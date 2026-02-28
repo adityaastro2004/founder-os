@@ -29,6 +29,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.agents import AGENT_CLASSES
+from app.agents.approval import ApprovalGate
 from app.agents.base import AgentConfig, BaseAgent
 from app.agents.event_bus import EventBus
 from app.agents.llm import LLMProvider, create_llm_provider
@@ -78,6 +79,9 @@ class AgentRegistry:
 
         # A2A router (shared across agents)
         self._router = AgentRouter(event_bus=self._event_bus)
+
+        # Human-in-the-loop approval gate
+        self._approval_gate = ApprovalGate(redis)
 
         # Register agent cards and factories
         for name, cls in AGENT_CLASSES.items():
@@ -210,6 +214,8 @@ class AgentRegistry:
             tools=tool_registry,
             router=self._router,
             event_bus=self._event_bus,
+            approval_gate=self._approval_gate,
+            user_id=str(user_id),
         )
 
         # 8. Wire the delegate_task tool for the orchestrator.

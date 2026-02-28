@@ -53,6 +53,20 @@ from app.agents.orchestrator import OrchestratorAgent, OrchestrationTrace
 # Event Bus
 from app.agents.event_bus import EventBus, Event
 
+# Approval (Human-in-the-Loop)
+from app.agents.approval import (
+    ApprovalGate,
+    ApprovalPreferences,
+    PendingApproval,
+    ApprovalDecision,
+    RiskLevel,
+    classify_tool_risk,
+    HIGH_RISK_TOOLS,
+)
+
+# API Client (retry + circuit breaker)
+from app.agents.api_client import APIClient, RetryConfig, CircuitBreakerConfig, APIResponse
+
 # Registry (top-level entry point)
 from app.agents.registry import AgentRegistry
 
@@ -102,6 +116,19 @@ __all__ = [
     # Event Bus
     "EventBus",
     "Event",
+    # Approval
+    "ApprovalGate",
+    "ApprovalPreferences",
+    "PendingApproval",
+    "ApprovalDecision",
+    "RiskLevel",
+    "classify_tool_risk",
+    "HIGH_RISK_TOOLS",
+    # API Client
+    "APIClient",
+    "RetryConfig",
+    "CircuitBreakerConfig",
+    "APIResponse",
     # Registry
     "AgentRegistry",
 ]

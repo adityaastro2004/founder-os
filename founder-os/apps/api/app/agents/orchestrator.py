@@ -188,8 +188,10 @@ OUTPUT FORMAT:
         tools: ToolRegistry,
         router: AgentRouter | None = None,
         event_bus: EventBus | None = None,
+        approval_gate: "Any | None" = None,
+        user_id: str = "",
     ) -> None:
-        super().__init__(config, memory, llm, tools, router, event_bus)
+        super().__init__(config, memory, llm, tools, router, event_bus, approval_gate, user_id)
         self._trace = OrchestrationTrace()
 
     async def run(

@@ -35,6 +35,10 @@ from app.agents.memory import AgentMemory
 from app.agents.router import AgentCard, AgentMessage, AgentRouter, DelegationResult
 from app.agents.tool_protocol import ToolRegistry
 
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.agents.approval import ApprovalGate
+
 logger = logging.getLogger(__name__)
 
 
@@ -70,6 +74,7 @@ class AgentResult:
     model: str = ""
     steps: list[Any] = field(default_factory=list)  # ExecutionStep trace
     delegations: list[DelegationResult] = field(default_factory=list)
+    pending_approvals: list[dict[str, Any]] = field(default_factory=list)
 
 
 # ============================================================================
@@ -113,6 +118,8 @@ class BaseAgent:
         tools: ToolRegistry,
         router: AgentRouter | None = None,
         event_bus: EventBus | None = None,
+        approval_gate: "ApprovalGate | None" = None,
+        user_id: str = "",
     ) -> None:
         self.config = config
         self.memory = memory
@@ -120,6 +127,8 @@ class BaseAgent:
         self.tools = tools
         self.router = router
         self.event_bus = event_bus
+        self.approval_gate = approval_gate
+        self.user_id = user_id
 
         # Build execution engine
         self._engine = ExecutionEngine(
@@ -127,6 +136,8 @@ class BaseAgent:
             tools=tools,
             max_rounds=config.max_tool_rounds,
             parallel_tool_calls=True,
+            approval_gate=approval_gate,
+            user_id=user_id,
         )
 
     # -- A2A Card --------------------------------------------------------
@@ -200,6 +211,7 @@ class BaseAgent:
             stop_reason=exec_result.stop_reason,
             model=exec_result.model,
             steps=exec_result.steps,
+            pending_approvals=exec_result.pending_approvals,
         )
 
         # 8. Post-run hook

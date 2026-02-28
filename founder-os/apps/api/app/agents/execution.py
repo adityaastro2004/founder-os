@@ -27,11 +27,12 @@ Architecture:
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import uuid
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from app.agents.llm import (
     LLMMessage,
@@ -42,6 +43,9 @@ from app.agents.llm import (
     ToolSchema,
 )
 from app.agents.tool_protocol import ToolRegistry, ToolResult
+
+if TYPE_CHECKING:
+    from app.agents.approval import ApprovalGate
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +78,7 @@ class ExecutionResult:
     stop_reason: str = ""
     model: str = ""
     cost_usd: float = 0.0
+    pending_approvals: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def tool_calls_log(self) -> list[dict[str, Any]]:
@@ -122,11 +127,17 @@ class ExecutionEngine:
         *,
         max_rounds: int = 15,
         parallel_tool_calls: bool = True,
+        approval_gate: "ApprovalGate | None" = None,
+        user_id: str = "",
+        agent_name: str = "",
     ) -> None:
         self.llm = llm
         self.tools = tools
         self.max_rounds = max_rounds
         self.parallel_tool_calls = parallel_tool_calls
+        self.approval_gate = approval_gate
+        self.user_id = user_id
+        self._agent_name = agent_name
 
     async def run(
         self,
@@ -157,6 +168,7 @@ class ExecutionEngine:
         final_text = ""
         stop_reason = ""
         model_used = model or ""
+        pending_approvals: list[dict[str, Any]] = []
 
         # Get available tool schemas
         tool_schemas = await self.tools.list_tools()
@@ -215,12 +227,13 @@ class ExecutionEngine:
                 tool_calls=response.tool_calls,
             ))
 
-            # -- Step: Execute tool calls -----------------------
-            tool_results = await self._execute_tool_calls(
+            # -- Step: Execute tool calls (with approval gate) --
+            tool_results, new_pending = await self._execute_tool_calls(
                 response.tool_calls,
                 agent_name=agent_name,
                 steps=steps,
             )
+            pending_approvals.extend(new_pending)
 
             # -- Append tool results as messages ----------------
             for tr in tool_results:
@@ -252,6 +265,7 @@ class ExecutionEngine:
             stop_reason=stop_reason,
             model=model_used,
             cost_usd=cost,
+            pending_approvals=pending_approvals,
         )
 
     # -- Tool execution ---------------------------------------------------
@@ -261,27 +275,80 @@ class ExecutionEngine:
         tool_calls: list[ToolCallRequest],
         agent_name: str,
         steps: list[ExecutionStep],
-    ) -> list[ToolResult]:
-        """Execute tool calls, optionally in parallel."""
-        if self.parallel_tool_calls and len(tool_calls) > 1:
-            results = await self.tools.call_tools_parallel([
-                {
-                    "name": tc.name,
-                    "arguments": tc.arguments,
-                    "tool_call_id": tc.id,
-                }
-                for tc in tool_calls
-            ])
-        else:
-            results = []
-            for tc in tool_calls:
-                result = await self.tools.call_tool(
-                    tc.name, tc.arguments, tc.id,
-                )
-                results.append(result)
+    ) -> tuple[list[ToolResult], list[dict[str, Any]]]:
+        """
+        Execute tool calls with approval gate checks.
 
-        # Log each tool call as a step
-        for tc, result in zip(tool_calls, results):
+        Returns:
+            (results, pending_approvals) — results for each tool call,
+            plus a list of any pending approval dicts created.
+        """
+        results: list[ToolResult] = []
+        pending: list[dict[str, Any]] = []
+
+        for tc in tool_calls:
+            # -- Approval gate check --
+            if self.approval_gate and self.user_id:
+                decision = await self.approval_gate.check(
+                    user_id=self.user_id,
+                    tool_name=tc.name,
+                    arguments=tc.arguments,
+                    agent_name=agent_name,
+                    session_id="",
+                )
+
+                if not decision.approved:
+                    # Tool call needs user approval — return a placeholder result
+                    approval_info = (
+                        decision.pending_approval.to_dict()
+                        if decision.pending_approval
+                        else {}
+                    )
+                    pending.append(approval_info)
+
+                    results.append(ToolResult(
+                        tool_call_id=tc.id,
+                        content=json.dumps({
+                            "status": "pending_approval",
+                            "approval_id": approval_info.get("id", ""),
+                            "message": decision.reason,
+                            "description": approval_info.get("description", ""),
+                        }),
+                        is_error=False,
+                    ))
+
+                    steps.append(ExecutionStep(
+                        step_type="approval_required",
+                        agent=agent_name,
+                        detail={
+                            "tool": tc.name,
+                            "arguments": tc.arguments,
+                            "approval_id": approval_info.get("id", ""),
+                            "risk_level": approval_info.get("risk_level", ""),
+                        },
+                        result=decision.reason,
+                    ))
+
+                    logger.info(
+                        "Agent '%s' tool '%s' → PENDING APPROVAL (id=%s)",
+                        agent_name, tc.name, approval_info.get("id", ""),
+                    )
+                    continue
+
+                # If auto-approved, log it
+                if decision.auto_approved:
+                    logger.info(
+                        "Agent '%s' tool '%s' → auto-approved (always_allow)",
+                        agent_name, tc.name,
+                    )
+
+            # -- Execute the tool --
+            result = await self.tools.call_tool(
+                tc.name, tc.arguments, tc.id,
+            )
+            results.append(result)
+
+            # Log tool call step
             steps.append(ExecutionStep(
                 step_type="tool_call",
                 agent=agent_name,
@@ -290,7 +357,7 @@ class ExecutionEngine:
                     "arguments": tc.arguments,
                     "is_error": result.is_error,
                 },
-                result=result.content[:500],  # truncate for logging
+                result=result.content[:500],
                 duration_ms=result.duration_ms,
             ))
 
@@ -301,4 +368,4 @@ class ExecutionEngine:
                 result.duration_ms,
             )
 
-        return results
+        return results, pending

@@ -41,6 +41,7 @@ class AgentRunResponse(BaseModel):
     stop_reason: str
     cost_usd: float = 0.0
     llm_provider: str = ""
+    pending_approvals: list[dict] = []
 
 
 class AgentInfo(BaseModel):
@@ -70,6 +71,7 @@ class OrchestrationResponse(BaseModel):
     stop_reason: str
     cost_usd: float = 0.0
     llm_provider: str = ""
+    pending_approvals: list[dict] = []
 
 
 # ── Routes ────────────────────────────────────────────────
@@ -148,6 +150,7 @@ async def run_agent(
         stop_reason=result.stop_reason,
         cost_usd=round(result.cost_usd, 6),
         llm_provider=settings.LLM_PROVIDER,
+        pending_approvals=result.pending_approvals,
     )
 
 
@@ -200,4 +203,5 @@ async def orchestrate(
         stop_reason=result.stop_reason,
         cost_usd=round(result.cost_usd, 6),
         llm_provider=settings.LLM_PROVIDER,
+        pending_approvals=result.pending_approvals,
     )
