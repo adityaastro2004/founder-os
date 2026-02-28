@@ -623,11 +623,88 @@ INSERT INTO agents (name, display_name, description, system_prompt, capabilities
 
 -- Default workflow templates
 INSERT INTO workflow_templates (name, slug, description, category, steps, trigger_type, estimated_duration_minutes) VALUES
-('Weekly Planning', 'weekly-planning', 'Analyze last week and plan the week ahead', 'planning',
+('Weekly Planning', 'weekly-planning',
+ 'Full weekly planning workflow: review last week, scan the market, generate a prioritised plan, schedule content, and create actionable tasks.',
+ 'planning',
  '[
-    {"step_number": 1, "agent_name": "ops", "task_template": "Compile last week metrics", "requires_approval": false},
-    {"step_number": 2, "agent_name": "research", "task_template": "Check market and competitor updates", "requires_approval": false},
-    {"step_number": 3, "agent_name": "planner", "task_template": "Generate prioritized task list", "requires_approval": true}
+    {
+      "step_number": 1,
+      "agent_name": "ops",
+      "title": "Compile Last Week Metrics",
+      "task_template": "Pull all business metrics for the past 7 days. Summarise: MRR change, active users, traffic, conversion rate, support ticket volume, and any anomalies. Use the get_business_metrics tool. Output a structured dashboard summary.",
+      "depends_on": [],
+      "requires_approval": false,
+      "timeout_seconds": 120,
+      "retry_on_failure": true,
+      "max_retries": 2,
+      "output_key": "last_week_metrics",
+      "tools_required": ["get_business_metrics", "get_current_datetime"]
+    },
+    {
+      "step_number": 2,
+      "agent_name": "planner",
+      "title": "Review Prior Week Plan",
+      "task_template": "Retrieve the previous weeks plan from shared memory (key: current_plan). For each task that was planned: mark it as completed, partially done, or missed. Calculate the completion rate. Identify any recurring blockers. Output a structured review with a carryover_tasks list of items that need to roll into the new week.",
+      "depends_on": [],
+      "requires_approval": false,
+      "timeout_seconds": 120,
+      "retry_on_failure": true,
+      "max_retries": 2,
+      "output_key": "prior_week_review",
+      "tools_required": ["list_tasks", "get_current_datetime", "store_working_memory"]
+    },
+    {
+      "step_number": 3,
+      "agent_name": "research",
+      "title": "Market & Competitor Scan",
+      "task_template": "Given the founders industry (from context), run a quick scan for: (1) competitor moves in the last 7 days, (2) relevant market/industry news, (3) trending topics in the founders space. Use web_search. Summarise the top 5 actionable insights. Reference: {{last_week_metrics}}",
+      "depends_on": [1],
+      "requires_approval": false,
+      "timeout_seconds": 180,
+      "retry_on_failure": true,
+      "max_retries": 2,
+      "output_key": "market_scan",
+      "tools_required": ["web_search", "search_knowledge"]
+    },
+    {
+      "step_number": 4,
+      "agent_name": "planner",
+      "title": "Generate Weekly Plan",
+      "task_template": "Using the following inputs, create a prioritised weekly plan:\n\n1. Last Week Metrics: {{last_week_metrics}}\n2. Prior Plan Review: {{prior_week_review}} (include carryover tasks)\n3. Market Intelligence: {{market_scan}}\n4. Founder Profile: {{founder_profile}}\n\nOutput format:\n- Top 3 Priorities for the week (with rationale)\n- Daily breakdown (Mon-Fri) with specific tasks, owners (which agent), and time estimates\n- Delegations: list of tasks to delegate to content/research/ops/product/support agents\n- Risks and mitigations\n- Success criteria for the week\n\nSave the plan to shared memory under key current_plan.",
+      "depends_on": [1, 2, 3],
+      "requires_approval": true,
+      "timeout_seconds": 300,
+      "retry_on_failure": true,
+      "max_retries": 1,
+      "output_key": "weekly_plan",
+      "tools_required": ["create_task", "store_working_memory", "get_current_datetime", "search_knowledge"]
+    },
+    {
+      "step_number": 5,
+      "agent_name": "content",
+      "title": "Schedule Content Calendar",
+      "task_template": "Based on the weekly plan ({{weekly_plan}}), create a content calendar for the week:\n- Blog posts / articles to write (with topics + target publish day)\n- Social media posts (LinkedIn, Twitter/X) - 1 per day minimum\n- Newsletter if scheduled\n- Any launch announcements\n\nMatch the founders writing voice (use get_writing_style). Save each piece as a draft via save_draft.",
+      "depends_on": [4],
+      "requires_approval": true,
+      "timeout_seconds": 240,
+      "retry_on_failure": true,
+      "max_retries": 1,
+      "output_key": "content_calendar",
+      "tools_required": ["save_draft", "get_writing_style", "get_current_datetime"]
+    },
+    {
+      "step_number": 6,
+      "agent_name": "ops",
+      "title": "Create Tasks & Send Notifications",
+      "task_template": "Take the approved weekly plan ({{weekly_plan}}) and:\n1. Create individual task records for each item using create_task\n2. Set priorities (1=urgent, 10=backlog)\n3. Assign each task to the appropriate agent\n4. Generate a summary notification for the founder with the weeks key objectives\n\nOutput: list of created task IDs and the notification content.",
+      "depends_on": [4],
+      "requires_approval": false,
+      "timeout_seconds": 120,
+      "retry_on_failure": true,
+      "max_retries": 2,
+      "output_key": "task_creation_summary",
+      "tools_required": ["create_task", "list_tasks", "get_current_datetime"]
+    }
  ]'::jsonb,
  'scheduled', 15),
 ('Content Creation', 'content-creation', 'Research and create blog content', 'marketing',

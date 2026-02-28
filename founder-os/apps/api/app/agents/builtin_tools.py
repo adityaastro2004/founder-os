@@ -70,8 +70,9 @@ async def save_draft(title: str, content: str, output_type: str = "blog_post") -
     description="Retrieve the user's preferred writing voice and tone guidelines.",
 )
 async def get_writing_style() -> str:
-    """Placeholder — reads from founder_profiles.writing_voice."""
-    return json.dumps({"voice": "", "note": "Writing style not yet loaded"})
+    """Return the founder's writing voice preferences (mock data)."""
+    from app.agents.mock_data import get_mock_writing_style
+    return json.dumps(get_mock_writing_style())
 
 
 # ============================================================================
@@ -86,13 +87,9 @@ async def get_writing_style() -> str:
     ),
 )
 async def get_business_metrics(metric_type: str = "", days: int = 30) -> str:
-    """Placeholder — will query business_metrics table."""
-    return json.dumps({
-        "metric_type": metric_type,
-        "days": days,
-        "data": [],
-        "note": "Metrics query not yet wired",
-    })
+    """Return realistic mock metrics (or manual-input data if set)."""
+    from app.agents.mock_data import get_mock_metrics
+    return json.dumps(get_mock_metrics(metric_type=metric_type, days=days))
 
 
 @tool(
@@ -100,8 +97,9 @@ async def get_business_metrics(metric_type: str = "", days: int = 30) -> str:
     description="List the user's connected integrations and their sync status.",
 )
 async def get_integrations() -> str:
-    """Placeholder — will query integrations table."""
-    return json.dumps({"integrations": [], "note": "Not yet wired"})
+    """Return mock integration status list."""
+    from app.agents.mock_data import get_mock_integrations
+    return json.dumps(get_mock_integrations())
 
 
 # ============================================================================
@@ -135,8 +133,9 @@ async def create_task(
     description="List tasks for the user, optionally filtered by status or agent.",
 )
 async def list_tasks(status: str = "", agent_name: str = "", limit: int = 10) -> str:
-    """Placeholder — will query tasks table."""
-    return json.dumps({"tasks": [], "note": "Not yet wired"})
+    """Return mock tasks with completion stats."""
+    from app.agents.mock_data import get_mock_tasks
+    return json.dumps(get_mock_tasks(status=status, agent_name=agent_name, limit=limit))
 
 
 @tool(

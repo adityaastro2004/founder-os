@@ -49,6 +49,11 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
 
+    # ── Google Calendar Integration ──
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/test/plan/gcal/callback"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

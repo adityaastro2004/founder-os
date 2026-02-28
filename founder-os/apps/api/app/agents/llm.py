@@ -597,7 +597,7 @@ class GeminiProvider(OpenAICompatibleProvider):
 
     provider_name = "gemini"
 
-    _GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
+    _GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai/"
 
     def __init__(
         self,
@@ -605,13 +605,15 @@ class GeminiProvider(OpenAICompatibleProvider):
         default_model: str = "gemini-2.5-flash",
         timeout: float = 120.0,
     ) -> None:
-        super().__init__(
-            api_key=api_key,
+        self.default_model = default_model
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
+        self._client = httpx.AsyncClient(
             base_url=self._GEMINI_BASE,
-            default_model=default_model,
+            headers=headers,
             timeout=timeout,
         )
-
     async def health_check(self) -> bool:
         try:
             resp = await self._client.get("/models")
