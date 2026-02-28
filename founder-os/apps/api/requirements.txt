@@ -26,3 +26,7 @@ psycopg2-binary>=2.9.0
 
 # Redis
 redis[hiredis]>=5.0.0
+
+# Auth (Clerk JWT)
+PyJWT[crypto]>=2.8.0
+httpx>=0.27.0
