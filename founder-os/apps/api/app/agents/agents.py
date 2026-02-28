@@ -283,10 +283,18 @@ Output format:
 
 
 # ============================================================================
+# Orchestrator — import here to keep the registry dict in one place
+# ============================================================================
+
+from app.agents.orchestrator import OrchestratorAgent  # noqa: E402
+
+
+# ============================================================================
 # Registry of concrete classes by slug
 # ============================================================================
 
 AGENT_CLASSES: dict[str, type[BaseAgent]] = {
+    "orchestrator": OrchestratorAgent,
     "planner": PlannerAgent,
     "content": ContentAgent,
     "research": ResearchAgent,

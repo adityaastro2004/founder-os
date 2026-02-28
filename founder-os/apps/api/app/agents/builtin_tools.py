@@ -176,3 +176,32 @@ async def get_current_datetime() -> str:
 async def store_working_memory(key: str, value: str) -> str:
     """Placeholder — the BaseAgent wires this to WorkingMemory at runtime."""
     return json.dumps({"stored": key})
+
+
+# ============================================================================
+# Orchestrator — Agent delegation (Stripe Minions pattern)
+# ============================================================================
+
+@tool(
+    name="delegate_task",
+    description=(
+        "Delegate a task to a specialist agent. Use this when a request "
+        "requires domain expertise. Available agents: planner, content, "
+        "research, ops, product, support. Pass a clear, specific task "
+        "description — don't just forward the user's message verbatim."
+    ),
+)
+async def delegate_task(
+    agent_name: str,
+    task: str,
+    context: str = "",
+) -> str:
+    """
+    Placeholder — wired to OrchestratorAgent.execute_delegation() at runtime.
+
+    The AgentRegistry injects a real implementation that creates the target
+    specialist agent, runs it, and returns its response.
+    """
+    return json.dumps({
+        "error": "delegate_task not wired — must be called via orchestrator",
+    })

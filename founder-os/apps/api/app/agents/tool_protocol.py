@@ -258,3 +258,79 @@ class ToolRegistry:
     @property
     def provider_count(self) -> int:
         return len(self._providers)
+
+    # ------------------------------------------------------------------
+    # Runtime tool override (for agents-as-tools / Minions pattern)
+    # ------------------------------------------------------------------
+
+    def override_tool_impl(
+        self,
+        tool_name: str,
+        impl: Any,
+    ) -> None:
+        """
+        Replace a tool's implementation at runtime.
+
+        This is used by the Orchestrator to bind the ``delegate_task``
+        placeholder to an actual delegation closure that has access to
+        the orchestrator instance, user_id, and session_id.
+
+        The override installs a ``ClosureToolProvider`` that intercepts
+        calls to ``tool_name`` and routes them to ``impl``.
+
+        Args:
+            tool_name: Name of the tool to override.
+            impl: An async callable matching the tool's signature.
+        """
+        closure_provider = _ClosureToolProvider(tool_name, impl)
+        # The closure provider must appear *before* the local provider
+        # in the lookup map so it shadows the placeholder.
+        self._tool_to_provider[tool_name] = closure_provider
+        logger.info("Tool '%s' overridden with runtime closure", tool_name)
+
+
+class _ClosureToolProvider(ToolProvider):
+    """
+    A thin ToolProvider that wraps a single async callable.
+
+    Used to inject runtime closures (e.g. delegate_task bound to
+    the orchestrator) into the tool registry without modifying the
+    global @tool catalog.
+    """
+
+    provider_name = "closure"
+
+    def __init__(self, tool_name: str, impl: Any) -> None:
+        self._tool_name = tool_name
+        self._impl = impl
+
+    async def list_tools(self) -> list[ToolSchema]:
+        # Schema already exists from the @tool decorator; we only
+        # override the execution path.
+        return []
+
+    async def call_tool(
+        self,
+        name: str,
+        arguments: dict[str, Any],
+        tool_call_id: str = "",
+    ) -> ToolResult:
+        start = time.monotonic()
+        try:
+            result_str = await self._impl(**arguments)
+            duration = (time.monotonic() - start) * 1000
+            return ToolResult(
+                tool_call_id=tool_call_id,
+                content=result_str,
+                is_error=False,
+                duration_ms=duration,
+            )
+        except Exception as exc:
+            duration = (time.monotonic() - start) * 1000
+            logger.exception("Closure tool '%s' failed", name)
+            return ToolResult(
+                tool_call_id=tool_call_id,
+                content=json.dumps({"error": str(exc)}),
+                is_error=True,
+                duration_ms=duration,
+            )

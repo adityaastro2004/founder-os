@@ -6,16 +6,21 @@ Factory that composes the full agent architecture:
 
 This is the single entry point for creating ready-to-use agents.
 
+The registry also handles the Orchestrator's special wiring:
+  - The ``delegate_task`` tool is bound to the orchestrator instance
+  - This enables the Stripe Minions pattern (agents-as-tools)
+
 Usage:
     from app.agents.registry import AgentRegistry
 
     registry = AgentRegistry(db=session, redis=redis_client, settings=settings)
-    agent = await registry.get("planner", user_id=user_id)
-    result = await agent.run("What should I focus on this week?")
+    agent = await registry.get("orchestrator", user_id=user_id)
+    result = await agent.run("Help me plan my product launch")
 """
 
 from __future__ import annotations
 
+import json
 import uuid
 from typing import Any, Optional
 
@@ -198,7 +203,7 @@ class AgentRegistry:
         )
 
         # 7. Instantiate with all components
-        return agent_cls(
+        agent = agent_cls(
             config=config,
             memory=memory,
             llm=self._llm,
@@ -206,6 +211,37 @@ class AgentRegistry:
             router=self._router,
             event_bus=self._event_bus,
         )
+
+        # 8. Wire the delegate_task tool for the orchestrator.
+        #    This is the Stripe Minions pattern: the orchestrator's LLM
+        #    sees ``delegate_task`` as a regular tool, but under the hood
+        #    it creates a specialist agent and runs it.
+        if agent_name == "orchestrator":
+            from app.agents.orchestrator import OrchestratorAgent
+            if isinstance(agent, OrchestratorAgent):
+                _orchestrator = agent
+                _uid = user_id
+                _sid = session_id
+
+                async def _delegate_task_impl(
+                    agent_name: str,
+                    task: str,
+                    context: str = "",
+                ) -> str:
+                    return await _orchestrator.execute_delegation(
+                        agent_name=agent_name,
+                        task=task,
+                        context=context,
+                        user_id=_uid,
+                        session_id=_sid,
+                    )
+
+                # Inject the real implementation into the tool registry
+                tool_registry.override_tool_impl(
+                    "delegate_task", _delegate_task_impl,
+                )
+
+        return agent
 
     async def list_available(self) -> list[dict]:
         """Return a summary of all active agents."""

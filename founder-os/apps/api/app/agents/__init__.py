@@ -47,6 +47,9 @@ from app.agents.execution import ExecutionEngine, ExecutionResult, ExecutionStep
 # A2A / Routing
 from app.agents.router import AgentRouter, AgentCard, AgentMessage, DelegationResult
 
+# Orchestrator
+from app.agents.orchestrator import OrchestratorAgent, OrchestrationTrace
+
 # Event Bus
 from app.agents.event_bus import EventBus, Event
 
@@ -93,6 +96,9 @@ __all__ = [
     "AgentCard",
     "AgentMessage",
     "DelegationResult",
+    # Orchestrator
+    "OrchestratorAgent",
+    "OrchestrationTrace",
     # Event Bus
     "EventBus",
     "Event",
