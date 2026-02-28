@@ -31,6 +31,13 @@ class Settings(BaseSettings):
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     OPENAI_MODEL: str = "gpt-4o-mini"
 
+    # ── Embedding Provider ──
+    EMBEDDING_PROVIDER: str = "ollama"  # "ollama" | "openai"
+    EMBEDDING_MODEL: str = "nomic-embed-text"  # Ollama default
+    EMBEDDING_API_KEY: str = ""  # Only needed for OpenAI
+    EMBEDDING_BASE_URL: str = ""  # Falls back to OLLAMA_BASE_URL or OpenAI default
+    EMBEDDING_DIMENSIONS: int = 1536  # Padded/truncated to match pgvector column
+
     # App
     APP_ENV: str = "development"
     DEBUG: bool = True

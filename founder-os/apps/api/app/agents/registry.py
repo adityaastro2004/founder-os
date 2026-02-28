@@ -43,6 +43,7 @@ from app.agents.memory import (
 from app.agents.router import AgentCard, AgentRouter
 from app.agents.tool_protocol import LocalToolProvider, ToolRegistry
 from app.models import Agent as AgentModel, UserAgentConfig
+from app.retrieval.embeddings import EmbeddingProvider, create_embedding_provider
 
 
 class AgentRegistry:
@@ -82,6 +83,9 @@ class AgentRegistry:
 
         # Human-in-the-loop approval gate
         self._approval_gate = ApprovalGate(redis)
+
+        # Embedding provider for auto-RAG in agent runs
+        self._embedder = self._create_embedder(settings, redis)
 
         # Register agent cards and factories
         for name, cls in AGENT_CLASSES.items():
@@ -132,6 +136,28 @@ class AgentRegistry:
         elif settings.LLM_PROVIDER == "openai_compatible":
             return settings.OPENAI_MODEL
         return ""
+
+    @staticmethod
+    def _create_embedder(settings: Any, redis: aioredis.Redis) -> EmbeddingProvider:
+        """Create the shared embedding provider for auto-RAG."""
+        provider = getattr(settings, "EMBEDDING_PROVIDER", "ollama")
+        model = getattr(settings, "EMBEDDING_MODEL", "nomic-embed-text")
+        api_key = getattr(settings, "EMBEDDING_API_KEY", "")
+        base_url = getattr(settings, "EMBEDDING_BASE_URL", "")
+
+        if provider == "ollama":
+            base_url = base_url or getattr(settings, "OLLAMA_BASE_URL", "http://localhost:11434")
+        elif provider == "openai":
+            api_key = api_key or getattr(settings, "OPENAI_API_KEY", "")
+            base_url = base_url or None
+
+        return create_embedding_provider(
+            provider=provider,
+            api_key=api_key or None,
+            base_url=base_url or None,
+            model=model,
+            redis=redis,
+        )
 
     # -- Public API -------------------------------------------------------
 
@@ -216,6 +242,7 @@ class AgentRegistry:
             event_bus=self._event_bus,
             approval_gate=self._approval_gate,
             user_id=str(user_id),
+            embedder=self._embedder,
         )
 
         # 8. Wire the delegate_task tool for the orchestrator.

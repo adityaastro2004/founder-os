@@ -38,6 +38,7 @@ from app.agents.tool_protocol import ToolRegistry
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from app.agents.approval import ApprovalGate
+    from app.retrieval.embeddings import EmbeddingProvider
 
 logger = logging.getLogger(__name__)
 
@@ -120,6 +121,7 @@ class BaseAgent:
         event_bus: EventBus | None = None,
         approval_gate: "ApprovalGate | None" = None,
         user_id: str = "",
+        embedder: "EmbeddingProvider | None" = None,
     ) -> None:
         self.config = config
         self.memory = memory
@@ -129,6 +131,7 @@ class BaseAgent:
         self.event_bus = event_bus
         self.approval_gate = approval_gate
         self.user_id = user_id
+        self._embedder = embedder
 
         # Build execution engine
         self._engine = ExecutionEngine(
@@ -173,6 +176,13 @@ class BaseAgent:
                 agent=self.name,
                 data={"input_preview": user_input[:200]},
             ))
+
+        # 1b. Auto-embed the user query for RAG (if embedder is available)
+        if query_embedding is None and self._embedder is not None:
+            try:
+                query_embedding = await self._embedder.embed(user_input)
+            except Exception as exc:
+                logger.warning("Auto-embedding failed, skipping RAG: %s", exc)
 
         # 2. Build system prompt with memory + router context
         system_prompt = await self._build_system_prompt(
