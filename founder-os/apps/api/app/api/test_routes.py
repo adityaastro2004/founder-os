@@ -248,8 +248,53 @@ async def generate_structured_plan(body: PlanRequest):
     The plan is stored in memory for ICS download and Google Calendar push.
     """
     from app.agents.agents import PlannerAgent
-    from app.agents.planner_models import parse_plan_to_model
+    from app.agents.planner_models import parse_plan_to_model, WeeklyPlan, Priority, DaySchedule, PlanTask, ICEScore
     from app.agents.mock_data import get_mock_founder_profile
+    import datetime
+
+    global _latest_plan
+
+    # ── MOCK BYPASS FOR RATE LIMITS ──
+    if body.message.strip().lower() == "mock_plan":
+        mock_plan_obj = WeeklyPlan(
+            week_of=datetime.date.today().isoformat(),
+            top_priorities=[
+                Priority(rank=1, title="Test Google Calendar Auth", rationale="To verify the OAuth flow.", ice_score=ICEScore(impact=10, confidence=10, ease=10), owner_agent="planner")
+            ],
+            daily_schedule={
+                "monday": DaySchedule(
+                    day="monday",
+                    tasks=[
+                        PlanTask(
+                            id="pt-mock-1",
+                            title="Mock Task for Calendar Sync",
+                            description="This event was generated without hitting the LLM to avoid rate limits.",
+                            owner_agent="planner",
+                            priority=1,
+                            est_hours=1.0,
+                            start_time="10:00",
+                            end_time="11:00",
+                            status="pending",
+                            ice_score=ICEScore(impact=5, confidence=5, ease=5),
+                            tags=["test"]
+                        )
+                    ]
+                )
+            },
+            delegations=[],
+            risks=[],
+            success_criteria=["Event synced successfully to GCAL."]
+        )
+        mock_plan_obj.compute_totals()
+        
+        plan_dict = mock_plan_obj.model_dump(mode="json")
+        _latest_plan = plan_dict
+        return {
+            "plan": plan_dict,
+            "raw_markdown": "MOCK_PLAN_USED",
+            "duration_seconds": 0.0,
+            "model": "mock-bypass",
+        }
 
     settings = get_settings()
     provider = _create_provider(settings)
@@ -307,7 +352,6 @@ async def generate_structured_plan(body: PlanRequest):
     duration = time.time() - start
 
     # Store for ICS / GCal export
-    global _latest_plan
     plan_dict = plan.model_dump(mode="json")
     _latest_plan = plan_dict
 
