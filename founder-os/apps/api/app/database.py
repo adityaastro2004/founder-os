@@ -32,9 +32,15 @@ async def get_db() -> AsyncSession:
 
 
 async def init_db() -> None:
-    """Create all tables (for development convenience)."""
+    """Verify the database connection on startup.
+
+    Tables are managed via Alembic migrations + schema.sql,
+    so we only do a lightweight connectivity check here.
+    """
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.execute(
+            __import__("sqlalchemy").text("SELECT 1")
+        )
 
 
 async def close_db() -> None:
