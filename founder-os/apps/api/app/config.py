@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     CLERK_AUDIENCE: str = ""  # optional — leave empty to skip audience check
 
     # ── LLM Providers ──
-    LLM_PROVIDER: str = "ollama"  # "ollama" | "anthropic" | "openai_compatible"
+    LLM_PROVIDER: str = "gemini"  # "ollama" | "anthropic" | "openai_compatible" | "gemini"
 
     # Ollama (free, local — default)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://api.openai.com/v1"
     OPENAI_MODEL: str = "gpt-4o-mini"
+
+    # Gemini (Google)
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # ── Embedding Provider ──
     EMBEDDING_PROVIDER: str = "ollama"  # "ollama" | "openai"

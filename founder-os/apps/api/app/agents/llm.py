@@ -584,6 +584,43 @@ class OpenAICompatibleProvider(LLMProvider):
 
 
 # ============================================================================
+# Gemini (Google)
+# ============================================================================
+
+class GeminiProvider(OpenAICompatibleProvider):
+    """
+    Google Gemini via its OpenAI-compatible endpoint.
+    Uses: https://generativelanguage.googleapis.com/v1beta/openai/
+
+    This avoids needing the google-genai SDK — pure httpx.
+    """
+
+    provider_name = "gemini"
+
+    _GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
+
+    def __init__(
+        self,
+        api_key: str,
+        default_model: str = "gemini-2.5-flash",
+        timeout: float = 120.0,
+    ) -> None:
+        super().__init__(
+            api_key=api_key,
+            base_url=self._GEMINI_BASE,
+            default_model=default_model,
+            timeout=timeout,
+        )
+
+    async def health_check(self) -> bool:
+        try:
+            resp = await self._client.get("/models")
+            return resp.status_code == 200
+        except Exception:
+            return False
+
+
+# ============================================================================
 # Factory
 # ============================================================================
 
@@ -598,7 +635,7 @@ def create_llm_provider(
     Factory to create the right LLM provider from config.
 
     Args:
-        provider:  "ollama" | "anthropic" | "openai_compatible"
+        provider:  "ollama" | "anthropic" | "openai_compatible" | "gemini"
         api_key:   API key (not needed for Ollama)
         base_url:  Override base URL
         model:     Default model name
@@ -620,6 +657,13 @@ def create_llm_provider(
             api_key=api_key,
             base_url=base_url or "https://api.openai.com/v1",
             default_model=model or "gpt-4o-mini",
+        )
+    elif provider == "gemini":
+        if not api_key:
+            raise ValueError("GEMINI_API_KEY required for Gemini provider")
+        return GeminiProvider(
+            api_key=api_key,
+            default_model=model or "gemini-2.5-flash",
         )
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")

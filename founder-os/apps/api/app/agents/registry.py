@@ -117,6 +117,8 @@ class AgentRegistry:
             return settings.ANTHROPIC_API_KEY
         elif settings.LLM_PROVIDER == "openai_compatible":
             return settings.OPENAI_API_KEY
+        elif settings.LLM_PROVIDER == "gemini":
+            return settings.GEMINI_API_KEY
         return ""  # Ollama doesn't need a key
 
     @staticmethod
@@ -125,7 +127,7 @@ class AgentRegistry:
             return settings.OLLAMA_BASE_URL
         elif settings.LLM_PROVIDER == "openai_compatible":
             return settings.OPENAI_BASE_URL
-        return ""
+        return ""  # Gemini & Anthropic have hardcoded base URLs
 
     @staticmethod
     def _get_model(settings: Any) -> str:
@@ -135,6 +137,8 @@ class AgentRegistry:
             return settings.ANTHROPIC_MODEL
         elif settings.LLM_PROVIDER == "openai_compatible":
             return settings.OPENAI_MODEL
+        elif settings.LLM_PROVIDER == "gemini":
+            return settings.GEMINI_MODEL
         return ""
 
     @staticmethod

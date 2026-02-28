@@ -8,6 +8,7 @@ from app.api.agent_routes import router as agent_router
 from app.api.approval_routes import router as approval_router
 from app.api.queue_routes import router as queue_router
 from app.api.knowledge_routes import router as knowledge_router
+from app.api.test_routes import router as test_router
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.redis import init_redis, close_redis
@@ -44,6 +45,10 @@ app.include_router(agent_router)
 app.include_router(approval_router)
 app.include_router(queue_router)
 app.include_router(knowledge_router)
+
+# Dev-only test routes (no auth required)
+if settings.APP_ENV == "development":
+    app.include_router(test_router)
 
 
 @app.get("/")
