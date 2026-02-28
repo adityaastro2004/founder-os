@@ -1,51 +1,37 @@
-# Turborepo starter
+# Founder OS — Monorepo
 
-This Turborepo starter is maintained by the Turborepo core team.
+This is the Turborepo monorepo for Founder OS. See the [project README](../readme.md) for the full vision, architecture, and roadmap.
 
-## Using this example
+## Apps
 
-Run the following command:
+| App | Stack | Description |
+|-----|-------|-------------|
+| `apps/api` | FastAPI + Python 3.14 | Multi-agent AI backend (PostgreSQL, Redis, pgvector) |
+| `apps/web` | Next.js | Dashboard frontend (WIP) |
+| `apps/docs` | Next.js | Documentation site (WIP) |
 
-```sh
-npx create-turbo@latest
-```
+## Packages
 
-## What's inside?
+| Package | Description |
+|---------|-------------|
+| `packages/ui` | Shared React component library |
+| `packages/eslint-config` | Shared ESLint configuration |
+| `packages/typescript-config` | Shared TypeScript configuration |
 
-This Turborepo includes the following packages/apps:
+## Commands
 
-### Apps and Packages
+```bash
+# Install dependencies (frontend)
+pnpm install
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended)
+# Build all apps
 turbo build
 
-# Without [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+# Dev mode (frontend apps)
+turbo dev
+
+# API server (separate — Python)
+cd apps/api && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000
 ```
 
 You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):

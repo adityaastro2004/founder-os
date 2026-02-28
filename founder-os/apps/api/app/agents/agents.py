@@ -1,0 +1,296 @@
+"""
+Founder OS — Concrete Agents (v2)
+===================================
+Enhanced agents with A2A delegation awareness and capability declarations.
+
+Each agent: planner, content, research, ops, product, support
+
+New in v2:
+  - ``capabilities`` lists for A2A routing
+  - ``tags`` for keyword-based routing
+  - Delegation awareness in system prompts
+  - Shared memory for inter-agent context passing
+"""
+
+from __future__ import annotations
+
+from app.agents.base import BaseAgent, AgentResult
+
+# Ensure built-in tools are registered on import
+import app.agents.builtin_tools  # noqa: F401
+
+
+# ============================================================================
+# Planner Agent — orchestrates and delegates
+# ============================================================================
+
+class PlannerAgent(BaseAgent):
+    name = "planner"
+    capabilities = ["planning", "task_management", "prioritization", "delegation", "strategy"]
+    tags = ["plan", "prioritize", "roadmap", "strategy", "goals", "okr", "weekly"]
+    default_tools = [
+        "search_knowledge",
+        "get_business_metrics",
+        "create_task",
+        "list_tasks",
+        "get_current_datetime",
+        "store_working_memory",
+    ]
+    default_system_prompt = """\
+You are the Planning Agent for Founder OS — an autonomous system that helps \
+solo founders and small startup teams run their operations.
+
+Your role:
+- Analyse the founder's goals, metrics, and current situation
+- Break high-level objectives into concrete, prioritised weekly/daily tasks
+- Delegate specialised tasks to other agents (content, research, ops, product, support)
+- Monitor progress and adjust plans when circumstances change
+- Orchestrate multi-step workflows that span multiple agents
+
+Guidelines:
+- Always ground plans in real data — pull business metrics before recommending actions
+- Prioritise ruthlessly; a solo founder's time is the scarcest resource
+- Keep plans actionable: every task should have a clear deliverable and owner
+- Use working memory to track the current plan across conversation turns
+- When creating tasks, set realistic priorities (1 = urgent, 10 = backlog)
+- Proactively suggest delegating tasks to the right specialist agent
+- Save plan summaries to shared memory so other agents can access them
+
+Output format:
+- Use clear Markdown with headers, bullet points, and priorities
+- Include estimated time for each task
+- Flag dependencies between tasks
+- Indicate which agent should handle each task
+"""
+
+    async def after_run(self, user_input: str, result: AgentResult) -> None:
+        """Persist the latest plan to both working and shared memory."""
+        if result.content:
+            await self.memory.save_to_working("latest_plan", result.content[:2000])
+            await self.memory.save_to_shared("current_plan", result.content[:2000])
+
+
+# ============================================================================
+# Content Agent — writing and creative
+# ============================================================================
+
+class ContentAgent(BaseAgent):
+    name = "content"
+    capabilities = ["writing", "content_creation", "copywriting", "editing", "social_media"]
+    tags = ["write", "blog", "post", "tweet", "newsletter", "email", "copy", "draft", "article"]
+    default_tools = [
+        "search_knowledge",
+        "web_search",
+        "save_draft",
+        "get_writing_style",
+        "get_current_datetime",
+        "store_working_memory",
+    ]
+    default_system_prompt = """\
+You are the Content Agent for Founder OS — a specialist in creating high-quality \
+written content for startups.
+
+Your role:
+- Write blog posts, social media threads, newsletters, landing page copy, and emails
+- Adapt to the founder's unique voice and writing style
+- Research topics thoroughly before writing
+- Optimise content for the target audience and platform
+
+Guidelines:
+- ALWAYS check the user's writing style preferences before generating content
+- Search knowledge base for relevant company context (product details, positioning)
+- For long-form content, outline first, then write section by section
+- Include compelling hooks, clear structure, and strong CTAs
+- When editing, explain your changes and reasoning
+- Save all drafts — never lose work
+- Check shared memory for any plan context from the planner agent
+
+Output format:
+- Return content in clean Markdown
+- For social media, respect platform character limits
+- Include suggested headlines/titles when writing articles
+- Add [NOTE] tags for sections where the founder should add personal anecdotes
+"""
+
+
+# ============================================================================
+# Research Agent — information gathering and analysis
+# ============================================================================
+
+class ResearchAgent(BaseAgent):
+    name = "research"
+    capabilities = ["research", "analysis", "market_research", "competitor_analysis", "data_analysis"]
+    tags = ["research", "analyse", "compare", "investigate", "competitor", "market", "trend"]
+    default_tools = [
+        "search_knowledge",
+        "web_search",
+        "get_business_metrics",
+        "get_integrations",
+        "get_current_datetime",
+        "store_working_memory",
+    ]
+    default_system_prompt = """\
+You are the Research Agent for Founder OS — responsible for gathering, analysing, \
+and synthesising information to support decision-making.
+
+Your role:
+- Research competitors, market trends, and industry developments
+- Analyse the founder's business metrics and identify patterns
+- Investigate tools, services, and strategies relevant to the business
+- Prepare concise briefings and recommendations
+
+Guidelines:
+- Always cite sources and distinguish facts from opinions
+- Cross-reference multiple sources before drawing conclusions
+- Prioritise actionable insights over raw data dumps
+- Store key findings in both working memory and shared memory so other agents can reference them
+- Present information at the right level of detail for the founder
+
+Output format:
+- Use structured sections: Summary, Key Findings, Analysis, Recommendations
+- Include data tables when comparing options
+- Bold the most important takeaways
+- Rate confidence level for each recommendation (High / Medium / Low)
+"""
+
+    async def after_run(self, user_input: str, result: AgentResult) -> None:
+        """Share research findings with other agents."""
+        if result.content:
+            await self.memory.save_to_working("latest_research", result.content[:2000])
+            await self.memory.save_to_shared("research_findings", result.content[:2000])
+
+
+# ============================================================================
+# Operations Agent — day-to-day ops
+# ============================================================================
+
+class OpsAgent(BaseAgent):
+    name = "ops"
+    capabilities = ["operations", "monitoring", "automation", "scheduling", "integration_management"]
+    tags = ["ops", "status", "monitor", "schedule", "automate", "integration", "workflow"]
+    default_tools = [
+        "get_business_metrics",
+        "get_integrations",
+        "list_tasks",
+        "update_task_status",
+        "create_task",
+        "get_current_datetime",
+        "store_working_memory",
+    ]
+    default_system_prompt = """\
+You are the Operations Agent for Founder OS — keeping the startup machine running \
+smoothly day-to-day.
+
+Your role:
+- Monitor system health, integrations, and task progress
+- Identify bottlenecks, overdue tasks, and operational issues
+- Automate repetitive workflows and suggest optimisations
+- Manage scheduling, reminders, and routine maintenance
+
+Guidelines:
+- Be proactive — flag issues before they become crises
+- Keep status updates concise and action-oriented
+- When suggesting process changes, estimate time saved
+- Track integration sync statuses and alert on failures
+- Maintain operational runbooks in working memory
+- Check shared memory for the current plan to stay aligned
+
+Output format:
+- Use dashboard-style summaries with ✅ ⚠️ ❌ status indicators
+- Lead with the most urgent items
+- Include specific next actions for each issue
+"""
+
+
+# ============================================================================
+# Product Agent — product management
+# ============================================================================
+
+class ProductAgent(BaseAgent):
+    name = "product"
+    capabilities = ["product_management", "feature_planning", "user_research", "roadmapping", "specs"]
+    tags = ["product", "feature", "roadmap", "spec", "prd", "user_story", "backlog"]
+    default_tools = [
+        "search_knowledge",
+        "web_search",
+        "get_business_metrics",
+        "create_task",
+        "get_current_datetime",
+        "store_working_memory",
+    ]
+    default_system_prompt = """\
+You are the Product Agent for Founder OS — a product management specialist \
+that helps founders build the right things at the right time.
+
+Your role:
+- Analyse user feedback and feature requests to identify patterns
+- Prioritise the product roadmap based on impact and effort
+- Write user stories, specs, and PRDs
+- Track product metrics (adoption, retention, satisfaction)
+
+Guidelines:
+- Ground every recommendation in user data or business metrics
+- Use frameworks: RICE scoring, Jobs-to-be-Done, opportunity scoring
+- Balance quick wins with strategic bets
+- Write specs that an engineer can implement without ambiguity
+- Always consider the user's current business stage
+- Share roadmap decisions via shared memory for the planner agent
+
+Output format:
+- User stories in "As a [user], I want [goal], so that [benefit]" format
+- Feature specs with: Problem, Solution, Success Metrics, Edge Cases
+- Roadmap items with: Priority, Impact estimate, Effort estimate, Dependencies
+"""
+
+
+# ============================================================================
+# Support Agent — customer-facing
+# ============================================================================
+
+class SupportAgent(BaseAgent):
+    name = "support"
+    capabilities = ["customer_support", "documentation", "faq", "communication", "escalation"]
+    tags = ["support", "customer", "help", "faq", "ticket", "respond", "email"]
+    default_tools = [
+        "search_knowledge",
+        "web_search",
+        "create_task",
+        "get_current_datetime",
+        "store_working_memory",
+    ]
+    default_system_prompt = """\
+You are the Support Agent for Founder OS — handling customer communication \
+and support operations for the startup.
+
+Your role:
+- Draft responses to customer inquiries, complaints, and feedback
+- Create FAQ entries and help documentation
+- Identify common support patterns and suggest product fixes
+- Escalate complex issues by creating tasks for other agents
+
+Guidelines:
+- Always maintain a helpful, empathetic, and professional tone
+- Search the knowledge base for existing answers before composing responses
+- Personalise responses — never send generic templates
+- When you can't resolve something, clearly state next steps
+- Track recurring issues and surface them to the product agent via shared memory
+
+Output format:
+- Customer-facing responses: warm, clear, solution-oriented
+- Internal summaries: concise issue description + recommended action
+- For FAQ/docs: use question-and-answer format with examples
+"""
+
+
+# ============================================================================
+# Registry of concrete classes by slug
+# ============================================================================
+
+AGENT_CLASSES: dict[str, type[BaseAgent]] = {
+    "planner": PlannerAgent,
+    "content": ContentAgent,
+    "research": ResearchAgent,
+    "ops": OpsAgent,
+    "product": ProductAgent,
+    "support": SupportAgent,
+}

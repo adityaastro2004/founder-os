@@ -15,6 +15,22 @@ class Settings(BaseSettings):
     CLERK_JWKS_URL: str = ""  # e.g. https://<your-clerk-instance>.clerk.accounts.dev/.well-known/jwks.json
     CLERK_AUDIENCE: str = ""  # optional — leave empty to skip audience check
 
+    # ── LLM Providers ──
+    LLM_PROVIDER: str = "ollama"  # "ollama" | "anthropic" | "openai_compatible"
+
+    # Ollama (free, local — default)
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.1:8b"
+
+    # Anthropic
+    ANTHROPIC_API_KEY: str = ""
+    ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
+
+    # OpenAI-compatible (vLLM, Together, Groq, LM Studio, etc.)
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_MODEL: str = "gpt-4o-mini"
+
     # App
     APP_ENV: str = "development"
     DEBUG: bool = True
