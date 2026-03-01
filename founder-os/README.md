@@ -6,7 +6,7 @@ This is the Turborepo monorepo for Founder OS. See the [project README](../readm
 
 | App | Stack | Description |
 |-----|-------|-------------|
-| `apps/api` | FastAPI + Python 3.14 | Multi-agent AI backend (PostgreSQL, Redis, pgvector) |
+| `apps/api` | FastAPI + Python 3.14 | Multi-agent AI backend — 64 endpoints, 7 agents, 28 DB tables, Celery queue, APScheduler, Google Calendar |
 | `apps/web` | Next.js | Dashboard frontend (WIP) |
 | `apps/docs` | Next.js | Documentation site (WIP) |
 
@@ -32,6 +32,12 @@ turbo dev
 
 # API server (separate — Python)
 cd apps/api && source .venv/bin/activate && uvicorn app.main:app --reload --port 8000
+
+# Celery worker (background tasks)
+cd apps/api && source .venv/bin/activate && celery -A app.celery_app worker --loglevel=info -Q default,agents,orchestrator
+
+# Infrastructure
+docker compose up -d   # PostgreSQL + Redis
 ```
 
 You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
