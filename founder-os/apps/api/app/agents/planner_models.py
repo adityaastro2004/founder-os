@@ -141,6 +141,67 @@ class WeeklyPlan(BaseModel):
             day.total_hours for day in self.daily_schedule.values()
         )
 
+    def ensure_daily_schedule(self) -> None:
+        """
+        If daily_schedule is empty but we have priorities, auto-distribute
+        them across the week as concrete tasks with time slots.
+        This ensures calendar events are always created.
+        """
+        if self.daily_schedule:
+            return  # already has tasks
+
+        if not self.top_priorities:
+            return  # nothing to distribute
+
+        days = list(DayOfWeek)
+        next_mon = _next_monday()
+
+        # Create a schedule with each priority broken into daily tasks
+        for i, day_enum in enumerate(days):
+            day_date = next_mon + timedelta(days=i)
+            tasks: list[PlanTask] = []
+
+            # Distribute priorities round-robin across days
+            for j, priority in enumerate(self.top_priorities):
+                if j % len(days) == i or len(self.top_priorities) <= len(days):
+                    # Each priority gets a 2-hour block
+                    hour = 9 + len(tasks) * 2
+                    if hour >= 18:
+                        break
+                    tasks.append(PlanTask(
+                        title=priority.title,
+                        description=priority.rationale,
+                        owner_agent=priority.owner_agent,
+                        priority=priority.rank,
+                        est_hours=2.0,
+                        start_time=f"{hour:02d}:00",
+                        end_time=f"{hour + 2:02d}:00",
+                        ice_score=priority.ice_score,
+                        tags=["auto-scheduled"],
+                    ))
+
+            if not tasks and self.top_priorities:
+                # Ensure at least one task per day from the first priority
+                p = self.top_priorities[min(i, len(self.top_priorities) - 1)]
+                tasks.append(PlanTask(
+                    title=f"{p.title} (continued)",
+                    description=p.rationale,
+                    owner_agent=p.owner_agent,
+                    priority=p.rank,
+                    est_hours=2.0,
+                    start_time="09:00",
+                    end_time="11:00",
+                    ice_score=p.ice_score,
+                    tags=["auto-scheduled"],
+                ))
+
+            self.daily_schedule[day_enum.value] = DaySchedule(
+                day=day_enum,
+                tasks=tasks,
+            )
+
+        self.compute_totals()
+
 
 def _next_monday() -> date:
     """Return the date of the upcoming Monday."""
@@ -231,6 +292,7 @@ async def parse_plan_to_model(
         data = json.loads(raw)
         plan = WeeklyPlan.model_validate(data)
         plan.source_markdown = markdown_plan
+        plan.ensure_daily_schedule()
         plan.compute_totals()
         return plan
 
@@ -258,6 +320,7 @@ async def parse_plan_to_model(
             data = json.loads(fixed)
             plan = WeeklyPlan.model_validate(data)
             plan.source_markdown = markdown_plan
+            plan.ensure_daily_schedule()
             plan.compute_totals()
             return plan
         except Exception as repair_exc:
@@ -270,16 +333,20 @@ async def parse_plan_to_model(
             ],
             success_criteria=[f"Parse failed: {jde}"],
         )
+    # ↑ ensure_daily_schedule not needed here — "Parse Failed" title
+    # is not a useful calendar event
 
     except Exception as exc:
         # Fallback: return a minimal plan with the raw markdown
-        return WeeklyPlan(
+        plan = WeeklyPlan(
             source_markdown=markdown_plan,
             top_priorities=[
                 Priority(rank=1, title="Parse Failed (Generation Error)"),
             ],
             success_criteria=[f"Parse failed: {exc}"],
         )
+        plan.ensure_daily_schedule()
+        return plan
 
 
 def _clean_llm_json(raw: str) -> str:
@@ -287,11 +354,19 @@ def _clean_llm_json(raw: str) -> str:
     Fix common JSON issues from LLM output:
     - Trailing commas before } or ]
     - JavaScript-style comments (// and /* */)
+    - Single-quoted strings
+    - Unquoted property names
+    - Ellipsis placeholders
     """
     # Remove single-line comments (// ...)
     raw = re.sub(r'//[^\n]*', '', raw)
     # Remove multi-line comments (/* ... */)
     raw = re.sub(r'/\*.*?\*/', '', raw, flags=re.DOTALL)
+    # Remove ... or "..." placeholder entries (e.g., "tuesday": { ... })
+    raw = re.sub(r'"[a-z]+":\s*\{\s*\.\.\.\s*\},?', '', raw)
+    raw = re.sub(r'"[a-z]+":\s*"\.\.\.",?', '', raw)
+    raw = re.sub(r'\{\s*\.\.\.\s*\},?', '', raw)
+    raw = re.sub(r'"\.\.\.",?', '', raw)
     # Remove trailing commas before } or ]
     raw = re.sub(r',\s*([}\]])', r'\1', raw)
     return raw

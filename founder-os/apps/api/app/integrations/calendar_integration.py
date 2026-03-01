@@ -22,26 +22,50 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
-# In-memory token store (replace with DB in production)
+# Token store — backed by PostgreSQL via user_store
 # ============================================================================
-
-_token_store: dict[str, dict[str, Any]] = {}
+# Tokens are persisted in the planner_users table (gcal_access_token,
+# gcal_refresh_token, gcal_token_data). These functions provide a
+# backward-compatible interface used by _get_valid_token() and routes.
+# ============================================================================
 
 
 def store_tokens(user_id: str, tokens: dict[str, Any]) -> None:
-    """Save OAuth tokens for a user."""
+    """Save OAuth tokens for a user (persisted to PostgreSQL)."""
     tokens["stored_at"] = time.time()
-    _token_store[user_id] = tokens
+    try:
+        from app.user_store import get_or_create_user, save_user
+        user = get_or_create_user(user_id)
+        user.store_gcal_tokens(tokens)
+        save_user(user)
+        logger.info("Stored GCal tokens for %s in PostgreSQL", user_id)
+    except Exception as exc:
+        logger.error("Failed to persist tokens for %s: %s", user_id, exc)
 
 
 def get_tokens(user_id: str) -> dict[str, Any] | None:
-    """Retrieve stored OAuth tokens for a user."""
-    return _token_store.get(user_id)
+    """Retrieve stored OAuth tokens for a user (from PostgreSQL)."""
+    try:
+        from app.user_store import get_user
+        user = get_user(user_id)
+        if user and user.gcal_tokens:
+            return user.gcal_tokens
+    except Exception as exc:
+        logger.error("Failed to fetch tokens for %s: %s", user_id, exc)
+    return None
 
 
 def clear_tokens(user_id: str) -> None:
-    """Remove stored OAuth tokens."""
-    _token_store.pop(user_id, None)
+    """Remove stored OAuth tokens for a user."""
+    try:
+        from app.user_store import get_user, save_user
+        user = get_user(user_id)
+        if user:
+            user.gcal_tokens = {}
+            user.gcal_connected = False
+            save_user(user)
+    except Exception as exc:
+        logger.error("Failed to clear tokens for %s: %s", user_id, exc)
 
 
 # ============================================================================

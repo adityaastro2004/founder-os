@@ -447,12 +447,27 @@ async def gcal_callback(code: str, state: str = "founder-os"):
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Token exchange failed: {exc}")
 
-    # Store tokens (using "dev-user" as the user ID for testing)
-    store_tokens("dev-user", tokens)
+    # Use state param as user_id (planner /connect passes real user_id here)
+    user_id = state if state and state != "founder-os" else "dev-user"
+    store_tokens(user_id, tokens)
+
+    # Also store in new user_store for production planner compatibility
+    from app.user_store import get_or_create_user, save_user
+    user = get_or_create_user(user_id)
+    user.store_gcal_tokens(tokens)
+    save_user(user)
+
+    # Also keep dev-user tokens for backward compat if different
+    if user_id != "dev-user":
+        store_tokens("dev-user", tokens)
+        dev = get_or_create_user("dev-user")
+        dev.store_gcal_tokens(tokens)
+        save_user(dev)
 
     return {
         "status": "authenticated",
-        "message": "Google Calendar access granted. You can now push plans.",
+        "user_id": user_id,
+        "message": f"Google Calendar connected for '{user_id}'. Plans will be generated automatically.",
         "scopes": tokens.get("scope", ""),
     }
 
