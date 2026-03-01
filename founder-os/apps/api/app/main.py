@@ -12,6 +12,7 @@ from app.api.knowledge_routes import router as knowledge_router
 from app.api.planner_routes import router as planner_router
 from app.api.test_routes import router as test_router
 from app.api.memory_routes import router as memory_router
+from app.api.onboarding_routes import router as onboarding_router
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.redis import init_redis, close_redis
@@ -61,6 +62,7 @@ app.include_router(queue_router)
 app.include_router(knowledge_router)
 app.include_router(planner_router)
 app.include_router(memory_router)
+app.include_router(onboarding_router)
 
 # Dev-only test routes (no auth required)
 if settings.APP_ENV == "development":
