@@ -41,6 +41,9 @@ from app.agents.tools import Tool, tool
 from app.agents.tool_protocol import ToolProvider, LocalToolProvider, ToolRegistry, ToolResult
 from app.agents.mcp_adapter import MCPStdioClient, MCPSSEClient, MCPServerConfig, create_mcp_client
 
+# MCP In-Process Providers
+from app.agents.mcp_tools import MCPGoogleCalendarProvider, MCPToolManager, CALENDAR_TOOL_NAMES
+
 # Execution
 from app.agents.execution import ExecutionEngine, ExecutionResult, ExecutionStep
 
@@ -101,6 +104,10 @@ __all__ = [
     "MCPSSEClient",
     "MCPServerConfig",
     "create_mcp_client",
+    # MCP In-Process Providers
+    "MCPGoogleCalendarProvider",
+    "MCPToolManager",
+    "CALENDAR_TOOL_NAMES",
     # Execution
     "ExecutionEngine",
     "ExecutionResult",

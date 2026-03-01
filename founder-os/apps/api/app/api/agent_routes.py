@@ -19,6 +19,23 @@ from app.config import get_settings
 from app.database import get_db
 from app.redis import get_redis
 from app.agents.registry import AgentRegistry
+from app.user_store import get_user as get_planner_user
+
+def _resolve_planner_user_id(clerk_user_id: str) -> str:
+    """Resolve the user_store key for a Clerk user.
+
+    The planner routes use a simple string user_id (often 'default-user').
+    Try: the Clerk sub directly → 'default-user' fallback.
+    This ensures MCP providers can look up Google Calendar tokens.
+    """
+    # Try the Clerk ID directly
+    if get_planner_user(clerk_user_id):
+        return clerk_user_id
+    # Fallback: most single-user setups use 'default-user'
+    if get_planner_user("default-user"):
+        return "default-user"
+    return clerk_user_id
+
 
 router = APIRouter(prefix="/api/agents", tags=["agents"])
 
@@ -37,6 +54,7 @@ class AgentRunResponse(BaseModel):
     model: str
     tokens_used: int
     tool_calls_made: int
+    tool_names: list[str] = []
     duration_seconds: float
     stop_reason: str
     cost_usd: float = 0.0
@@ -65,6 +83,7 @@ class OrchestrationResponse(BaseModel):
     model: str
     tokens_used: int
     tool_calls_made: int
+    tool_names: list[str] = []
     delegations_made: int
     agents_used: list[str]
     duration_seconds: float
@@ -126,11 +145,13 @@ async def run_agent(
     try:
         # user_id from Clerk is a string; derive a deterministic UUID.
         user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")
+        planner_uid = _resolve_planner_user_id(user.user_id)
 
         agent = await registry.get(
             agent_name,
             user_id=user_uuid,
             session_id=body.session_id,
+            planner_user_id=planner_uid,
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
@@ -146,6 +167,7 @@ async def run_agent(
         model=result.model,
         tokens_used=result.tokens_used,
         tool_calls_made=len(result.tool_calls_made),
+        tool_names=list({tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")}),
         duration_seconds=round(result.duration_seconds, 2),
         stop_reason=result.stop_reason,
         cost_usd=round(result.cost_usd, 6),
@@ -174,12 +196,14 @@ async def orchestrate(
     registry = AgentRegistry(db=db, redis=redis, settings=settings)
 
     user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")
+    planner_uid = _resolve_planner_user_id(user.user_id)
 
     try:
         agent = await registry.get(
             "orchestrator",
             user_id=user_uuid,
             session_id=body.session_id,
+            planner_user_id=planner_uid,
         )
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
@@ -197,6 +221,7 @@ async def orchestrate(
         model=result.model,
         tokens_used=result.tokens_used,
         tool_calls_made=len(result.tool_calls_made),
+        tool_names=list({tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")}),
         delegations_made=len(result.delegations) if result.delegations else 0,
         agents_used=agents_used,
         duration_seconds=round(result.duration_seconds, 2),

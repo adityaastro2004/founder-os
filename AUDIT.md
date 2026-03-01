@@ -50,7 +50,7 @@ Founder OS is a **multi-agent AI backend** built with FastAPI, PostgreSQL+pgvect
 | "Embedding pipeline — auto-generate vector embeddings on knowledge ingestion" | **BUILT.** Full `app/retrieval/` subsystem: `embeddings.py` (Ollama + OpenAI providers + Redis cache), `vector_store.py` (pgvector), `chunker.py` (token-aware recursive), `ingester.py` (text/URL/JSON/batch), `retriever.py` (hybrid search + context formatting) |
 | "Background agent runs — async task queue" | **BUILT.** Full Celery system: `celery_app.py` (3 queues: default, agents, orchestrator), `tasks/agent_tasks.py` (run_agent_task + run_orchestration_task with exponential backoff), `tasks/status.py` (TaskStatusService), `api/queue_routes.py` (6 endpoints) |
 | "Real tool implementations" | **PARTIALLY.** Most tools remain placeholder stubs returning JSON mocks. `search_knowledge`, `web_search`, `create_task`, `save_draft`, `update_task_status` all have "Placeholder — wired to DB at runtime" comments. Only `get_current_datetime` and `get_writing_style` (via mock_data) return real data. |
-| "MCP server connections" | **CLIENT BUILT, NOT WIRED.** `mcp_adapter.py` has full stdio + SSE JSON-RPC 2.0 clients, but no configuration UI or agent-level wiring to actually connect external servers. |
+| "MCP server connections" | **FULLY WIRED.** `mcp_adapter.py` has stdio + SSE JSON-RPC 2.0 clients for external servers. `mcp_tools.py` adds in-process MCP providers (Google Calendar: 7 tools). `MCPToolManager` auto-registers providers per-user in `AgentRegistry`. PlannerAgent and OpsAgent have calendar MCP tools in their default_tools. Config-driven `MCP_SERVERS` in Settings for external servers. |
 | "Scheduled orchestrations" | **BUILT.** `scheduler.py` runs `automated_planner_job` via APScheduler CronTrigger (Monday 08:00 IST). Iterates all GCal-connected users, generates plans, pushes to Google Calendar. |
 
 ### Major systems the README does NOT mention
@@ -574,6 +574,7 @@ CORS_ORIGINS           # ["http://localhost:3000", "http://localhost:3001"]
 | `tools.py` | ~160 | @tool decorator, Tool dataclass, _TOOL_CATALOG |
 | `builtin_tools.py` | ~180 | 12 @tool-decorated functions (mostly stubs) |
 | `mcp_adapter.py` | ~280 | MCPStdioClient, MCPSSEClient, MCPServerConfig |
+| `mcp_tools.py` | ~370 | MCPGoogleCalendarProvider (7 tools), MCPToolManager, CALENDAR_TOOL_NAMES |
 | `memory.py` | 422 | ConversationMemory, WorkingMemory, SharedMemory, LongTermMemory, AgentMemory |
 | `router.py` | 364 | AgentCard, AgentMessage, DelegationResult, AgentRouter |
 | `execution.py` | ~600 | ExecutionEngine, ExecutionStep, ExecutionResult |

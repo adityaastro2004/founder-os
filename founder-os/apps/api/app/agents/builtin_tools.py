@@ -178,6 +178,71 @@ async def store_working_memory(key: str, value: str) -> str:
 
 
 # ============================================================================
+# User Context & Intelligence
+# ============================================================================
+
+@tool(
+    name="get_user_profile",
+    description=(
+        "Retrieve the user's full profile: business info, primary goals, "
+        "blockers, team size, MRR, preferred work hours, and calendar status. "
+        "ALWAYS call this before making recommendations or planning — "
+        "you need to know the founder's context and current priorities."
+    ),
+)
+async def get_user_profile() -> str:
+    """Placeholder — wired to user_store at runtime by the registry."""
+    return json.dumps({
+        "note": "get_user_profile not yet wired",
+        "profile": {},
+    })
+
+
+@tool(
+    name="check_calendar_conflicts",
+    description=(
+        "Check the user's Google Calendar for conflicts/overlaps with a "
+        "proposed time range. Returns conflicting events if any exist. "
+        "ALWAYS call this before creating or moving events to avoid "
+        "double-booking. Pass start and end as ISO datetimes."
+    ),
+)
+async def check_calendar_conflicts(
+    start_datetime: str,
+    end_datetime: str,
+) -> str:
+    """Placeholder — wired at runtime with real gcal_list_events."""
+    return json.dumps({
+        "conflicts": [],
+        "note": "check_calendar_conflicts not yet wired",
+    })
+
+
+@tool(
+    name="ask_user_clarification",
+    description=(
+        "When you don't have enough information to proceed, or the user's "
+        "request is ambiguous/conflicting, use this tool to formulate a "
+        "clear question back to the user. This signals that you need more "
+        "input before acting. Include what you already know and what's "
+        "specifically missing."
+    ),
+)
+async def ask_user_clarification(
+    question: str,
+    what_i_know: str = "",
+    options: str = "",
+) -> str:
+    """Return a structured clarification request."""
+    return json.dumps({
+        "type": "clarification_needed",
+        "question": question,
+        "context": what_i_know,
+        "options": options,
+    })
+
+
+# ============================================================================
 # Orchestrator — Agent delegation (Stripe Minions pattern)
 # ============================================================================
 

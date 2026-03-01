@@ -44,6 +44,40 @@ router = APIRouter(prefix="/api/planner", tags=["planner"])
 
 
 # ============================================================================
+# MCP Helper — all calendar operations go through this
+# ============================================================================
+
+def _get_mcp_calendar(user: UserProfile) -> "MCPGoogleCalendarProvider":
+    """
+    Create an MCP calendar provider for the given user.
+    This routes all calendar operations through the MCP ToolProvider interface,
+    ensuring consistent tool execution, logging, and error handling.
+    """
+    from app.agents.mcp_tools import MCPGoogleCalendarProvider
+    settings = get_settings()
+    return MCPGoogleCalendarProvider(
+        user_id=user.user_id,
+        client_id=settings.GOOGLE_CLIENT_ID,
+        client_secret=settings.GOOGLE_CLIENT_SECRET,
+        timezone_str=user.timezone or "Asia/Kolkata",
+        calendar_id=user.calendar_id or "primary",
+    )
+
+
+async def _mcp_call(user: UserProfile, tool_name: str, arguments: dict) -> Any:
+    """
+    Execute a Google Calendar MCP tool call.
+    Returns the parsed result dict or raises an exception on error.
+    """
+    import json as _json
+    provider = _get_mcp_calendar(user)
+    result = await provider.call_tool(tool_name, arguments)
+    if result.is_error:
+        raise RuntimeError(f"MCP {tool_name} failed: {result.content}")
+    return _json.loads(result.content)
+
+
+# ============================================================================
 # Request / Response Models
 # ============================================================================
 
@@ -237,16 +271,61 @@ async def connect_callback(code: str, state: str = "default-user"):
     from app.integrations.calendar_integration import store_tokens
     store_tokens(user_id, tokens)
 
-    return {
-        "status": "connected",
-        "user_id": user_id,
-        "message": (
-            f"Google Calendar connected for {user.business_name or user_id}! "
-            "Your weekly plan will be generated and pushed automatically every Monday at 8 AM. "
-            "You don't need to do anything else."
-        ),
-        "gcal_connected": True,
-    }
+    # Return an HTML page that shows success and auto-closes the popup
+    from fastapi.responses import HTMLResponse
+    display_name = user.business_name or user_id
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Calendar Connected</title>
+  <style>
+    * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+    body {{
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; background: #f8fafc; color: #1e293b;
+    }}
+    .card {{
+      text-align: center; padding: 3rem 2rem; max-width: 400px;
+      background: white; border-radius: 1rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,.1);
+    }}
+    .icon {{
+      width: 64px; height: 64px; margin: 0 auto 1.5rem;
+      background: #ecfdf5; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }}
+    .icon svg {{ width: 32px; height: 32px; color: #10b981; }}
+    h1 {{ font-size: 1.25rem; font-weight: 700; margin-bottom: .5rem; }}
+    p {{ font-size: .875rem; color: #64748b; line-height: 1.5; }}
+    .countdown {{ margin-top: 1.5rem; font-size: .75rem; color: #94a3b8; }}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+      </svg>
+    </div>
+    <h1>Calendar Connected!</h1>
+    <p>Google Calendar is now linked for <strong>{display_name}</strong>.
+       Your weekly plan will be generated automatically every Monday at 8 AM.</p>
+    <p class="countdown">This window will close automatically...</p>
+  </div>
+  <script>
+    // Close the popup after a short delay so user can see the success message
+    setTimeout(function() {{ window.close(); }}, 2000);
+    // Fallback: if window.close() is blocked, show a manual close hint
+    setTimeout(function() {{
+      document.querySelector('.countdown').textContent = 'You can close this window now.';
+    }}, 3000);
+  </script>
+</body>
+</html>"""
+    return HTMLResponse(content=html, status_code=200)
 
 
 # Also handle the legacy callback path so Google's registered redirect still works
@@ -353,30 +432,30 @@ async def generate_now(body: GenerateRequest):
         raise HTTPException(status_code=502, detail=f"Plan generation failed: {exc}")
     duration = time.time() - start
 
-    # Push to calendar
-    from app.integrations.calendar_integration import push_plan_to_gcal
+    # Push to calendar (via MCP)
     try:
-        result = await push_plan_to_gcal(
-            plan=plan,
-            user_id=user.user_id,
-            client_id=settings.GOOGLE_CLIENT_ID,
-            client_secret=settings.GOOGLE_CLIENT_SECRET,
-            calendar_id=user.calendar_id,
-            timezone_str=user.timezone,
-        )
+        result = await _mcp_call(user, "gcal_push_weekly_plan", {
+            "plan_json": plan.model_dump_json(),
+        })
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Calendar push failed: {exc}")
 
-    # Update user stats
-    from datetime import datetime, timezone as tz
-    user.last_plan_at = datetime.now(tz.utc).isoformat()
-    user.last_plan_events = result.get("events_created", 0)
-    user.plan_count += 1
-    save_user(user)
+    # Update user stats (wrapped so a DB glitch doesn't cause a raw 500)
+    task_count = sum(len(d.tasks) for d in plan.daily_schedule.values())
+    try:
+        from datetime import datetime, timezone as tz
+        user.last_plan_at = datetime.now(tz.utc).isoformat()
+        user.last_plan_events = result.get("events_created", 0)
+        user.plan_count += 1
+        save_user(user)
+    except Exception as exc:
+        logger.error("Failed to update user stats after plan generation: %s", exc)
 
     # Store in history (DB-backed)
-    task_count = sum(len(d.tasks) for d in plan.daily_schedule.values())
-    _store_plan_summary(user.user_id, plan, result, duration)
+    try:
+        _store_plan_summary(user.user_id, plan, result, duration)
+    except Exception as exc:
+        logger.error("Failed to store plan history: %s", exc)
 
     # Also store plan outcomes as a memory for long-term recall
     try:
@@ -543,14 +622,7 @@ async def handle_prompt(body: PromptRequest):
     # ── Step 2: Get upcoming calendar events for context ────────
     existing_events_summary = ""
     try:
-        from app.integrations.calendar_integration import list_upcoming_events
-        upcoming = await list_upcoming_events(
-            user_id=body.user_id,
-            client_id=settings.GOOGLE_CLIENT_ID,
-            client_secret=settings.GOOGLE_CLIENT_SECRET,
-            calendar_id=user.calendar_id,
-            max_results=15,
-        )
+        upcoming = await _mcp_call(user, "gcal_list_events", {"max_results": 15})
         if upcoming:
             event_lines = []
             for ev in upcoming:
@@ -731,38 +803,23 @@ RULES:
     failed_events = []
 
     if events_to_create:
-        from app.integrations.calendar_integration import (
-            create_single_event,
-            create_all_day_event,
-        )
-
         for ev in events_to_create:
             try:
                 if ev.get("all_day"):
-                    result = await create_all_day_event(
-                        user_id=body.user_id,
-                        client_id=settings.GOOGLE_CLIENT_ID,
-                        client_secret=settings.GOOGLE_CLIENT_SECRET,
-                        summary=ev["summary"],
-                        event_date=ev["date"],
-                        timezone_str=user.timezone,
-                        calendar_id=user.calendar_id,
-                        description=ev.get("description", ""),
-                    )
+                    result = await _mcp_call(user, "gcal_create_all_day_event", {
+                        "summary": ev["summary"],
+                        "event_date": ev["date"],
+                        "description": ev.get("description", ""),
+                    })
                 else:
                     start_dt = f"{ev['date']}T{ev['start_time']}:00"
                     end_dt = f"{ev['date']}T{ev['end_time']}:00"
-                    result = await create_single_event(
-                        user_id=body.user_id,
-                        client_id=settings.GOOGLE_CLIENT_ID,
-                        client_secret=settings.GOOGLE_CLIENT_SECRET,
-                        summary=ev["summary"],
-                        start_datetime=start_dt,
-                        end_datetime=end_dt,
-                        timezone_str=user.timezone,
-                        calendar_id=user.calendar_id,
-                        description=ev.get("description", ""),
-                    )
+                    result = await _mcp_call(user, "gcal_create_event", {
+                        "summary": ev["summary"],
+                        "start_datetime": start_dt,
+                        "end_datetime": end_dt,
+                        "description": ev.get("description", ""),
+                    })
                 created_events.append(result)
             except Exception as ev_exc:
                 failed_events.append({
@@ -785,15 +842,9 @@ RULES:
                 extra_message=actions.get("replan_focus", body.message),
             )
 
-            from app.integrations.calendar_integration import push_plan_to_gcal
-            gcal_result = await push_plan_to_gcal(
-                plan=plan,
-                user_id=body.user_id,
-                client_id=settings.GOOGLE_CLIENT_ID,
-                client_secret=settings.GOOGLE_CLIENT_SECRET,
-                calendar_id=user.calendar_id,
-                timezone_str=user.timezone,
-            )
+            gcal_result = await _mcp_call(user, "gcal_push_weekly_plan", {
+                "plan_json": plan.model_dump_json(),
+            })
 
             from datetime import datetime as _dt, timezone as _tz
             user.last_plan_at = _dt.now(_tz.utc).isoformat()
@@ -873,17 +924,8 @@ async def get_upcoming_calendar(
             detail="Google Calendar not connected.",
         )
 
-    settings = get_settings()
-    from app.integrations.calendar_integration import list_upcoming_events
-
     try:
-        events = await list_upcoming_events(
-            user_id=user_id,
-            client_id=settings.GOOGLE_CLIENT_ID,
-            client_secret=settings.GOOGLE_CLIENT_SECRET,
-            calendar_id=user.calendar_id,
-            max_results=max_results,
-        )
+        events = await _mcp_call(user, "gcal_list_events", {"max_results": max_results})
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Calendar read failed: {exc}")
 
@@ -908,17 +950,8 @@ async def get_calendar_event(
     if not user or not user.gcal_connected:
         raise HTTPException(status_code=400, detail="Google Calendar not connected.")
 
-    settings = get_settings()
-    from app.integrations.calendar_integration import get_event
-
     try:
-        ev = await get_event(
-            user_id=user_id,
-            client_id=settings.GOOGLE_CLIENT_ID,
-            client_secret=settings.GOOGLE_CLIENT_SECRET,
-            event_id=event_id,
-            calendar_id=user.calendar_id,
-        )
+        ev = await _mcp_call(user, "gcal_get_event", {"event_id": event_id})
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Calendar read failed: {exc}")
 
@@ -937,21 +970,13 @@ async def create_calendar_event(request: Request):
     if not user or not user.gcal_connected:
         raise HTTPException(status_code=400, detail="Google Calendar not connected.")
 
-    settings = get_settings()
-    from app.integrations.calendar_integration import create_single_event
-
     try:
-        ev = await create_single_event(
-            user_id=uid,
-            client_id=settings.GOOGLE_CLIENT_ID,
-            client_secret=settings.GOOGLE_CLIENT_SECRET,
-            summary=body["summary"],
-            start_datetime=body["start"],
-            end_datetime=body["end"],
-            timezone_str=body.get("timezone", "Asia/Kolkata"),
-            calendar_id=user.calendar_id,
-            description=body.get("description", ""),
-        )
+        ev = await _mcp_call(user, "gcal_create_event", {
+            "summary": body["summary"],
+            "start_datetime": body["start"],
+            "end_datetime": body["end"],
+            "description": body.get("description", ""),
+        })
     except KeyError as exc:
         raise HTTPException(status_code=422, detail=f"Missing field: {exc}")
     except Exception as exc:
@@ -972,20 +997,11 @@ async def update_calendar_event(event_id: str, request: Request):
     if not user or not user.gcal_connected:
         raise HTTPException(status_code=400, detail="Google Calendar not connected.")
 
-    settings = get_settings()
-    from app.integrations.calendar_integration import update_event
-
-    updates = {k: v for k, v in body.items() if k not in ("user_id",)}
     try:
-        ev = await update_event(
-            user_id=uid,
-            client_id=settings.GOOGLE_CLIENT_ID,
-            client_secret=settings.GOOGLE_CLIENT_SECRET,
-            event_id=event_id,
-            updates=updates,
-            timezone_str=body.get("timezone", "Asia/Kolkata"),
-            calendar_id=user.calendar_id,
-        )
+        ev = await _mcp_call(user, "gcal_update_event", {
+            "event_id": event_id,
+            **{k: v for k, v in body.items() if k not in ("user_id",)},
+        })
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Calendar update failed: {exc}")
 
@@ -1002,17 +1018,9 @@ async def delete_calendar_event(
     if not user or not user.gcal_connected:
         raise HTTPException(status_code=400, detail="Google Calendar not connected.")
 
-    settings = get_settings()
-    from app.integrations.calendar_integration import delete_event
-
     try:
-        ok = await delete_event(
-            user_id=user_id,
-            client_id=settings.GOOGLE_CLIENT_ID,
-            client_secret=settings.GOOGLE_CLIENT_SECRET,
-            event_id=event_id,
-            calendar_id=user.calendar_id,
-        )
+        result = await _mcp_call(user, "gcal_delete_event", {"event_id": event_id})
+        ok = result.get("deleted", False)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Calendar delete failed: {exc}")
 
@@ -1330,3 +1338,64 @@ def _get_model(settings) -> str:
         "openai_compatible": settings.OPENAI_MODEL,
         "gemini": settings.GEMINI_MODEL,
     }.get(settings.LLM_PROVIDER, "")
+
+
+# ============================================================================
+# MCP Tools Status Endpoint
+# ============================================================================
+
+@router.get("/mcp-tools")
+async def get_mcp_tools_status(user_id: str = Query("default-user")):
+    """
+    Return the list of MCP tools available for this user.
+    Used by the frontend to show MCP connection status and available tools.
+    """
+    user = get_user(user_id)
+    if not user:
+        return {
+            "user_id": user_id,
+            "mcp_connected": False,
+            "providers": [],
+            "tools": [],
+            "total_tools": 0,
+        }
+
+    providers = []
+    tools = []
+
+    # Google Calendar MCP provider
+    if user.gcal_connected:
+        provider = _get_mcp_calendar(user)
+        tool_schemas = await provider.list_tools()
+        health = await provider.health_check()
+        providers.append({
+            "name": provider.provider_name,
+            "type": "in-process",
+            "status": "connected" if health else "token_expired",
+            "tool_count": len(tool_schemas),
+        })
+        for ts in tool_schemas:
+            tools.append({
+                "name": ts.name,
+                "description": ts.description,
+                "provider": provider.provider_name,
+            })
+
+    # External MCP servers (from config)
+    settings = get_settings()
+    external_servers = getattr(settings, "MCP_SERVERS", [])
+    for srv in external_servers:
+        providers.append({
+            "name": srv.get("name", "unknown"),
+            "type": srv.get("transport", "unknown"),
+            "status": "configured",
+            "tool_count": 0,
+        })
+
+    return {
+        "user_id": user_id,
+        "mcp_connected": len(providers) > 0,
+        "providers": providers,
+        "tools": tools,
+        "total_tools": len(tools),
+    }

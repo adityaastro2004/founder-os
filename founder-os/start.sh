@@ -128,10 +128,14 @@ fi
 # Kill any stale process on port 8000
 lsof -ti :8000 | xargs kill -9 2>/dev/null && warn "Killed stale process on :8000"
 sleep 1
+
+LOG_DIR="$ROOT_DIR/logs"
+mkdir -p "$LOG_DIR"
+
 log "Starting FastAPI backend on http://localhost:8000 ..."
 cd apps/api
 source .venv/bin/activate
-uvicorn app.main:app --reload --port 8000 &
+uvicorn app.main:app --reload --port 8000 > "$LOG_DIR/api.log" 2>&1 &
 API_PID=$!
 cd "$ROOT_DIR"
 
@@ -149,7 +153,7 @@ fi
 lsof -ti :3000 | xargs kill -9 2>/dev/null && warn "Killed stale process on :3000"
 sleep 1
 log "Starting Next.js frontend on http://localhost:3000 ..."
-npm run dev &
+npm run dev > "$LOG_DIR/web.log" 2>&1 &
 WEB_PID=$!
 
 sleep 3
@@ -167,7 +171,11 @@ echo -e "${GREEN} Web:  ${NC}http://localhost:3000  ${GREEN}║${NC}"
 echo -e "${GREEN} API:  ${NC}http://localhost:8000  ${GREEN}║${NC}"
 echo -e "${GREEN} Docs: ${NC}http://localhost:8000/docs ${GREEN}║${NC}"
 
+echo -e "${CYAN} Logs:${NC}"
+echo -e "  API → logs/api.log"
+echo -e "  Web → logs/web.log"
 echo ""
+echo -e "Tail logs:  ${YELLOW}tail -f logs/api.log logs/web.log${NC}"
 echo -e "Press ${YELLOW}Ctrl+C${NC} to stop all services."
 echo ""
 

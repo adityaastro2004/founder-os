@@ -54,6 +54,13 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = "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"
     GOOGLE_REDIRECT_URI: str = "http://127.0.0.1:8000/api/planner/connect/callback"
 
+    # ── MCP Tool Servers ──
+    # External MCP servers (stdio or SSE) to connect to.
+    # Each entry: {"name": "...", "transport": "stdio"|"sse", "command": "...",
+    #              "args": [...], "url": "...", "env": {}, "headers": {}}
+    # In-process providers (Google Calendar) are auto-registered — no config needed.
+    MCP_SERVERS: list[dict] = []
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

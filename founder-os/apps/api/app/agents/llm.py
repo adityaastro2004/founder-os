@@ -724,7 +724,8 @@ class GeminiNativeProvider(LLMProvider):
 class GeminiWithFallback(LLMProvider):
     """
     Tries the OpenAI-compatible Gemini endpoint first.
-    If it gets a 429, falls back to the native Gemini REST endpoint.
+    If it gets a 429, retries with exponential backoff, then falls back
+    to the native Gemini REST endpoint (separate rate-limit pool).
     If both Gemini endpoints fail (e.g. daily quota exhausted),
     automatically falls back to OpenAI as a third-tier provider.
     """
@@ -758,33 +759,60 @@ class GeminiWithFallback(LLMProvider):
             logger.info("OpenAI fallback configured (model=%s)", openai_model)
 
     _RETRYABLE = ("429", "400", "401", "403", "404", "500", "503")
+    _MAX_RETRIES = 2
+    _BACKOFF_BASE = 3  # seconds
 
     def _is_retryable(self, exc: Exception) -> bool:
         err = str(exc)
         return any(code in err for code in self._RETRYABLE)
 
-    async def generate(self, messages, *, system="", model=None, temperature=0.7, max_tokens=4096, **kwargs):
-        # 1) Gemini OpenAI-compat endpoint
-        try:
-            return await self._primary.generate(
-                messages, system=system, model=model,
-                temperature=temperature, max_tokens=max_tokens, **kwargs,
-            )
-        except Exception as exc:
-            if not self._is_retryable(exc):
-                raise
-            logger.info("Gemini OpenAI-compat failed (%s) — trying native REST", str(exc)[:80])
+    def _is_rate_limit(self, exc: Exception) -> bool:
+        return "429" in str(exc)
 
-        # 2) Gemini native REST endpoint (separate rate-limit pool)
+    async def _call_with_retry(self, provider, label, messages, **kwargs):
+        """Call a provider with retry + exponential backoff on 429."""
+        import asyncio
+        last_exc = None
+        for attempt in range(1 + self._MAX_RETRIES):
+            try:
+                return await provider.generate(messages, **kwargs)
+            except Exception as exc:
+                last_exc = exc
+                if not self._is_retryable(exc):
+                    raise
+                if attempt < self._MAX_RETRIES and self._is_rate_limit(exc):
+                    delay = self._BACKOFF_BASE * (2 ** attempt)
+                    logger.info(
+                        "%s 429 rate-limited (attempt %d/%d) — retrying in %ds",
+                        label, attempt + 1, 1 + self._MAX_RETRIES, delay,
+                    )
+                    await asyncio.sleep(delay)
+                else:
+                    break
+        raise last_exc  # type: ignore[misc]
+
+    async def generate(self, messages, *, system="", model=None, temperature=0.7, max_tokens=4096, **kwargs):
+        gen_kwargs = dict(system=system, model=model, temperature=temperature, max_tokens=max_tokens, **kwargs)
+
+        # 1) Gemini OpenAI-compat endpoint (with retry)
         try:
-            return await self._fallback.generate(
-                messages, system=system, model=model,
-                temperature=temperature, max_tokens=max_tokens, **kwargs,
+            return await self._call_with_retry(
+                self._primary, "Gemini OpenAI-compat", messages, **gen_kwargs,
             )
         except Exception as exc:
             if not self._is_retryable(exc):
                 raise
-            logger.warning("Gemini native also failed (%s)", str(exc)[:80])
+            logger.info("Gemini OpenAI-compat exhausted (%s) — trying native REST", str(exc)[:80])
+
+        # 2) Gemini native REST endpoint (with retry, separate rate-limit pool)
+        try:
+            return await self._call_with_retry(
+                self._fallback, "Gemini native", messages, **gen_kwargs,
+            )
+        except Exception as exc:
+            if not self._is_retryable(exc):
+                raise
+            logger.warning("Gemini native also exhausted (%s)", str(exc)[:80])
 
         # 3) OpenAI fallback (if configured)
         if self._openai:
@@ -795,8 +823,8 @@ class GeminiWithFallback(LLMProvider):
             )
 
         raise RuntimeError(
-            "All Gemini endpoints exhausted and no OpenAI fallback configured. "
-            "Set OPENAI_API_KEY in .env to enable automatic fallback."
+            "All LLM providers are temporarily unavailable (rate-limited). "
+            "Please wait a minute and try again, or set OPENAI_API_KEY in .env for automatic fallback."
         )
 
     async def health_check(self) -> bool:

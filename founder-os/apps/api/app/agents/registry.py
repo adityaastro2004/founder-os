@@ -21,8 +21,11 @@ Usage:
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 import redis.asyncio as aioredis
 from sqlalchemy import select
@@ -40,6 +43,7 @@ from app.agents.memory import (
     SharedMemory,
     WorkingMemory,
 )
+from app.agents.mcp_tools import MCPToolManager, MCPGoogleCalendarProvider
 from app.agents.router import AgentCard, AgentRouter
 from app.agents.tool_protocol import LocalToolProvider, ToolRegistry
 from app.models import Agent as AgentModel, UserAgentConfig
@@ -87,6 +91,12 @@ class AgentRegistry:
         # Human-in-the-loop approval gate
         self._approval_gate = ApprovalGate(redis)
 
+        # MCP tool manager (in-process + external MCP providers)
+        self._mcp_manager = MCPToolManager(settings)
+
+        # Planner user-store key — set by get() so delegation factory can use it
+        self._planner_user_id: str | None = None
+
         # Embedding provider for auto-RAG in agent runs
         self._embedder = self._create_embedder(settings, redis)
 
@@ -107,8 +117,16 @@ class AgentRegistry:
                 user_id: Any,
                 session_id: str | None = None,
                 _self=self,
+                planner_user_id: str | None = None,
             ) -> BaseAgent:
-                return await _self.get(agent_name, user_id, session_id=session_id)
+                # Use the planner_user_id passed in, or fall back to
+                # the one stored on the registry by the top-level get() call.
+                p_uid = planner_user_id or _self._planner_user_id
+                return await _self.get(
+                    agent_name, user_id,
+                    session_id=session_id,
+                    planner_user_id=p_uid,
+                )
 
             self._router.register_factory(name, _factory)
 
@@ -174,14 +192,18 @@ class AgentRegistry:
         user_id: uuid.UUID,
         *,
         session_id: str | None = None,
+        planner_user_id: str | None = None,
     ) -> BaseAgent:
         """
         Build and return a fully-initialised agent.
 
         Args:
-            agent_name: Agent slug (e.g. "planner", "content").
-            user_id:    The authenticated user's UUID.
-            session_id: Optional session identifier for memory scoping.
+            agent_name:       Agent slug (e.g. "planner", "content").
+            user_id:          The authenticated user's UUID (for memory/DB).
+            session_id:       Optional session identifier for memory scoping.
+            planner_user_id:  The user-store key (e.g. "default-user" or Clerk
+                              sub) used by planner routes and user_store.
+                              Needed so MCP providers can look up gcal tokens.
         """
         # 1. Resolve the Python class
         agent_cls = AGENT_CLASSES.get(agent_name)
@@ -190,6 +212,10 @@ class AgentRegistry:
                 f"Unknown agent '{agent_name}'. "
                 f"Available: {list(AGENT_CLASSES.keys())}"
             )
+
+        # Store planner_user_id so delegation factory can pick it up
+        if planner_user_id:
+            self._planner_user_id = planner_user_id
 
         # 2. Load agent row from DB
         db_agent = await self._load_agent(agent_name)
@@ -211,11 +237,30 @@ class AgentRegistry:
             ),
         )
 
-        # 5. Build tool registry with local tools
+        # 5. Build tool registry with local tools + MCP providers
         tool_registry = ToolRegistry()
         tool_registry.add_provider(
             LocalToolProvider(allowed_tools=config.tool_names)
         )
+
+        # 5b. Add MCP tool providers (Google Calendar, external servers, etc.)
+        #     Use planner_user_id (the user_store key) so MCPToolManager can
+        #     look up gcal tokens.  Falls back to the UUID string if not given.
+        mcp_uid = planner_user_id or str(user_id)
+        try:
+            mcp_providers = await self._mcp_manager.get_providers(
+                user_id=mcp_uid,
+            )
+            for mcp_provider in mcp_providers:
+                tool_registry.add_provider(mcp_provider)
+                logger.info(
+                    "Added MCP provider '%s' for agent '%s'",
+                    mcp_provider.provider_name,
+                    agent_name,
+                )
+        except Exception:
+            logger.exception("Failed to load MCP providers for agent '%s'", agent_name)
+
         await tool_registry.refresh()
 
         # 6. Build memory layers
@@ -280,6 +325,76 @@ class AgentRegistry:
                 tool_registry.override_tool_impl(
                     "delegate_task", _delegate_task_impl,
                 )
+
+        # 9. Wire get_user_profile with the real user-store data
+        _mcp_uid = mcp_uid
+        _settings_ref = self._settings
+
+        async def _get_user_profile_impl() -> str:
+            """Return the founder's profile as JSON for agent context."""
+            from app.user_store import get_user as _get_user
+            user_profile = _get_user(_mcp_uid)
+            if not user_profile:
+                return json.dumps({"error": "No user profile found. Ask the user for their details."})
+            data = user_profile.model_dump(exclude={"gcal_tokens"})
+            return json.dumps(data, default=str)
+
+        tool_registry.override_tool_impl("get_user_profile", _get_user_profile_impl)
+
+        # 10. Wire check_calendar_conflicts with real MCP calendar
+        async def _check_conflicts_impl(
+            start_datetime: str,
+            end_datetime: str,
+        ) -> str:
+            """Check for overlapping events in the given time range."""
+            from app.user_store import get_user as _get_user
+            from datetime import datetime as _dt, timedelta
+            user_profile = _get_user(_mcp_uid)
+            if not user_profile or not user_profile.gcal_connected:
+                return json.dumps({
+                    "conflicts": [],
+                    "calendar_connected": False,
+                    "note": "Google Calendar not connected — cannot check conflicts.",
+                })
+            try:
+                provider = MCPGoogleCalendarProvider(
+                    user_id=_mcp_uid,
+                    client_id=_settings_ref.GOOGLE_CLIENT_ID,
+                    client_secret=_settings_ref.GOOGLE_CLIENT_SECRET,
+                    timezone_str=user_profile.timezone or "Asia/Kolkata",
+                    calendar_id=user_profile.calendar_id or "primary",
+                )
+                # Fetch events around the requested window
+                events_result = await provider.call_tool(
+                    "gcal_list_events",
+                    {"max_results": 50, "time_min": start_datetime},
+                )
+                import json as _json
+                all_events = _json.loads(events_result.content)
+                # Filter to those that overlap with the proposed range
+                conflicts = []
+                for ev in (all_events if isinstance(all_events, list) else []):
+                    ev_start = ev.get("start", "")
+                    ev_end = ev.get("end", "")
+                    # Simple string comparison works for ISO datetimes
+                    if ev_start and ev_end:
+                        if ev_start < end_datetime and ev_end > start_datetime:
+                            conflicts.append({
+                                "id": ev.get("id", ""),
+                                "summary": ev.get("summary", "(no title)"),
+                                "start": ev_start,
+                                "end": ev_end,
+                            })
+                return _json.dumps({
+                    "conflicts": conflicts,
+                    "has_conflicts": len(conflicts) > 0,
+                    "calendar_connected": True,
+                    "total_checked": len(all_events) if isinstance(all_events, list) else 0,
+                })
+            except Exception as exc:
+                return json.dumps({"error": str(exc), "conflicts": []})
+
+        tool_registry.override_tool_impl("check_calendar_conflicts", _check_conflicts_impl)
 
         return agent
 

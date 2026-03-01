@@ -15,7 +15,10 @@ import { apiFetch } from "@/lib/api";
 export function useApi() {
   const { getToken } = useAuth();
 
-  async function fetchWithAuth(path: string, options: RequestInit = {}) {
+  async function fetchWithAuth(
+    path: string,
+    options: RequestInit & { direct?: boolean; timeoutMs?: number } = {}
+  ) {
     const token = await getToken();
     return apiFetch(path, { ...options, token });
   }
