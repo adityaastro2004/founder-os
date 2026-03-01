@@ -45,9 +45,7 @@ fi
 trap cleanup SIGINT SIGTERM
 
 echo ""
-echo -e "${CYAN}╔══════════════════════════════════════╗${NC}"
-echo -e "${CYAN}║        🚀 Founder OS  -  Start       ║${NC}"
-echo -e "${CYAN}╚══════════════════════════════════════╝${NC}"
+echo -e "${CYAN} Founder OS  -  Start ${NC}"
 echo ""
 
 # ── 1. Check prerequisites ──
@@ -164,13 +162,11 @@ fi
 
 # ── Ready ──
 echo ""
-echo -e "${GREEN}╔══════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║       ✅ Founder OS is running!       ║${NC}"
-echo -e "${GREEN}╠══════════════════════════════════════╣${NC}"
-echo -e "${GREEN}║  Web:  ${NC}http://localhost:3000          ${GREEN}║${NC}"
-echo -e "${GREEN}║  API:  ${NC}http://localhost:8000          ${GREEN}║${NC}"
-echo -e "${GREEN}║  Docs: ${NC}http://localhost:8000/docs     ${GREEN}║${NC}"
-echo -e "${GREEN}╚══════════════════════════════════════╝${NC}"
+echo -e "${GREEN} Founder OS is running!${NC}"
+echo -e "${GREEN} Web:  ${NC}http://localhost:3000  ${GREEN}║${NC}"
+echo -e "${GREEN} API:  ${NC}http://localhost:8000  ${GREEN}║${NC}"
+echo -e "${GREEN} Docs: ${NC}http://localhost:8000/docs ${GREEN}║${NC}"
+
 echo ""
 echo -e "Press ${YELLOW}Ctrl+C${NC} to stop all services."
 echo ""
