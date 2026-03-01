@@ -73,6 +73,9 @@ class AgentRegistry:
             api_key=self._get_api_key(settings),
             base_url=self._get_base_url(settings),
             model=self._get_model(settings),
+            openai_api_key=getattr(settings, 'OPENAI_API_KEY', ''),
+            openai_model=getattr(settings, 'OPENAI_MODEL', 'gpt-4o-mini'),
+            openai_base_url=getattr(settings, 'OPENAI_BASE_URL', 'https://api.openai.com/v1'),
         )
 
         # Event bus (shared across agents)

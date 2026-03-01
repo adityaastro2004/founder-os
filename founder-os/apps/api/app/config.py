@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     # ── Google Calendar Integration ──
     GOOGLE_CLIENT_ID: str = "219004168797-pdlev58p5d9jsh4mle1k0uggtmh0uvak.apps.googleusercontent.com"
     GOOGLE_CLIENT_SECRET: str = "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"
-    GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/test/plan/gcal/callback"
+    GOOGLE_REDIRECT_URI: str = "http://127.0.0.1:8000/api/planner/connect/callback"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

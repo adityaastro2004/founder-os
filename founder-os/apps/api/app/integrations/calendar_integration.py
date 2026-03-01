@@ -82,11 +82,13 @@ def get_auth_url(
     client_id: str,
     redirect_uri: str,
     state: str = "founder-os",
+    force_consent: bool = True,
 ) -> str:
     """
     Build the Google OAuth2 authorization URL.
 
     The user visits this URL to grant calendar access.
+    Set force_consent=False when re-linking (we already have a refresh_token).
     """
     params = {
         "client_id": client_id,
@@ -94,11 +96,12 @@ def get_auth_url(
         "response_type": "code",
         "scope": SCOPES,
         "access_type": "offline",
-        "prompt": "consent",
         "state": state,
     }
-    query = "&".join(f"{k}={httpx.URL('', params={k: v}).params}" for k, v in params.items())
-    # Cleaner approach:
+    # Only force consent on first-time auth — ensures we get a refresh_token.
+    # On re-links where we already have a refresh_token, skip the consent screen.
+    if force_consent:
+        params["prompt"] = "consent"
     url = httpx.URL(GOOGLE_AUTH_URL, params=params)
     return str(url)
 
@@ -258,6 +261,268 @@ async def push_plan_to_gcal(
         "events": created_events,
         "errors": errors,
     }
+
+
+# ============================================================================
+# Individual Event Helpers (for prompt-driven calendar updates)
+# ============================================================================
+
+async def create_single_event(
+    user_id: str,
+    client_id: str,
+    client_secret: str,
+    summary: str,
+    start_datetime: str,
+    end_datetime: str,
+    timezone_str: str = "Asia/Kolkata",
+    calendar_id: str = "primary",
+    description: str = "",
+    color_id: str = "5",
+) -> dict[str, Any]:
+    """
+    Create a single event on Google Calendar.
+
+    Args:
+        summary: Event title
+        start_datetime: ISO format, e.g. "2026-03-06T14:00:00"
+        end_datetime: ISO format, e.g. "2026-03-06T15:00:00"
+    """
+    access_token = await _get_valid_token(user_id, client_id, client_secret)
+
+    event_body: dict[str, Any] = {
+        "summary": summary,
+        "start": {"dateTime": start_datetime, "timeZone": timezone_str},
+        "end": {"dateTime": end_datetime, "timeZone": timezone_str},
+    }
+    if description:
+        event_body["description"] = description + "\n\n— Created by Founder OS"
+    if color_id:
+        event_body["colorId"] = color_id
+
+    async with httpx.AsyncClient(
+        base_url=GOOGLE_CALENDAR_API,
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=10.0,
+    ) as client:
+        resp = await client.post(
+            f"/calendars/{calendar_id}/events",
+            json=event_body,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        logger.info("Created GCal event: %s → %s", summary, data.get("id"))
+        return {
+            "event_id": data.get("id"),
+            "summary": summary,
+            "html_link": data.get("htmlLink"),
+            "start": start_datetime,
+            "end": end_datetime,
+        }
+
+
+async def create_all_day_event(
+    user_id: str,
+    client_id: str,
+    client_secret: str,
+    summary: str,
+    event_date: str,
+    timezone_str: str = "Asia/Kolkata",
+    calendar_id: str = "primary",
+    description: str = "",
+) -> dict[str, Any]:
+    """Create an all-day event. event_date is ISO date like '2026-03-06'."""
+    access_token = await _get_valid_token(user_id, client_id, client_secret)
+
+    next_day = (date.fromisoformat(event_date) + timedelta(days=1)).isoformat()
+    event_body: dict[str, Any] = {
+        "summary": summary,
+        "start": {"date": event_date},
+        "end": {"date": next_day},
+    }
+    if description:
+        event_body["description"] = description + "\n\n— Created by Founder OS"
+
+    async with httpx.AsyncClient(
+        base_url=GOOGLE_CALENDAR_API,
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=10.0,
+    ) as client:
+        resp = await client.post(
+            f"/calendars/{calendar_id}/events",
+            json=event_body,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return {
+            "event_id": data.get("id"),
+            "summary": summary,
+            "html_link": data.get("htmlLink"),
+            "date": event_date,
+            "all_day": True,
+        }
+
+
+async def delete_event(
+    user_id: str,
+    client_id: str,
+    client_secret: str,
+    event_id: str,
+    calendar_id: str = "primary",
+) -> bool:
+    """Delete a calendar event by ID."""
+    access_token = await _get_valid_token(user_id, client_id, client_secret)
+
+    async with httpx.AsyncClient(
+        base_url=GOOGLE_CALENDAR_API,
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=10.0,
+    ) as client:
+        resp = await client.delete(
+            f"/calendars/{calendar_id}/events/{event_id}",
+        )
+        return resp.status_code in (200, 204)
+
+
+async def update_event(
+    user_id: str,
+    client_id: str,
+    client_secret: str,
+    event_id: str,
+    updates: dict[str, Any],
+    timezone_str: str = "Asia/Kolkata",
+    calendar_id: str = "primary",
+) -> dict[str, Any]:
+    """
+    Patch a Google Calendar event.
+
+    ``updates`` can contain: summary, description, start_datetime, end_datetime,
+    start_date, end_date (for all-day), color_id.
+    """
+    access_token = await _get_valid_token(user_id, client_id, client_secret)
+
+    body: dict[str, Any] = {}
+    if "summary" in updates:
+        body["summary"] = updates["summary"]
+    if "description" in updates:
+        body["description"] = updates["description"]
+    if "start_datetime" in updates:
+        body["start"] = {
+            "dateTime": updates["start_datetime"],
+            "timeZone": timezone_str,
+        }
+    if "end_datetime" in updates:
+        body["end"] = {
+            "dateTime": updates["end_datetime"],
+            "timeZone": timezone_str,
+        }
+    if "start_date" in updates:
+        body["start"] = {"date": updates["start_date"]}
+    if "end_date" in updates:
+        body["end"] = {"date": updates["end_date"]}
+    if "color_id" in updates:
+        body["colorId"] = updates["color_id"]
+
+    async with httpx.AsyncClient(
+        base_url=GOOGLE_CALENDAR_API,
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=10.0,
+    ) as client:
+        resp = await client.patch(
+            f"/calendars/{calendar_id}/events/{event_id}",
+            json=body,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        logger.info("Updated GCal event %s: %s", event_id, list(body.keys()))
+        start = data.get("start", {})
+        return {
+            "event_id": data.get("id"),
+            "summary": data.get("summary"),
+            "html_link": data.get("htmlLink"),
+            "start": start.get("dateTime") or start.get("date"),
+            "end": (data.get("end", {}).get("dateTime")
+                    or data.get("end", {}).get("date")),
+            "updated": True,
+        }
+
+
+async def get_event(
+    user_id: str,
+    client_id: str,
+    client_secret: str,
+    event_id: str,
+    calendar_id: str = "primary",
+) -> dict[str, Any]:
+    """Get a single calendar event by ID."""
+    access_token = await _get_valid_token(user_id, client_id, client_secret)
+
+    async with httpx.AsyncClient(
+        base_url=GOOGLE_CALENDAR_API,
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=10.0,
+    ) as client:
+        resp = await client.get(
+            f"/calendars/{calendar_id}/events/{event_id}",
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        start = data.get("start", {})
+        return {
+            "event_id": data.get("id"),
+            "summary": data.get("summary"),
+            "description": data.get("description"),
+            "html_link": data.get("htmlLink"),
+            "start": start.get("dateTime") or start.get("date"),
+            "end": (data.get("end", {}).get("dateTime")
+                    or data.get("end", {}).get("date")),
+            "status": data.get("status"),
+        }
+
+
+async def list_upcoming_events(
+    user_id: str,
+    client_id: str,
+    client_secret: str,
+    calendar_id: str = "primary",
+    max_results: int = 20,
+    time_min: str | None = None,
+) -> list[dict[str, Any]]:
+    """List upcoming events from Google Calendar."""
+    access_token = await _get_valid_token(user_id, client_id, client_secret)
+
+    if not time_min:
+        time_min = datetime.now(timezone.utc).isoformat()
+
+    params = {
+        "maxResults": str(max_results),
+        "orderBy": "startTime",
+        "singleEvents": "true",
+        "timeMin": time_min,
+    }
+
+    async with httpx.AsyncClient(
+        base_url=GOOGLE_CALENDAR_API,
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=10.0,
+    ) as client:
+        resp = await client.get(
+            f"/calendars/{calendar_id}/events",
+            params=params,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        events = []
+        for item in data.get("items", []):
+            start = item.get("start", {})
+            events.append({
+                "event_id": item.get("id"),
+                "summary": item.get("summary", "(no title)"),
+                "start": start.get("dateTime") or start.get("date"),
+                "end": (item.get("end", {}).get("dateTime")
+                        or item.get("end", {}).get("date")),
+                "html_link": item.get("htmlLink"),
+            })
+        return events
 
 
 def _build_gcal_event(

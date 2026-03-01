@@ -92,6 +92,29 @@ class GenerateRequest(BaseModel):
     )
 
 
+class PromptRequest(BaseModel):
+    """
+    The unified prompt endpoint — one call does everything.
+
+    Send any natural language prompt and the system will:
+    1. Pull your business context + long-term memory
+    2. Decide what to do (add events, replan week, update metrics, etc.)
+    3. Push changes to your Google Calendar
+    4. Store the interaction as a memory for future context
+    """
+    user_id: str = Field("default-user")
+    message: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description=(
+            "Anything you want — 'Board meeting Friday at 2 PM', "
+            "'Reschedule marketing to Thursday', 'Plan my week focused on fundraising', "
+            "'We just hit $100k MRR, update everything'"
+        ),
+    )
+
+
 # ============================================================================
 # 1. ONBOARD — set up business context (one-time)
 # ============================================================================
@@ -153,13 +176,29 @@ async def connect_gcal(user_id: str = Query("default-user")):
         )
 
     # Ensure user exists
-    get_or_create_user(user_id)
+    user = get_or_create_user(user_id)
+
+    # If user already has valid tokens, skip the OAuth dance entirely
+    if user.has_valid_gcal_tokens():
+        return {
+            "status": "already_connected",
+            "user_id": user_id,
+            "gcal_connected": True,
+            "message": (
+                f"Google Calendar is already connected for {user.business_name or user_id}. "
+                "No need to re-authenticate — your tokens are saved permanently."
+            ),
+        }
+
+    # Only force consent screen if we have no refresh token at all
+    has_refresh = bool(user.gcal_tokens.get("refresh_token"))
 
     # Use user_id as state so we know who to link on callback
     auth_url = get_auth_url(
         client_id=settings.GOOGLE_CLIENT_ID,
         redirect_uri=settings.GOOGLE_REDIRECT_URI,
         state=user_id,
+        force_consent=not has_refresh,
     )
     return {
         "auth_url": auth_url,
@@ -431,6 +470,559 @@ async def get_history(user_id: str = Query("default-user"), limit: int = 10):
 
 
 # ============================================================================
+# 7. PROMPT — The single smart endpoint (prompt → memory → calendar)
+# ============================================================================
+
+@router.post("/prompt")
+async def handle_prompt(body: PromptRequest):
+    """
+    **The main endpoint.** Send any natural language prompt and the system will:
+
+    1. Load your business context + calendar tokens (stored from one-time OAuth)
+    2. Pull relevant long-term memories (past meetings, milestones, metrics)
+    3. Use the LLM to understand your intent and extract:
+       - Calendar events to create (meetings, tasks, blocks)
+       - Context updates (MRR changes, new goals, blockers)
+       - Whether a full weekly replan is needed
+    4. Push all events to Google Calendar (using stored tokens — no re-auth)
+    5. Store this interaction as a new memory for future reference
+
+    Examples:
+    - "Board meeting with investors Friday at 2 PM, prep deck Thursday morning"
+    - "We hit $100k MRR! Update my metrics and replan the week for fundraising"
+    - "Cancel marketing review, move product sync to Wednesday 3 PM"
+    - "Remind me to follow up with Acme Corp next Tuesday at 10 AM"
+    - "Plan my week — focus on hiring and closing the Series A"
+    """
+    user = get_user(body.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"User '{body.user_id}' not found. "
+                "Call POST /api/planner/onboard first."
+            ),
+        )
+
+    if not user.gcal_connected or not user.has_valid_gcal_tokens():
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Google Calendar not connected. "
+                "One-time setup: GET /api/planner/connect?user_id=" + body.user_id
+            ),
+        )
+
+    settings = get_settings()
+    start_time = time.time()
+
+    # ── Step 1: Pull relevant memories ──────────────────────────
+    memory_context = ""
+    try:
+        from app.memory.manager import get_memory_manager
+        mgr = get_memory_manager()
+
+        # Get memories relevant to the prompt + any due for review
+        recall_hits = await mgr.async_recall(
+            body.user_id,
+            query=body.message,
+            limit=10,
+            min_importance=0.2,
+            auto_embed_query=False,
+        )
+        review_hits = await mgr.async_get_due_reviews(body.user_id, limit=5)
+
+        all_memories = recall_hits + [
+            h for h in review_hits if h.id not in {r.id for r in recall_hits}
+        ]
+        if all_memories:
+            memory_context = mgr.format_for_llm(all_memories[:10], max_chars=3000)
+    except Exception as mem_exc:
+        logger.debug("Memory recall for prompt skipped: %s", mem_exc)
+
+    # ── Step 2: Get upcoming calendar events for context ────────
+    existing_events_summary = ""
+    try:
+        from app.integrations.calendar_integration import list_upcoming_events
+        upcoming = await list_upcoming_events(
+            user_id=body.user_id,
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            calendar_id=user.calendar_id,
+            max_results=15,
+        )
+        if upcoming:
+            event_lines = []
+            for ev in upcoming:
+                event_lines.append(f"  - {ev['summary']} @ {ev['start']}")
+            existing_events_summary = (
+                "Current upcoming events on your calendar:\n"
+                + "\n".join(event_lines)
+            )
+    except Exception as cal_exc:
+        logger.debug("Listing upcoming events failed (non-fatal): %s", cal_exc)
+
+    # ── Step 3: LLM — understand intent + generate actions ──────
+    import json as _json
+    import re as _re
+    from datetime import date as _date, timedelta as _td
+    from app.agents.llm import LLMMessage, Role, create_llm_provider
+
+    provider = create_llm_provider(
+        provider=settings.LLM_PROVIDER,
+        api_key=_get_api_key(settings),
+        base_url=_get_base_url(settings),
+        model=_get_model(settings),
+        openai_api_key=settings.OPENAI_API_KEY,
+        openai_model=settings.OPENAI_MODEL or "gpt-4o-mini",
+        openai_base_url=settings.OPENAI_BASE_URL or "https://api.openai.com/v1",
+    )
+
+    today = _date.today()
+    # Build day→date mapping for the current + next week
+    days_map = {}
+    for offset in range(14):
+        d = today + _td(days=offset)
+        day_name = d.strftime("%A").lower()
+        key = f"{day_name}_{d.isoformat()}"
+        days_map[day_name] = d.isoformat()
+        days_map[d.isoformat()] = d.isoformat()
+
+    context_block = (
+        f"Business: {user.business_name} ({user.industry})\n"
+        f"Type: {user.business_type} | Stage: {user.business_stage}\n"
+        f"Team: {user.team_size} | MRR: ${user.current_mrr:,.0f} | Users: {user.current_users}\n"
+        f"Primary goal: {user.primary_goal}\n"
+        f"Goals this week: {', '.join(user.goals_this_week) if user.goals_this_week else 'None set'}\n"
+        f"Work hours: {user.preferred_work_hours} ({user.timezone})\n"
+        f"Today is: {today.strftime('%A, %B %d, %Y')}\n"
+    )
+    if user.blockers:
+        context_block += f"Blockers: {', '.join(user.blockers)}\n"
+    if memory_context:
+        context_block += f"\nRelevant memories from business history:\n{memory_context}\n"
+    if existing_events_summary:
+        context_block += f"\n{existing_events_summary}\n"
+
+    # Build day→date mapping for LLM
+    day_date_map = {}
+    for offset in range(14):
+        d = today + _td(days=offset)
+        day_name = d.strftime("%A").lower()
+        if day_name not in day_date_map:
+            day_date_map[day_name] = d.isoformat()
+        day_date_map[f"next_{day_name}"] = (today + _td(days=7 + (offset % 7))).isoformat() if offset < 7 else d.isoformat()
+    day_date_json = _json.dumps(day_date_map, indent=2)
+
+    system_prompt = f"""\
+You are the AI assistant for Founder OS. The founder sends you natural language prompts \
+about their schedule, business, and goals. You must respond with a structured JSON action plan.
+
+TODAY: {today.isoformat()} ({today.strftime('%A')})
+TIMEZONE: {user.timezone}
+WORK HOURS: {user.preferred_work_hours}
+
+Day-to-date mapping (use these exact dates):
+{day_date_json}
+
+Return ONLY a JSON object with this structure (omit sections not needed):
+{{
+  "intent": "add_events | update_context | full_replan | mixed",
+  "reply": "Brief human-friendly confirmation message",
+  "events_to_create": [
+    {{
+      "summary": "Event title",
+      "date": "YYYY-MM-DD",
+      "start_time": "HH:MM",
+      "end_time": "HH:MM",
+      "description": "Optional details",
+      "all_day": false
+    }}
+  ],
+  "context_updates": {{
+    "current_mrr": 100000,
+    "primary_goal": "Close Series A",
+    "goals_this_week": ["Goal 1", "Goal 2"],
+    "blockers": ["Blocker"],
+    "completed_last_week": ["Done task"]
+  }},
+  "needs_full_replan": false,
+  "replan_focus": "Optional focus area if needs_full_replan is true"
+}}
+
+RULES:
+- Always compute real dates from day names using today={today.isoformat()} ({today.strftime('%A')})
+- "Friday" means the NEXT upcoming Friday from today
+- Time slots should be within work hours ({user.preferred_work_hours}) unless specified
+- Default meeting duration is 1 hour unless stated otherwise
+- If the founder mentions metrics (MRR, users, revenue), include context_updates
+- Set needs_full_replan=true only if they ask to "plan my week" or similar
+- Return ONLY valid JSON, no markdown fences, no commentary"""
+
+    user_msg = f"Founder's prompt:\n{body.message}\n\nFounder Context:\n{context_block}"
+
+    import asyncio as _asyncio
+
+    llm_response = None
+    last_err = None
+    for attempt in range(3):
+        try:
+            llm_response = await provider.generate(
+                [LLMMessage(role=Role.USER, content=user_msg)],
+                system=system_prompt,
+                temperature=0.3,
+                max_tokens=4096,
+            )
+            break
+        except Exception as llm_exc:
+            last_err = llm_exc
+            if "429" in str(llm_exc) and attempt < 2:
+                wait = (attempt + 1) * 15  # 15s, 30s
+                logger.info("Gemini 429 — retrying in %ds (attempt %d/3)", wait, attempt + 1)
+                await _asyncio.sleep(wait)
+            else:
+                break
+
+    if hasattr(provider, "close"):
+        await provider.close()
+
+    if llm_response is None:
+        raise HTTPException(status_code=502, detail=f"LLM failed after retries: {last_err}")
+
+    response = llm_response
+
+    # Parse LLM response
+    raw = response.content.strip()
+    raw = _re.sub(r"^```(?:json)?\s*", "", raw)
+    raw = _re.sub(r"\s*```$", "", raw)
+
+    try:
+        actions = _json.loads(raw)
+    except _json.JSONDecodeError:
+        # Fallback: treat entire prompt as a single event request
+        actions = {
+            "intent": "mixed",
+            "reply": "I'll process your request.",
+            "events_to_create": [],
+            "context_updates": {},
+            "needs_full_replan": False,
+        }
+
+    # ── Step 4: Execute actions ──────────────────────────────────
+    results: dict[str, Any] = {
+        "status": "completed",
+        "user_id": body.user_id,
+        "intent": actions.get("intent", "mixed"),
+        "reply": actions.get("reply", "Done."),
+    }
+
+    # 4a. Apply context updates
+    ctx_updates = actions.get("context_updates", {})
+    if ctx_updates:
+        for key, value in ctx_updates.items():
+            if value is not None and hasattr(user, key):
+                setattr(user, key, value)
+        save_user(user)
+        results["context_updated"] = list(ctx_updates.keys())
+
+    # 4b. Create calendar events
+    events_to_create = actions.get("events_to_create", [])
+    created_events = []
+    failed_events = []
+
+    if events_to_create:
+        from app.integrations.calendar_integration import (
+            create_single_event,
+            create_all_day_event,
+        )
+
+        for ev in events_to_create:
+            try:
+                if ev.get("all_day"):
+                    result = await create_all_day_event(
+                        user_id=body.user_id,
+                        client_id=settings.GOOGLE_CLIENT_ID,
+                        client_secret=settings.GOOGLE_CLIENT_SECRET,
+                        summary=ev["summary"],
+                        event_date=ev["date"],
+                        timezone_str=user.timezone,
+                        calendar_id=user.calendar_id,
+                        description=ev.get("description", ""),
+                    )
+                else:
+                    start_dt = f"{ev['date']}T{ev['start_time']}:00"
+                    end_dt = f"{ev['date']}T{ev['end_time']}:00"
+                    result = await create_single_event(
+                        user_id=body.user_id,
+                        client_id=settings.GOOGLE_CLIENT_ID,
+                        client_secret=settings.GOOGLE_CLIENT_SECRET,
+                        summary=ev["summary"],
+                        start_datetime=start_dt,
+                        end_datetime=end_dt,
+                        timezone_str=user.timezone,
+                        calendar_id=user.calendar_id,
+                        description=ev.get("description", ""),
+                    )
+                created_events.append(result)
+            except Exception as ev_exc:
+                failed_events.append({
+                    "summary": ev.get("summary", "Unknown"),
+                    "error": str(ev_exc),
+                })
+                logger.error("Failed to create event '%s': %s", ev.get("summary"), ev_exc)
+
+        results["events_created"] = len(created_events)
+        results["events_failed"] = len(failed_events)
+        results["events"] = created_events
+        if failed_events:
+            results["errors"] = failed_events
+
+    # 4c. Full weekly replan if requested
+    if actions.get("needs_full_replan"):
+        try:
+            plan = await _generate_plan_for_user(
+                user, settings,
+                extra_message=actions.get("replan_focus", body.message),
+            )
+
+            from app.integrations.calendar_integration import push_plan_to_gcal
+            gcal_result = await push_plan_to_gcal(
+                plan=plan,
+                user_id=body.user_id,
+                client_id=settings.GOOGLE_CLIENT_ID,
+                client_secret=settings.GOOGLE_CLIENT_SECRET,
+                calendar_id=user.calendar_id,
+                timezone_str=user.timezone,
+            )
+
+            from datetime import datetime as _dt, timezone as _tz
+            user.last_plan_at = _dt.now(_tz.utc).isoformat()
+            user.last_plan_events = gcal_result.get("events_created", 0)
+            user.plan_count += 1
+            save_user(user)
+
+            duration = time.time() - start_time
+            _store_plan_summary(user.user_id, plan, gcal_result, duration)
+
+            results["weekly_plan"] = {
+                "plan_id": plan.id,
+                "tasks_generated": sum(len(d.tasks) for d in plan.daily_schedule.values()),
+                "events_created": gcal_result.get("events_created", 0),
+                "events_failed": gcal_result.get("events_failed", 0),
+            }
+        except Exception as plan_exc:
+            logger.error("Full replan failed: %s", plan_exc)
+            results["replan_error"] = str(plan_exc)
+
+    # ── Step 5: Store as memory ──────────────────────────────────
+    try:
+        from app.memory.manager import get_memory_manager
+        mgr = get_memory_manager()
+
+        ev_count = len(created_events)
+        memory_title = f"Prompt: {body.message[:80]}"
+        memory_content = (
+            f"User prompt: {body.message}\n"
+            f"Actions taken: {actions.get('intent', 'unknown')}\n"
+        )
+        if ev_count:
+            summaries = [e.get("summary", "") for e in created_events]
+            memory_content += f"Events created ({ev_count}): {'; '.join(summaries)}\n"
+        if ctx_updates:
+            memory_content += f"Context updates: {', '.join(ctx_updates.keys())}\n"
+        if actions.get("needs_full_replan"):
+            memory_content += "Full weekly replan generated.\n"
+
+        await mgr.async_store(
+            user_id=body.user_id,
+            title=memory_title,
+            content=memory_content,
+            page_type="interaction",
+            chapter="planning",
+            importance=0.5,
+            tags=["prompt", "calendar-update"],
+            source="planner-prompt",
+            auto_embed=False,
+        )
+    except Exception as mem_exc:
+        logger.debug("Memory store for prompt failed (non-fatal): %s", mem_exc)
+
+    results["duration_seconds"] = round(time.time() - start_time, 1)
+    return results
+
+
+# ============================================================================
+# 8. CALENDAR — view upcoming events
+# ============================================================================
+
+@router.get("/calendar")
+async def get_upcoming_calendar(
+    user_id: str = Query("default-user"),
+    max_results: int = Query(20, ge=1, le=100),
+):
+    """
+    View your upcoming Google Calendar events.
+    Uses stored tokens — no re-auth needed.
+    """
+    user = get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if not user.gcal_connected or not user.has_valid_gcal_tokens():
+        raise HTTPException(
+            status_code=400,
+            detail="Google Calendar not connected.",
+        )
+
+    settings = get_settings()
+    from app.integrations.calendar_integration import list_upcoming_events
+
+    try:
+        events = await list_upcoming_events(
+            user_id=user_id,
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            calendar_id=user.calendar_id,
+            max_results=max_results,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Calendar read failed: {exc}")
+
+    return {
+        "user_id": user_id,
+        "events_count": len(events),
+        "events": events,
+    }
+
+
+# ============================================================================
+# 9. CALENDAR CRUD — individual event operations
+# ============================================================================
+
+@router.get("/calendar/event/{event_id}")
+async def get_calendar_event(
+    event_id: str,
+    user_id: str = Query("default-user"),
+):
+    """Get a single calendar event by ID."""
+    user = get_user(user_id)
+    if not user or not user.gcal_connected:
+        raise HTTPException(status_code=400, detail="Google Calendar not connected.")
+
+    settings = get_settings()
+    from app.integrations.calendar_integration import get_event
+
+    try:
+        ev = await get_event(
+            user_id=user_id,
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            event_id=event_id,
+            calendar_id=user.calendar_id,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Calendar read failed: {exc}")
+
+    return {"user_id": user_id, "event": ev}
+
+
+@router.post("/calendar/event")
+async def create_calendar_event(request: Request):
+    """
+    Create a single event directly (no LLM).
+    Body: { user_id, summary, start, end, description?, timezone? }
+    """
+    body = await request.json()
+    uid = body.get("user_id", "default-user")
+    user = get_user(uid)
+    if not user or not user.gcal_connected:
+        raise HTTPException(status_code=400, detail="Google Calendar not connected.")
+
+    settings = get_settings()
+    from app.integrations.calendar_integration import create_single_event
+
+    try:
+        ev = await create_single_event(
+            user_id=uid,
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            summary=body["summary"],
+            start_datetime=body["start"],
+            end_datetime=body["end"],
+            timezone_str=body.get("timezone", "Asia/Kolkata"),
+            calendar_id=user.calendar_id,
+            description=body.get("description", ""),
+        )
+    except KeyError as exc:
+        raise HTTPException(status_code=422, detail=f"Missing field: {exc}")
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Calendar create failed: {exc}")
+
+    return {"user_id": uid, "created": True, "event": ev}
+
+
+@router.patch("/calendar/event/{event_id}")
+async def update_calendar_event(event_id: str, request: Request):
+    """
+    Update a calendar event by ID.
+    Body: { user_id, summary?, start_datetime?, end_datetime?, description?, color_id? }
+    """
+    body = await request.json()
+    uid = body.get("user_id", "default-user")
+    user = get_user(uid)
+    if not user or not user.gcal_connected:
+        raise HTTPException(status_code=400, detail="Google Calendar not connected.")
+
+    settings = get_settings()
+    from app.integrations.calendar_integration import update_event
+
+    updates = {k: v for k, v in body.items() if k not in ("user_id",)}
+    try:
+        ev = await update_event(
+            user_id=uid,
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            event_id=event_id,
+            updates=updates,
+            timezone_str=body.get("timezone", "Asia/Kolkata"),
+            calendar_id=user.calendar_id,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Calendar update failed: {exc}")
+
+    return {"user_id": uid, "updated": True, "event": ev}
+
+
+@router.delete("/calendar/event/{event_id}")
+async def delete_calendar_event(
+    event_id: str,
+    user_id: str = Query("default-user"),
+):
+    """Delete a calendar event by ID."""
+    user = get_user(user_id)
+    if not user or not user.gcal_connected:
+        raise HTTPException(status_code=400, detail="Google Calendar not connected.")
+
+    settings = get_settings()
+    from app.integrations.calendar_integration import delete_event
+
+    try:
+        ok = await delete_event(
+            user_id=user_id,
+            client_id=settings.GOOGLE_CLIENT_ID,
+            client_secret=settings.GOOGLE_CLIENT_SECRET,
+            event_id=event_id,
+            calendar_id=user.calendar_id,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Calendar delete failed: {exc}")
+
+    if not ok:
+        raise HTTPException(status_code=404, detail="Event not found or already deleted.")
+
+    return {"user_id": user_id, "deleted": True, "event_id": event_id}
+
+
+# ============================================================================
 # Internal helpers
 # ============================================================================
 
@@ -447,6 +1039,9 @@ async def _extract_context_from_text(
         api_key=_get_api_key(settings),
         base_url=_get_base_url(settings),
         model=_get_model(settings),
+        openai_api_key=settings.OPENAI_API_KEY,
+        openai_model=settings.OPENAI_MODEL or "gpt-4o-mini",
+        openai_base_url=settings.OPENAI_BASE_URL or "https://api.openai.com/v1",
     )
 
     system = """\
@@ -515,6 +1110,9 @@ async def _generate_plan_for_user(
         api_key=_get_api_key(settings),
         base_url=_get_base_url(settings),
         model=_get_model(settings),
+        openai_api_key=settings.OPENAI_API_KEY,
+        openai_model=settings.OPENAI_MODEL or "gpt-4o-mini",
+        openai_base_url=settings.OPENAI_BASE_URL or "https://api.openai.com/v1",
     )
 
     next_mon = _next_monday()

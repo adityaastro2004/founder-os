@@ -584,7 +584,7 @@ class OpenAICompatibleProvider(LLMProvider):
 
 
 # ============================================================================
-# Gemini (Google)
+# Gemini (Google) — OpenAI-compatible endpoint
 # ============================================================================
 
 class GeminiProvider(OpenAICompatibleProvider):
@@ -605,6 +605,7 @@ class GeminiProvider(OpenAICompatibleProvider):
         default_model: str = "gemini-2.5-flash",
         timeout: float = 120.0,
     ) -> None:
+        self._api_key = api_key
         self.default_model = default_model
         headers: dict[str, str] = {"Content-Type": "application/json"}
         if api_key:
@@ -614,12 +615,204 @@ class GeminiProvider(OpenAICompatibleProvider):
             headers=headers,
             timeout=timeout,
         )
+
     async def health_check(self) -> bool:
         try:
             resp = await self._client.get("/models")
             return resp.status_code == 200
         except Exception:
             return False
+
+
+# ============================================================================
+# Gemini (Google) — Native REST API (separate rate limit pool)
+# ============================================================================
+
+class GeminiNativeProvider(LLMProvider):
+    """
+    Google Gemini via its NATIVE REST API (not OpenAI-compatible).
+    Uses: https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+
+    This has a SEPARATE rate limit pool from the OpenAI-compat endpoint,
+    so it serves as a fallback when the compat endpoint is throttled.
+    """
+
+    provider_name = "gemini_native"
+
+    _BASE = "https://generativelanguage.googleapis.com/v1beta"
+
+    def __init__(
+        self,
+        api_key: str,
+        default_model: str = "gemini-2.0-flash",
+        timeout: float = 120.0,
+    ) -> None:
+        self._api_key = api_key
+        self.default_model = default_model
+        self._client = httpx.AsyncClient(
+            headers={"Content-Type": "application/json"},
+            timeout=timeout,
+        )
+
+    async def generate(
+        self,
+        messages: list[LLMMessage],
+        *,
+        system: str = "",
+        model: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+        **kwargs,
+    ) -> LLMResponse:
+        model_name = model or self.default_model
+        url = f"{self._BASE}/models/{model_name}:generateContent?key={self._api_key}"
+
+        # Build native Gemini content format
+        contents = []
+        for msg in messages:
+            role = "user" if msg.role == Role.USER else "model"
+            contents.append({"role": role, "parts": [{"text": msg.content}]})
+
+        body: dict = {
+            "contents": contents,
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": max_tokens,
+            },
+        }
+
+        if system:
+            body["systemInstruction"] = {"parts": [{"text": system}]}
+
+        resp = await self._client.post(url, json=body)
+        resp.raise_for_status()
+        data = resp.json()
+
+        # Parse native response
+        candidate = data.get("candidates", [{}])[0]
+        text = ""
+        if candidate.get("content", {}).get("parts"):
+            text = candidate["content"]["parts"][0].get("text", "")
+
+        usage_data = data.get("usageMetadata", {})
+
+        return LLMResponse(
+            content=text,
+            model=model_name,
+            usage=TokenUsage(
+                input_tokens=usage_data.get("promptTokenCount", 0),
+                output_tokens=usage_data.get("candidatesTokenCount", 0),
+            ),
+        )
+
+    async def health_check(self) -> bool:
+        try:
+            url = f"{self._BASE}/models?key={self._api_key}"
+            resp = await self._client.get(url)
+            return resp.status_code == 200
+        except Exception:
+            return False
+
+    async def close(self) -> None:
+        await self._client.aclose()
+
+
+# ============================================================================
+# Gemini with automatic fallback
+# ============================================================================
+
+class GeminiWithFallback(LLMProvider):
+    """
+    Tries the OpenAI-compatible Gemini endpoint first.
+    If it gets a 429, falls back to the native Gemini REST endpoint.
+    If both Gemini endpoints fail (e.g. daily quota exhausted),
+    automatically falls back to OpenAI as a third-tier provider.
+    """
+
+    provider_name = "gemini"
+
+    def __init__(
+        self,
+        api_key: str,
+        default_model: str = "gemini-2.0-flash",
+        timeout: float = 120.0,
+        *,
+        openai_api_key: str = "",
+        openai_model: str = "gpt-4o-mini",
+        openai_base_url: str = "https://api.openai.com/v1",
+    ):
+        self._primary = GeminiProvider(api_key, default_model, timeout)
+        self._fallback = GeminiNativeProvider(api_key, default_model, timeout)
+        self.default_model = default_model
+
+        # Third-tier: OpenAI fallback when entire Gemini quota is exhausted
+        self._openai: OpenAICompatibleProvider | None = None
+        if openai_api_key:
+            self._openai = OpenAICompatibleProvider(
+                api_key=openai_api_key,
+                base_url=openai_base_url,
+                default_model=openai_model,
+                timeout=timeout,
+            )
+            self._openai_model = openai_model
+            logger.info("OpenAI fallback configured (model=%s)", openai_model)
+
+    _RETRYABLE = ("429", "400", "401", "403", "404", "500", "503")
+
+    def _is_retryable(self, exc: Exception) -> bool:
+        err = str(exc)
+        return any(code in err for code in self._RETRYABLE)
+
+    async def generate(self, messages, *, system="", model=None, temperature=0.7, max_tokens=4096, **kwargs):
+        # 1) Gemini OpenAI-compat endpoint
+        try:
+            return await self._primary.generate(
+                messages, system=system, model=model,
+                temperature=temperature, max_tokens=max_tokens, **kwargs,
+            )
+        except Exception as exc:
+            if not self._is_retryable(exc):
+                raise
+            logger.info("Gemini OpenAI-compat failed (%s) — trying native REST", str(exc)[:80])
+
+        # 2) Gemini native REST endpoint (separate rate-limit pool)
+        try:
+            return await self._fallback.generate(
+                messages, system=system, model=model,
+                temperature=temperature, max_tokens=max_tokens, **kwargs,
+            )
+        except Exception as exc:
+            if not self._is_retryable(exc):
+                raise
+            logger.warning("Gemini native also failed (%s)", str(exc)[:80])
+
+        # 3) OpenAI fallback (if configured)
+        if self._openai:
+            logger.info("Both Gemini endpoints exhausted — falling back to OpenAI (%s)", self._openai_model)
+            return await self._openai.generate(
+                messages, system=system, model=self._openai_model,
+                temperature=temperature, max_tokens=max_tokens, **kwargs,
+            )
+
+        raise RuntimeError(
+            "All Gemini endpoints exhausted and no OpenAI fallback configured. "
+            "Set OPENAI_API_KEY in .env to enable automatic fallback."
+        )
+
+    async def health_check(self) -> bool:
+        if await self._primary.health_check():
+            return True
+        if await self._fallback.health_check():
+            return True
+        if self._openai:
+            return await self._openai.health_check()
+        return False
+
+    async def close(self) -> None:
+        await self._primary.close()
+        await self._fallback.close()
+        if self._openai:
+            await self._openai.close()
 
 
 # ============================================================================
@@ -632,6 +825,9 @@ def create_llm_provider(
     api_key: str = "",
     base_url: str = "",
     model: str = "",
+    openai_api_key: str = "",
+    openai_model: str = "gpt-4o-mini",
+    openai_base_url: str = "https://api.openai.com/v1",
 ) -> LLMProvider:
     """
     Factory to create the right LLM provider from config.
@@ -641,6 +837,9 @@ def create_llm_provider(
         api_key:   API key (not needed for Ollama)
         base_url:  Override base URL
         model:     Default model name
+        openai_api_key:  OpenAI API key for cross-provider fallback (Gemini→OpenAI)
+        openai_model:    OpenAI model to use as fallback
+        openai_base_url: OpenAI base URL
     """
     if provider == "ollama":
         return OllamaProvider(
@@ -663,9 +862,12 @@ def create_llm_provider(
     elif provider == "gemini":
         if not api_key:
             raise ValueError("GEMINI_API_KEY required for Gemini provider")
-        return GeminiProvider(
+        return GeminiWithFallback(
             api_key=api_key,
-            default_model=model or "gemini-2.5-flash",
+            default_model=model or "gemini-2.0-flash",
+            openai_api_key=openai_api_key,
+            openai_model=openai_model or "gpt-4o-mini",
+            openai_base_url=openai_base_url or "https://api.openai.com/v1",
         )
     else:
         raise ValueError(f"Unknown LLM provider: {provider}")

@@ -127,6 +127,9 @@ async def _generate_plan_for_user(user, settings) -> "WeeklyPlan":
         api_key=_get_api_key(settings),
         base_url=_get_base_url(settings),
         model=_get_model(settings),
+        openai_api_key=settings.OPENAI_API_KEY,
+        openai_model=settings.OPENAI_MODEL or "gpt-4o-mini",
+        openai_base_url=settings.OPENAI_BASE_URL or "https://api.openai.com/v1",
     )
 
     next_mon = _next_monday()
@@ -311,20 +314,19 @@ def start_scheduler() -> AsyncIOScheduler:
         replace_existing=True,
     )
 
-    # ── Dev: fires 30s after boot for testing ─────────────────
-    settings = get_settings()
-    if settings.APP_ENV == "development":
-        from apscheduler.triggers.date import DateTrigger
-
-        run_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=30)
-        scheduler.add_job(
-            automated_planner_job,
-            trigger=DateTrigger(run_date=run_at),
-            id="weekly_planner_test",
-            name="Weekly Planner (test — 30s after boot)",
-            replace_existing=True,
-        )
-        logger.info("📋 Dev test job scheduled — will fire in 30 seconds")
+    # ── Dev: fires 30s after boot for testing (disabled — enable when needed) ──
+    # settings = get_settings()
+    # if settings.APP_ENV == "development":
+    #     from apscheduler.triggers.date import DateTrigger
+    #     run_at = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=30)
+    #     scheduler.add_job(
+    #         automated_planner_job,
+    #         trigger=DateTrigger(run_date=run_at),
+    #         id="weekly_planner_test",
+    #         name="Weekly Planner (test — 30s after boot)",
+    #         replace_existing=True,
+    #     )
+    #     logger.info("📋 Dev test job scheduled — will fire in 30 seconds")
 
     scheduler.start()
     _scheduler = scheduler

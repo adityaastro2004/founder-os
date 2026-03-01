@@ -122,6 +122,9 @@ def _create_provider(settings):
         api_key=_get_api_key(settings),
         base_url=_get_base_url(settings),
         model=_get_model(settings),
+        openai_api_key=settings.OPENAI_API_KEY,
+        openai_model=settings.OPENAI_MODEL or "gpt-4o-mini",
+        openai_base_url=settings.OPENAI_BASE_URL or "https://api.openai.com/v1",
     )
 
 
@@ -426,9 +429,9 @@ async def gcal_auth():
 @router.get("/plan/gcal/callback")
 async def gcal_callback(code: str, state: str = "founder-os"):
     """
-    OAuth2 callback from Google.
-
-    Exchanges the authorization code for access + refresh tokens.
+    OAuth2 callback from Google (legacy path).
+    Redirects to the production planner callback which persists tokens.
+    Also handles tokens directly for backward compatibility.
     """
     from app.integrations.calendar_integration import (
         exchange_code_for_tokens,
