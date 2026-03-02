@@ -46,6 +46,7 @@ from app.agents.tool_protocol import ToolRegistry, ToolResult
 
 if TYPE_CHECKING:
     from app.agents.approval import ApprovalGate
+    from app.agents.event_bus import EventBus
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +131,7 @@ class ExecutionEngine:
         approval_gate: "ApprovalGate | None" = None,
         user_id: str = "",
         agent_name: str = "",
+        event_bus: "EventBus | None" = None,
     ) -> None:
         self.llm = llm
         self.tools = tools
@@ -138,6 +140,7 @@ class ExecutionEngine:
         self.approval_gate = approval_gate
         self.user_id = user_id
         self._agent_name = agent_name
+        self._event_bus = event_bus
 
     async def run(
         self,
@@ -342,11 +345,37 @@ class ExecutionEngine:
                         agent_name, tc.name,
                     )
 
+            # -- Emit tool.called event --
+            if self._event_bus:
+                from app.agents.event_bus import Event
+                await self._event_bus.publish(Event(
+                    type="tool.called",
+                    agent=agent_name,
+                    data={
+                        "tool_name": tc.name,
+                        "arguments": {k: str(v)[:200] for k, v in tc.arguments.items()},
+                    },
+                ))
+
             # -- Execute the tool --
             result = await self.tools.call_tool(
                 tc.name, tc.arguments, tc.id,
             )
             results.append(result)
+
+            # -- Emit tool.result event --
+            if self._event_bus:
+                from app.agents.event_bus import Event
+                await self._event_bus.publish(Event(
+                    type="tool.result",
+                    agent=agent_name,
+                    data={
+                        "tool_name": tc.name,
+                        "is_error": result.is_error,
+                        "duration_ms": round(result.duration_ms, 1),
+                        "result_preview": result.content[:300],
+                    },
+                ))
 
             # Log tool call step
             steps.append(ExecutionStep(

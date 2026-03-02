@@ -119,7 +119,7 @@ HIGH_RISK_TOOLS: set[str] = {
 
 # Default risk levels for known built-in tools
 TOOL_RISK_MAP: dict[str, RiskLevel] = {
-    # LOW — read-only
+    # LOW — read-only / internal state
     "search_knowledge": RiskLevel.LOW,
     "web_search": RiskLevel.LOW,
     "get_business_metrics": RiskLevel.LOW,
@@ -127,15 +127,32 @@ TOOL_RISK_MAP: dict[str, RiskLevel] = {
     "get_integrations": RiskLevel.LOW,
     "get_writing_style": RiskLevel.LOW,
     "get_current_datetime": RiskLevel.LOW,
+    "store_working_memory": RiskLevel.LOW,
+
+    # LOW — agent intelligence (read-only context gathering)
+    "get_user_profile": RiskLevel.LOW,
+    "check_calendar_conflicts": RiskLevel.LOW,
+    "ask_user_clarification": RiskLevel.LOW,
+    "detect_calendar_intent": RiskLevel.LOW,
+    "validate_event_fields": RiskLevel.LOW,
+
+    # LOW — Google Calendar reads (no side effects)
+    "gcal_list_events": RiskLevel.LOW,
+    "gcal_get_event": RiskLevel.LOW,
+
+    # MEDIUM — Google Calendar writes (reversible but external)
+    "gcal_create_event": RiskLevel.MEDIUM,
+    "gcal_create_all_day_event": RiskLevel.MEDIUM,
+    "gcal_update_event": RiskLevel.MEDIUM,
+    "gcal_delete_event": RiskLevel.MEDIUM,
+    "gcal_push_weekly_plan": RiskLevel.MEDIUM,
+    "gcal_smart_delete": RiskLevel.MEDIUM,
 
     # MEDIUM — internal writes
     "create_task": RiskLevel.MEDIUM,
     "update_task_status": RiskLevel.MEDIUM,
     "save_draft": RiskLevel.MEDIUM,
     "delegate_task": RiskLevel.MEDIUM,
-
-    # LOW — internal state only
-    "store_working_memory": RiskLevel.LOW,
 }
 
 
@@ -427,7 +444,21 @@ class ApprovalGate:
                 reason=f"Auto-rejected (user set 'always deny' for '{tool_name}')",
             )
 
-        # Default: "ask" — create pending approval
+        # Default behaviour (no explicit preference set):
+        #   LOW risk  → auto-approve (safe, no side effects)
+        #   MEDIUM    → auto-approve (agent autonomy; user can override to "ask")
+        # This enables agents to actually function. Users who want stricter
+        # control can set individual tools to "ask" or "always_deny".
+        # HIGH-risk tools are always caught above, so this only applies to
+        # LOW and MEDIUM.
+        if pref == "ask":
+            return ApprovalDecision(
+                approved=True,
+                reason=f"Auto-approved '{tool_name}' ({risk.value} risk, default policy)",
+                auto_approved=True,
+            )
+
+        # Fallback: create pending approval (shouldn't normally reach here)
         return await self._create_pending(
             user_id=user_id,
             tool_name=tool_name,

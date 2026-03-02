@@ -480,6 +480,11 @@ class OpenAICompatibleProvider(LLMProvider):
                 }
                 for t in tools
             ]
+            payload["tool_choice"] = "auto"
+            logger.debug(
+                "OpenAI-compat request: model=%s, %d tools, %d messages",
+                model_name, len(tools), len(api_messages),
+            )
 
         if stop_sequences:
             payload["stop"] = stop_sequences
@@ -487,7 +492,13 @@ class OpenAICompatibleProvider(LLMProvider):
         resp = await self._client.post("/chat/completions", json=payload)
         resp.raise_for_status()
         data = resp.json()
-        return self._parse_response(data, model_name)
+        result = self._parse_response(data, model_name)
+        if tools:
+            logger.debug(
+                "OpenAI-compat response: tool_calls=%d, stop_reason=%s, content_len=%d",
+                len(result.tool_calls), result.stop_reason, len(result.content),
+            )
+        return result
 
     async def health_check(self) -> bool:
         try:
@@ -659,6 +670,7 @@ class GeminiNativeProvider(LLMProvider):
         messages: list[LLMMessage],
         *,
         system: str = "",
+        tools: list[ToolSchema] | None = None,
         model: str | None = None,
         temperature: float = 0.7,
         max_tokens: int = 4096,
@@ -670,8 +682,31 @@ class GeminiNativeProvider(LLMProvider):
         # Build native Gemini content format
         contents = []
         for msg in messages:
-            role = "user" if msg.role == Role.USER else "model"
-            contents.append({"role": role, "parts": [{"text": msg.content}]})
+            if msg.role == Role.TOOL_RESULT:
+                contents.append({
+                    "role": "user",
+                    "parts": [{
+                        "functionResponse": {
+                            "name": msg.tool_call_id or "tool",
+                            "response": {"result": msg.content},
+                        }
+                    }],
+                })
+            elif msg.role == Role.ASSISTANT and msg.tool_calls:
+                parts = []
+                if msg.content:
+                    parts.append({"text": msg.content})
+                for tc in msg.tool_calls:
+                    parts.append({
+                        "functionCall": {
+                            "name": tc.name,
+                            "args": tc.arguments,
+                        }
+                    })
+                contents.append({"role": "model", "parts": parts})
+            else:
+                role = "user" if msg.role == Role.USER else "model"
+                contents.append({"role": role, "parts": [{"text": msg.content}]})
 
         body: dict = {
             "contents": contents,
@@ -684,25 +719,50 @@ class GeminiNativeProvider(LLMProvider):
         if system:
             body["systemInstruction"] = {"parts": [{"text": system}]}
 
+        # Add tool declarations (function calling support)
+        if tools:
+            body["tools"] = [{
+                "functionDeclarations": [
+                    {
+                        "name": t.name,
+                        "description": t.description,
+                        "parameters": t.parameters,
+                    }
+                    for t in tools
+                ],
+            }]
+
         resp = await self._client.post(url, json=body)
         resp.raise_for_status()
         data = resp.json()
 
-        # Parse native response
+        # Parse native response (text + function calls)
         candidate = data.get("candidates", [{}])[0]
-        text = ""
-        if candidate.get("content", {}).get("parts"):
-            text = candidate["content"]["parts"][0].get("text", "")
+        text_parts: list[str] = []
+        tool_calls: list[ToolCallRequest] = []
+
+        for part in candidate.get("content", {}).get("parts", []):
+            if "text" in part:
+                text_parts.append(part["text"])
+            elif "functionCall" in part:
+                fc = part["functionCall"]
+                tool_calls.append(ToolCallRequest(
+                    id=uuid.uuid4().hex[:12],
+                    name=fc.get("name", ""),
+                    arguments=fc.get("args", {}),
+                ))
 
         usage_data = data.get("usageMetadata", {})
 
         return LLMResponse(
-            content=text,
+            content="\n".join(text_parts),
+            tool_calls=tool_calls,
             model=model_name,
             usage=TokenUsage(
                 input_tokens=usage_data.get("promptTokenCount", 0),
                 output_tokens=usage_data.get("candidatesTokenCount", 0),
             ),
+            stop_reason="tool_use" if tool_calls else "end_turn",
         )
 
     async def health_check(self) -> bool:
@@ -792,6 +852,13 @@ class GeminiWithFallback(LLMProvider):
         raise last_exc  # type: ignore[misc]
 
     async def generate(self, messages, *, system="", model=None, temperature=0.7, max_tokens=4096, **kwargs):
+        # Safety: ignore non-Gemini model names (e.g. from stale DB config)
+        if model and not model.startswith("gemini"):
+            logger.warning(
+                "Ignoring non-Gemini model '%s' — using default '%s'",
+                model, self.default_model,
+            )
+            model = None
         gen_kwargs = dict(system=system, model=model, temperature=temperature, max_tokens=max_tokens, **kwargs)
 
         # 1) Gemini OpenAI-compat endpoint (with retry)

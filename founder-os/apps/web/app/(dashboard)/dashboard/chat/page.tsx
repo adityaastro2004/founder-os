@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect, FormEvent } from "react";
+import { useState, useRef, useEffect, FormEvent, useCallback } from "react";
 import { useApi } from "@/lib/use-api";
+import { useAuth } from "@clerk/nextjs";
+import { DIRECT_API_URL } from "@/lib/api";
 import {
   MessageSquare,
   Send,
@@ -49,6 +51,30 @@ interface ChatMessage {
     tool_names: string[];
   };
   error?: boolean;
+}
+
+/** Intermediate streaming event from the SSE endpoint */
+interface StreamingEvent {
+  type: string;
+  tool_name?: string;
+  agent?: string;
+  is_error?: boolean;
+  duration_ms?: number;
+  timestamp?: number;
+  // done-event fields
+  content?: string;
+  model?: string;
+  tokens_used?: number;
+  tool_calls_made?: number;
+  tool_names?: string[];
+  delegations_made?: number;
+  agents_used?: string[];
+  duration_seconds?: number;
+  stop_reason?: string;
+  cost_usd?: number;
+  llm_provider?: string;
+  pending_approvals?: unknown[];
+  error?: string;
 }
 
 /* ── Suggested Prompts ─────────────────────────────── */
@@ -122,17 +148,20 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 /* ── Chat Page ────────────────────────────────────── */
 export default function ChatPage() {
   const api = useApi();
+  const { getToken } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [streamingEvents, setStreamingEvents] = useState<StreamingEvent[]>([]);
   const [sessionId] = useState(() => crypto.randomUUID());
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // Auto-scroll on new messages
+  // Auto-scroll on new messages or streaming events
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, streamingEvents]);
 
   // Auto-resize textarea
   const handleInputChange = (value: string) => {
@@ -156,33 +185,95 @@ export default function ChatPage() {
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
     setLoading(true);
+    setStreamingEvents([]);
+
+    // Cancel any previous request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
 
     try {
-      const data: OrchestrationResponse = await api("/api/agents/orchestrate", {
+      const token = await getToken();
+
+      // Try SSE streaming endpoint first
+      const res = await fetch(`${DIRECT_API_URL}/api/agents/orchestrate/stream`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           message: text.trim(),
           session_id: sessionId,
         }),
+        signal: controller.signal,
       });
 
-      const assistantMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: data.content,
-        timestamp: new Date(),
-        meta: {
-          model: data.model,
-          tokens: data.tokens_used,
-          duration: data.duration_seconds,
-          agents_used: data.agents_used,
-          delegations: data.delegations_made,
-          tool_calls: data.tool_calls_made,
-          tool_names: data.tool_names || [],
-        },
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      if (!res.ok) {
+        // Fallback to non-streaming endpoint
+        const data: OrchestrationResponse = await api("/api/agents/orchestrate", {
+          method: "POST",
+          body: JSON.stringify({
+            message: text.trim(),
+            session_id: sessionId,
+          }),
+        });
+        addAssistantMessage(data);
+        return;
+      }
+
+      // Parse SSE stream
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No readable stream");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || ""; // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event: StreamingEvent = JSON.parse(line.slice(6));
+
+            if (event.type === "done") {
+              // Final response — create the assistant message
+              addAssistantMessage({
+                content: event.content || "",
+                model: event.model || "",
+                tokens_used: event.tokens_used || 0,
+                tool_calls_made: event.tool_calls_made || 0,
+                tool_names: event.tool_names || [],
+                delegations_made: event.delegations_made || 0,
+                agents_used: event.agents_used || [],
+                duration_seconds: event.duration_seconds || 0,
+                stop_reason: event.stop_reason || "",
+                cost_usd: event.cost_usd || 0,
+                llm_provider: event.llm_provider || "",
+                pending_approvals: event.pending_approvals || [],
+              });
+              setStreamingEvents([]);
+            } else if (event.type === "error") {
+              throw new Error(event.error || "Agent error");
+            } else if (event.type !== "thinking") {
+              // Show intermediate events (tool_call, tool_result, agent_started, etc.)
+              setStreamingEvents((prev) => [...prev, event]);
+            }
+          } catch (parseErr) {
+            // Ignore non-JSON SSE lines
+            if (parseErr instanceof SyntaxError) continue;
+            throw parseErr;
+          }
+        }
+      }
     } catch (err) {
+      if ((err as Error).name === "AbortError") return;
       const errorMsg: ChatMessage = {
         id: crypto.randomUUID(),
         role: "assistant",
@@ -194,10 +285,30 @@ export default function ChatPage() {
         error: true,
       };
       setMessages((prev) => [...prev, errorMsg]);
+      setStreamingEvents([]);
     } finally {
       setLoading(false);
       inputRef.current?.focus();
     }
+  };
+
+  const addAssistantMessage = (data: OrchestrationResponse) => {
+    const assistantMsg: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "assistant",
+      content: data.content,
+      timestamp: new Date(),
+      meta: {
+        model: data.model,
+        tokens: data.tokens_used,
+        duration: data.duration_seconds,
+        agents_used: data.agents_used,
+        delegations: data.delegations_made,
+        tool_calls: data.tool_calls_made,
+        tool_names: data.tool_names || [],
+      },
+    };
+    setMessages((prev) => [...prev, assistantMsg]);
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -257,11 +368,68 @@ export default function ChatPage() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
-                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl rounded-tl-md px-4 py-3">
-                  <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Thinking...</span>
-                  </div>
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl rounded-tl-md px-4 py-3 space-y-2 max-w-[75%]">
+                  {streamingEvents.length === 0 ? (
+                    <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Thinking...</span>
+                    </div>
+                  ) : (
+                    <>
+                      {streamingEvents.map((evt, i) => (
+                        <div key={i} className="flex items-center gap-2 text-xs">
+                          {evt.type === "tool_call" && (
+                            <>
+                              <Wrench className="w-3.5 h-3.5 text-amber-500 animate-pulse" />
+                              <span className="text-amber-700 dark:text-amber-400">
+                                Calling <span className="font-mono font-medium">{evt.tool_name}</span>
+                                {evt.agent && <span className="text-[var(--color-text-muted)]"> via {evt.agent}</span>}
+                              </span>
+                            </>
+                          )}
+                          {evt.type === "tool_result" && (
+                            <>
+                              {evt.is_error ? (
+                                <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                              ) : (
+                                <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                              )}
+                              <span className={evt.is_error ? "text-red-600 dark:text-red-400" : "text-emerald-700 dark:text-emerald-400"}>
+                                {evt.tool_name} {evt.is_error ? "failed" : "done"}
+                                {evt.duration_ms ? ` (${evt.duration_ms}ms)` : ""}
+                              </span>
+                            </>
+                          )}
+                          {evt.type === "agent_started" && (
+                            <>
+                              <GitBranch className="w-3.5 h-3.5 text-purple-500" />
+                              <span className="text-purple-700 dark:text-purple-400">
+                                Delegating to <span className="font-medium">{evt.agent}</span>
+                              </span>
+                            </>
+                          )}
+                          {evt.type === "agent_completed" && (
+                            <>
+                              <GitBranch className="w-3.5 h-3.5 text-emerald-500" />
+                              <span className="text-emerald-700 dark:text-emerald-400">
+                                <span className="font-medium">{evt.agent}</span> finished
+                              </span>
+                            </>
+                          )}
+                          {evt.type === "started" && (
+                            <>
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-indigo-500" />
+                              <span className="text-[var(--color-text-secondary)]">Agent started...</span>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Processing...</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}

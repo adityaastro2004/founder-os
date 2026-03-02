@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useApi } from "@/lib/use-api";
+import { useEventSource } from "@/lib/use-event-source";
+import { DIRECT_API_URL } from "@/lib/api";
+import { useAuth } from "@clerk/nextjs";
 import {
   Activity,
   Bot,
@@ -20,6 +23,8 @@ import {
   Clock,
   Zap,
   AlertTriangle,
+  Send,
+  X,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -95,7 +100,13 @@ function timeAgo(ts: number): string {
 }
 
 /* ── Agent Status Badge ──────────────────────────────── */
-function AgentStatusCard({ agent }: { agent: AgentStatus }) {
+function AgentStatusCard({
+  agent,
+  onRun,
+}: {
+  agent: AgentStatus;
+  onRun: (agentName: string) => void;
+}) {
   const gradient = agentColors[agent.agent_name] || agentColors.system;
   return (
     <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-4 hover:shadow-md transition-shadow">
@@ -124,6 +135,14 @@ function AgentStatusCard({ agent }: { agent: AgentStatus }) {
             </span>
           </div>
         </div>
+        {/* Run button */}
+        <button
+          onClick={() => onRun(agent.agent_name)}
+          title={`Run ${agent.display_name}`}
+          className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
+        >
+          <Play className="w-4 h-4" />
+        </button>
       </div>
       <div className="grid grid-cols-3 gap-2 text-center">
         <div>
@@ -211,6 +230,7 @@ function EventRow({
 /* ── Main Page ───────────────────────────────────────── */
 export default function AgentsPage() {
   const api = useApi();
+  const { getToken } = useAuth();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [stats, setStats] = useState<ActivityStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -218,6 +238,33 @@ export default function AgentsPage() {
   const [filterAgent, setFilterAgent] = useState<string>("");
   const [newEventIds, setNewEventIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Run agent modal state
+  const [runModal, setRunModal] = useState<{ agentName: string; displayName: string } | null>(null);
+  const [runPrompt, setRunPrompt] = useState("");
+  const [runLoading, setRunLoading] = useState(false);
+  const [runResult, setRunResult] = useState<string | null>(null);
+
+  /* ── SSE: Real-time event stream ── */
+  const { connected } = useEventSource<ActivityEvent>(
+    `${DIRECT_API_URL}/api/activity/stream`,
+    {
+      enabled: !paused,
+      onEvent: (event) => {
+        setEvents((prev) => {
+          const exists = prev.some((e) => e.id === event.id);
+          if (exists) return prev;
+          setNewEventIds((ids) => new Set([...ids, event.id]));
+          setTimeout(() => setNewEventIds((ids) => {
+            const next = new Set(ids);
+            next.delete(event.id);
+            return next;
+          }), 3000);
+          return [event, ...prev].slice(0, 200);
+        });
+      },
+    }
+  );
 
   /* ── Fetch initial data ── */
   const fetchData = useCallback(async () => {
@@ -252,34 +299,43 @@ export default function AgentsPage() {
     return () => clearInterval(interval);
   }, [api]);
 
-  /* ── Polling for new events (every 3s) ── */
-  useEffect(() => {
-    if (paused) return;
+  /* ── Run Agent ── */
+  const handleOpenRunModal = (agentName: string) => {
+    const agent = stats?.agents.find((a) => a.agent_name === agentName);
+    setRunModal({ agentName, displayName: agent?.display_name || agentName });
+    setRunPrompt("");
+    setRunResult(null);
+  };
 
-    const interval = setInterval(async () => {
-      try {
-        const data = await api("/api/activity/recent?limit=10");
-        if (data.events?.length) {
-          setEvents((prev) => {
-            const existingIds = new Set(prev.map((e) => e.id));
-            const newOnes = data.events.filter(
-              (e: ActivityEvent) => !existingIds.has(e.id)
-            );
-            if (newOnes.length > 0) {
-              setNewEventIds(new Set(newOnes.map((e: ActivityEvent) => e.id)));
-              setTimeout(() => setNewEventIds(new Set()), 3000);
-              return [...newOnes, ...prev].slice(0, 200);
-            }
-            return prev;
-          });
-        }
-      } catch {
-        // ignore
+  const handleRunAgent = async () => {
+    if (!runModal || !runPrompt.trim()) return;
+    setRunLoading(true);
+    setRunResult(null);
+
+    try {
+      const token = await getToken();
+      const res = await fetch(`${DIRECT_API_URL}/api/agents/${runModal.agentName}/run`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ message: runPrompt.trim() }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || `API error ${res.status}`);
       }
-    }, 3000);
 
-    return () => clearInterval(interval);
-  }, [api, paused]);
+      const data = await res.json();
+      setRunResult(data.content || JSON.stringify(data));
+    } catch (err) {
+      setRunResult(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
+    } finally {
+      setRunLoading(false);
+    }
+  };
 
   /* ── Filtered events ── */
   const filteredEvents = filterAgent
@@ -305,17 +361,19 @@ export default function AgentsPage() {
           <span
             className={clsx(
               "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium",
-              !paused
+              connected
                 ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10"
-                : "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-500/10"
+                : paused
+                ? "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-500/10"
+                : "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10"
             )}
           >
-            {!paused ? (
+            {connected ? (
               <Wifi className="w-3.5 h-3.5" />
             ) : (
               <WifiOff className="w-3.5 h-3.5" />
             )}
-            {!paused ? "Live" : "Paused"}
+            {connected ? "Live (SSE)" : paused ? "Paused" : "Connecting..."}
           </span>
 
           {/* Pause/resume */}
@@ -385,7 +443,11 @@ export default function AgentsPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {stats.agents.map((agent) => (
-              <AgentStatusCard key={agent.agent_name} agent={agent} />
+              <AgentStatusCard
+                key={agent.agent_name}
+                agent={agent}
+                onRun={handleOpenRunModal}
+              />
             ))}
           </div>
         </div>
@@ -456,6 +518,88 @@ export default function AgentsPage() {
           )}
         </div>
       </div>
+
+      {/* Run Agent Modal */}
+      {runModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-xl w-full max-w-lg mx-4 overflow-hidden">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+              <div className="flex items-center gap-3">
+                <div
+                  className={clsx(
+                    "w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center",
+                    agentColors[runModal.agentName] || agentColors.system
+                  )}
+                >
+                  <Bot className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Run {runModal.displayName}</p>
+                  <p className="text-xs text-[var(--color-text-secondary)]">
+                    Send a direct message to this agent
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setRunModal(null)}
+                className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
+              >
+                <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
+              </button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              <textarea
+                value={runPrompt}
+                onChange={(e) => setRunPrompt(e.target.value)}
+                placeholder={`What should ${runModal.displayName} do?`}
+                rows={3}
+                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] px-4 py-3 text-sm outline-none resize-none placeholder:text-[var(--color-text-muted)] focus:border-indigo-300 dark:focus:border-indigo-500/30 transition-colors"
+                disabled={runLoading}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleRunAgent();
+                  }
+                }}
+              />
+
+              {runResult && (
+                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4 text-sm max-h-48 overflow-y-auto">
+                  <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">Response</p>
+                  <div className="whitespace-pre-wrap">{runResult}</div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setRunModal(null)}
+                  className="px-4 py-2 text-sm rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-muted)] transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={handleRunAgent}
+                  disabled={!runPrompt.trim() || runLoading}
+                  className={clsx(
+                    "flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-medium transition-all",
+                    runPrompt.trim() && !runLoading
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
+                  )}
+                >
+                  {runLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
+                  {runLoading ? "Running..." : "Run"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

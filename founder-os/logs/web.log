@@ -6,7 +6,7 @@
 • Packages in scope: web
 • Running dev in 1 packages
 • Remote caching disabled
-web:dev: cache bypass, force executing ced4cce351094ec2
+web:dev: cache bypass, force executing e5e655584b738c90
 web:dev: 
 web:dev: > web@0.1.0 dev
 web:dev: > next dev --port 3000
@@ -17,332 +17,28 @@ web:dev: - Network:       http://192.168.1.8:3000
 web:dev: - Environments: .env.local
 web:dev: 
 web:dev: ✓ Starting...
-web:dev: ✓ Ready in 2.4s
-web:dev:  GET /dashboard 200 in 3.1s (compile: 959ms, proxy.ts: 1484ms, render: 642ms)
-web:dev:  POST /dashboard 200 in 108ms (compile: 5ms, proxy.ts: 86ms, render: 17ms)
-web:dev: (node:59251) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+web:dev: ✓ Ready in 920ms
+web:dev:  GET /dashboard/planner 200 in 864ms (compile: 339ms, proxy.ts: 313ms, render: 211ms)
+web:dev:  POST /dashboard/planner 200 in 103ms (compile: 6ms, proxy.ts: 82ms, render: 15ms)
+web:dev: (node:90921) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
 web:dev: (Use `node --trace-deprecation ...` to show where the warning was created)
-web:dev:  GET /dashboard/agents 200 in 202ms (compile: 144ms, proxy.ts: 11ms, render: 47ms)
-web:dev:  GET /dashboard/planner 200 in 180ms (compile: 143ms, proxy.ts: 8ms, render: 29ms)
-web:dev:  POST /dashboard/planner 200 in 89ms (compile: 9ms, proxy.ts: 8ms, render: 71ms)
-web:dev:  GET / 200 in 86ms (compile: 36ms, proxy.ts: 9ms, render: 42ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 530ms (compile: 294ms, proxy.ts: 16ms, render: 220ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 1261ms (compile: 610ms, proxy.ts: 37ms, render: 614ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 2.2s (compile: 1516ms, proxy.ts: 55ms, render: 617ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 670ms (compile: 25ms, proxy.ts: 15ms, render: 629ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 727ms (compile: 263ms, proxy.ts: 13ms, render: 451ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 200 in 516ms (compile: 55ms, proxy.ts: 137ms, render: 324ms)
-web:dev:  GET /sign-in/SignIn_clerk_catchall_check_1772386801974 200 in 523ms (compile: 98ms, proxy.ts: 121ms, render: 304ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 571ms (compile: 16ms, proxy.ts: 144ms, render: 411ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 461ms (compile: 24ms, proxy.ts: 75ms, render: 363ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 481ms (compile: 29ms, proxy.ts: 42ms, render: 410ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 457ms (compile: 122ms, proxy.ts: 21ms, render: 314ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 396ms (compile: 27ms, proxy.ts: 34ms, render: 334ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 392ms (compile: 97ms, proxy.ts: 26ms, render: 269ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 405ms (compile: 32ms, proxy.ts: 20ms, render: 352ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 396ms (compile: 64ms, proxy.ts: 31ms, render: 301ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 467ms (compile: 21ms, proxy.ts: 85ms, render: 360ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 449ms (compile: 29ms, proxy.ts: 72ms, render: 348ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 382ms (compile: 29ms, proxy.ts: 112ms, render: 241ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 410ms (compile: 20ms, proxy.ts: 85ms, render: 306ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 362ms (compile: 23ms, proxy.ts: 66ms, render: 273ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 565ms (compile: 16ms, proxy.ts: 77ms, render: 472ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 582ms (compile: 69ms, proxy.ts: 15ms, render: 498ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 693ms (compile: 31ms, proxy.ts: 103ms, render: 559ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 668ms (compile: 136ms, proxy.ts: 28ms, render: 504ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 631ms (compile: 20ms, proxy.ts: 159ms, render: 452ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 499ms (compile: 99ms, proxy.ts: 91ms, render: 309ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fhistory%3Flimit%3D5 200 in 341ms (compile: 26ms, proxy.ts: 113ms, render: 201ms)
-web:dev:  GET /sign-in?redirect_url=http%3A%2F%2Flocalhost%3A3000%2Fapi%2Fplanner%2Fstatus 200 in 396ms (compile: 31ms, proxy.ts: 79ms, render: 286ms)
-web:dev:  GET /dashboard 200 in 237ms (compile: 6ms, proxy.ts: 11ms, render: 220ms)
-web:dev:  POST /dashboard 200 in 27ms (compile: 5ms, proxy.ts: 14ms, render: 9ms)
-web:dev:  GET /onboarding 200 in 160ms (compile: 117ms, proxy.ts: 6ms, render: 37ms)
-web:dev:  GET /dashboard 200 in 26ms (compile: 3ms, proxy.ts: 8ms, render: 16ms)
-web:dev:  GET /dashboard/planner 200 in 56ms (compile: 8ms, proxy.ts: 11ms, render: 37ms)
-web:dev:  GET /dashboard/planner 200 in 107ms (compile: 27ms, proxy.ts: 21ms, render: 58ms)
-web:dev:  POST /dashboard/planner 200 in 77ms (compile: 8ms, proxy.ts: 56ms, render: 14ms)
-web:dev: ✓ Compiled in 247ms
-web:dev: ✓ Compiled in 187ms
-web:dev: ⚠ Fast Refresh had to perform a full reload due to a runtime error.
-web:dev: ✓ Compiled in 157ms
-web:dev:  POST /dashboard/planner 200 in 3.6s (compile: 237ms, proxy.ts: 2.3s, render: 1023ms)
-web:dev:  GET /dashboard/planner 200 in 3.7s (compile: 297ms, proxy.ts: 2.4s, render: 1039ms)
-web:dev:  POST /dashboard/planner 200 in 122ms (compile: 9ms, proxy.ts: 98ms, render: 16ms)
-web:dev:  GET /dashboard/planner 200 in 298ms (compile: 21ms, proxy.ts: 14ms, render: 262ms)
-web:dev:  POST /dashboard/planner 200 in 54ms (compile: 5ms, proxy.ts: 34ms, render: 15ms)
-web:dev: Failed to proxy http://localhost:8000/api/planner/generate Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: ○ Compiling /_error ...
-web:dev:  GET /dashboard/tasks 200 in 433ms (compile: 332ms, proxy.ts: 15ms, render: 86ms)
-web:dev:  GET /dashboard/tasks 200 in 117ms (compile: 13ms, proxy.ts: 18ms, render: 86ms)
-web:dev:  GET /dashboard/tasks 200 in 96ms (compile: 13ms, proxy.ts: 31ms, render: 52ms)
-web:dev:  GET /dashboard/memory 200 in 778ms (compile: 611ms, proxy.ts: 20ms, render: 148ms)
-web:dev:  GET /dashboard/memory 200 in 103ms (compile: 15ms, proxy.ts: 16ms, render: 73ms)
-web:dev:  GET /dashboard/planner 200 in 926ms (compile: 19ms, proxy.ts: 31ms, render: 876ms)
-web:dev:  POST /dashboard/planner 200 in 180ms (compile: 18ms, proxy.ts: 132ms, render: 30ms)
-web:dev:  GET /dashboard/memory 200 in 107ms (compile: 14ms, proxy.ts: 22ms, render: 72ms)
-web:dev:  GET /dashboard/tasks 200 in 180ms (compile: 33ms, proxy.ts: 37ms, render: 111ms)
-web:dev:  GET /dashboard/planner 200 in 92ms (compile: 14ms, proxy.ts: 15ms, render: 63ms)
-web:dev:  GET /dashboard/agents 200 in 148ms (compile: 22ms, proxy.ts: 23ms, render: 103ms)
-web:dev:  GET /dashboard 200 in 48ms (compile: 7ms, proxy.ts: 9ms, render: 33ms)
-web:dev:  GET /dashboard/planner 200 in 91ms (compile: 10ms, proxy.ts: 14ms, render: 67ms)
-web:dev:  GET /dashboard/knowledge 200 in 540ms (compile: 443ms, proxy.ts: 23ms, render: 74ms)
-web:dev:  GET /dashboard/chat 200 in 324ms (compile: 254ms, proxy.ts: 18ms, render: 53ms)
-web:dev:  GET /dashboard/memory 200 in 84ms (compile: 13ms, proxy.ts: 26ms, render: 46ms)
-web:dev:  GET /dashboard/tasks 200 in 129ms (compile: 26ms, proxy.ts: 28ms, render: 76ms)
-web:dev: ✓ Compiled in 269ms
-web:dev:  GET /dashboard/settings 200 in 1889ms (compile: 1814ms, proxy.ts: 10ms, render: 64ms)
-web:dev:  GET /dashboard/settings/UserProfile_clerk_catchall_check_1772388646846 200 in 330ms (compile: 114ms, proxy.ts: 66ms, render: 150ms)
-web:dev:  GET /dashboard 200 in 27ms (compile: 4ms, proxy.ts: 6ms, render: 17ms)
-web:dev:  GET /dashboard/planner 200 in 338ms (compile: 223ms, proxy.ts: 19ms, render: 96ms)
-web:dev: Failed to proxy http://localhost:8000/api/planner/generate Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: ✓ Compiled in 162ms
-web:dev:  GET /dashboard/settings 200 in 90ms (compile: 19ms, proxy.ts: 17ms, render: 54ms)
-web:dev:  GET /dashboard/settings/UserProfile_clerk_catchall_check_1772388748503 200 in 137ms (compile: 15ms, proxy.ts: 25ms, render: 98ms)
-web:dev:  GET /dashboard 200 in 28ms (compile: 4ms, proxy.ts: 6ms, render: 18ms)
-web:dev:  GET /dashboard/planner 200 in 126ms (compile: 15ms, proxy.ts: 27ms, render: 85ms)
-web:dev: Failed to proxy http://localhost:8000/api/planner/generate Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: ✓ Compiled in 1477ms
-web:dev:  GET /dashboard/planner 200 in 927ms (compile: 174ms, proxy.ts: 14ms, render: 739ms)
-web:dev:  POST /dashboard/planner 200 in 27ms (compile: 3ms, proxy.ts: 9ms, render: 15ms)
-web:dev: Failed to proxy http://localhost:8000/api/planner/status Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev:  GET /dashboard/planner 200 in 630ms (compile: 81ms, proxy.ts: 137ms, render: 412ms)
-web:dev:  POST /dashboard/planner 200 in 39ms (compile: 5ms, proxy.ts: 15ms, render: 19ms)
-web:dev: Failed to proxy http://localhost:8000/api/planner/history?limit=5 Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/history?limit=5 Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev:  GET /dashboard 200 in 190ms (compile: 121ms, proxy.ts: 13ms, render: 56ms)
-web:dev:  GET /dashboard 200 in 36ms (compile: 5ms, proxy.ts: 10ms, render: 20ms)
-web:dev:  GET /dashboard/planner 200 in 607ms (compile: 11ms, proxy.ts: 24ms, render: 572ms)
-web:dev:  POST /dashboard/planner 200 in 101ms (compile: 12ms, proxy.ts: 69ms, render: 20ms)
-web:dev:  GET /dashboard 200 in 87ms (compile: 15ms, proxy.ts: 20ms, render: 52ms)
-web:dev: Failed to proxy http://localhost:8000/api/review/stats Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/activity/recent?limit=10 Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/knowledge/stats Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/memory/stats Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/review/stats Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev:  GET /dashboard/knowledge 200 in 670ms (compile: 576ms, proxy.ts: 59ms, render: 35ms)
-web:dev:  GET /dashboard/tasks 200 in 673ms (compile: 446ms, proxy.ts: 61ms, render: 166ms)
-web:dev:  GET /dashboard 200 in 1037ms (compile: 18ms, proxy.ts: 65ms, render: 954ms)
-web:dev:  POST /dashboard 200 in 101ms (compile: 4ms, proxy.ts: 89ms, render: 8ms)
-web:dev:  GET /dashboard/knowledge 200 in 80ms (compile: 18ms, proxy.ts: 17ms, render: 45ms)
-web:dev:  GET /dashboard/automations 200 in 574ms (compile: 475ms, proxy.ts: 25ms, render: 74ms)
-web:dev:  GET /dashboard/knowledge 200 in 23ms (compile: 5ms, proxy.ts: 6ms, render: 13ms)
-web:dev: Failed to proxy http://localhost:8000/api/knowledge/stats Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: ✓ Compiled in 330ms
-web:dev: Failed to proxy http://localhost:8000/api/knowledge/items Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev:  GET /dashboard/knowledge 200 in 320ms (compile: 21ms, proxy.ts: 11ms, render: 288ms)
-web:dev:  POST /dashboard/knowledge 200 in 54ms (compile: 7ms, proxy.ts: 20ms, render: 26ms)
-web:dev:  GET /dashboard/chat 200 in 280ms (compile: 228ms, proxy.ts: 6ms, render: 47ms)
-web:dev:  GET /dashboard/chat 200 in 603ms (compile: 9ms, proxy.ts: 464ms, render: 130ms)
-web:dev:  POST /dashboard/chat 200 in 70ms (compile: 6ms, proxy.ts: 53ms, render: 11ms)
-web:dev:  GET /dashboard 200 in 28ms (compile: 3ms, proxy.ts: 5ms, render: 20ms)
-web:dev:  GET /dashboard/chat 200 in 68ms (compile: 3ms, proxy.ts: 6ms, render: 59ms)
-web:dev:  GET /dashboard 200 in 47ms (compile: 10ms, proxy.ts: 7ms, render: 30ms)
-web:dev:  GET /dashboard/agents 200 in 183ms (compile: 114ms, proxy.ts: 5ms, render: 64ms)
-web:dev:  GET /dashboard/planner 200 in 172ms (compile: 128ms, proxy.ts: 18ms, render: 26ms)
-web:dev: Failed to proxy http://localhost:8000/api/planner/mcp-tools Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Error: read ECONNRESET
-web:dev:     at ignore-listed frames {
-web:dev:   errno: -54,
-web:dev:   code: 'ECONNRESET',
-web:dev:   syscall: 'read'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/mcp-tools Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/status Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/history?limit=5 Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/mcp-tools Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/history?limit=5 Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/status Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/history?limit=5 Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/status Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Failed to proxy http://localhost:8000/api/planner/mcp-tools Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
-web:dev: Error: socket hang up
-web:dev:     at ignore-listed frames {
-web:dev:   code: 'ECONNRESET'
-web:dev: }
+web:dev:  GET /dashboard/planner 200 in 133ms (compile: 9ms, proxy.ts: 12ms, render: 112ms)
+web:dev:  POST /dashboard/planner 200 in 77ms (compile: 48ms, proxy.ts: 9ms, render: 20ms)
+web:dev:  GET /dashboard/agents 200 in 340ms (compile: 185ms, proxy.ts: 12ms, render: 142ms)
+web:dev:  GET /dashboard 200 in 113ms (compile: 63ms, proxy.ts: 16ms, render: 34ms)
+web:dev:  GET /dashboard/planner 200 in 637ms (compile: 23ms, proxy.ts: 31ms, render: 583ms)
+web:dev:  POST /dashboard/planner 200 in 133ms (compile: 12ms, proxy.ts: 103ms, render: 18ms)
+web:dev:  GET /dashboard/agents 200 in 64ms (compile: 10ms, proxy.ts: 12ms, render: 42ms)
+web:dev:  GET /dashboard/chat 200 in 153ms (compile: 83ms, proxy.ts: 7ms, render: 63ms)
+web:dev: ✓ Compiled in 596ms
+web:dev: ✓ Compiled in 242ms
+web:dev: ✓ Compiled in 171ms
+web:dev: ✓ Compiled in 191ms
+web:dev: ✓ Compiled in 71ms
+web:dev: ✓ Compiled in 205ms
+web:dev: ✓ Compiled in 38ms
+web:dev: ✓ Compiled in 46ms
+web:dev: ✓ Compiled in 128ms
+web:dev:  GET /dashboard 200 in 1528ms (compile: 17ms, proxy.ts: 1488ms, render: 22ms)
+web:dev: [?25h
+ ERROR  run failed: command  exited (1)

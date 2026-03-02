@@ -141,6 +141,7 @@ class BaseAgent:
             parallel_tool_calls=True,
             approval_gate=approval_gate,
             user_id=user_id,
+            event_bus=event_bus,
         )
 
     # -- A2A Card --------------------------------------------------------
