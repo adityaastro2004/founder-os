@@ -402,7 +402,7 @@ export default function AgentsPage() {
 
       {/* Stats bar */}
       {stats && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-4 flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
               <Activity className="w-5 h-5" />
@@ -489,7 +489,7 @@ export default function AgentsPage() {
         {/* Event list */}
         <div
           ref={scrollRef}
-          className="divide-y divide-[var(--color-border)] max-h-[600px] overflow-y-auto"
+          className="divide-y divide-[var(--color-border)] max-h-[50vh] sm:max-h-[600px] overflow-y-auto"
         >
           {loading ? (
             <div className="flex items-center justify-center py-16">

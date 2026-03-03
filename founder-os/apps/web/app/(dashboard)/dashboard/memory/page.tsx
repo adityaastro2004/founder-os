@@ -280,6 +280,7 @@ export default function MemoryPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm("Delete this memory? This cannot be undone.")) return;
     setDeletingId(id);
     try {
       await api(`/api/memory/${id}`, { method: "DELETE" });
@@ -343,7 +344,7 @@ export default function MemoryPage() {
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-3">
           <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] mb-1">
             <Database className="w-3.5 h-3.5" />
@@ -466,9 +467,9 @@ export default function MemoryPage() {
             >
               All
             </button>
-            {chapters.map((ch) => (
+            {chapters.map((ch, idx) => (
               <button
-                key={ch.name}
+                key={`ch-${idx}-${ch.name}`}
                 onClick={() => {
                   setSelectedChapter(ch.name);
                 }}

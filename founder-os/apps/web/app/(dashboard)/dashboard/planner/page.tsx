@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, FormEvent } from "react";
+import { useState, useEffect, useCallback, useRef, FormEvent } from "react";
 import { useApi } from "@/lib/use-api";
 import {
   CalendarDays,
@@ -84,6 +84,8 @@ export default function PlannerPage() {
   const [connecting, setConnecting] = useState(false);
   const [mcpTools, setMcpTools] = useState<MCPToolsStatus | null>(null);
   const [showMcpTools, setShowMcpTools] = useState(false);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const hasRetriedRef = useRef(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -186,6 +188,7 @@ export default function PlannerPage() {
         data.message ||
           `Weekly plan generated! ${data.events_created ?? 0} events added to Google Calendar.`
       );
+      hasRetriedRef.current = false;
       fetchData();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
@@ -199,12 +202,14 @@ export default function PlannerPage() {
         setPromptResult(
           "The AI service is temporarily rate-limited. Please wait a minute and try again."
         );
-      } else if (msg.includes("Plan generation failed")) {
+      } else if (msg.includes("Plan generation failed") && !hasRetriedRef.current) {
         setPromptResult(
-          "Plan generation failed — the AI service may be temporarily unavailable. Retrying in a moment..."
+          "Plan generation failed — retrying once..."
         );
-        // Auto-retry once after a short delay
-        setTimeout(() => handleGenerate(), 5000);
+        hasRetriedRef.current = true;
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = setTimeout(() => handleGenerate(), 5000);
+        return; // don't setSending(false) yet
       } else if (msg.includes("Calendar push failed")) {
         setPromptResult(
           "Plan was generated but couldn't be pushed to Google Calendar. Please check your calendar connection."
@@ -216,6 +221,7 @@ export default function PlannerPage() {
       } else {
         setPromptResult(msg ? `Error: ${msg}` : "Generation failed. Please try again.");
       }
+      hasRetriedRef.current = false;
     } finally {
       setSending(false);
     }

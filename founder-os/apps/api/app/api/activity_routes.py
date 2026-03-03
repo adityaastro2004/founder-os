@@ -233,7 +233,7 @@ async def get_recent_activity(
     key = _ACTIVITY_KEY.format(user_id=user_id)
 
     # Get all events then filter (Redis list doesn't support filtering)
-    raw_events = await redis.lrange(key, 0, _MAX_STORED_EVENTS - 1)
+    raw_events = await redis.lrange(key, 0, _MAX_STORED_EVENTS - 1)  # type: ignore[misc]
     
     events = []
     for raw in raw_events:
@@ -338,7 +338,7 @@ async def get_activity_stats(
 
     # Total events today
     activity_key = _ACTIVITY_KEY.format(user_id=user_id)
-    total_events = await redis.llen(activity_key)
+    total_events = await redis.llen(activity_key)  # type: ignore[misc]
 
     # Pending approvals count
     from app.agents.approval import ApprovalGate

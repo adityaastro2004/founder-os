@@ -153,6 +153,7 @@ export default function KnowledgePage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm("Delete this knowledge item? This cannot be undone.")) return;
     setDeleting(id);
     try {
       await api(`/api/knowledge/items/${id}`, { method: "DELETE" });
@@ -236,7 +237,7 @@ export default function KnowledgePage() {
             </button>
           </div>
           <form onSubmit={handleIngest} className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <input
                 type="text"
                 value={ingestTitle}

@@ -101,7 +101,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
       >
         {isUser ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
       </div>
-      <div className={clsx("max-w-[75%] space-y-2", isUser ? "items-end" : "items-start")}>
+      <div className={clsx("max-w-[85%] sm:max-w-[75%] space-y-2", isUser ? "items-end" : "items-start")}>
         <div
           className={clsx(
             "rounded-2xl px-4 py-3 text-sm leading-relaxed",
@@ -157,6 +157,13 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Abort any in-flight request on unmount
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   // Auto-scroll on new messages or streaming events
   useEffect(() => {
@@ -324,7 +331,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-[calc(100dvh-8rem)]">
       {/* Header */}
       <div className="mb-4">
         <h1 className="text-2xl font-bold tracking-tight">Chat</h1>
@@ -368,7 +375,7 @@ export default function ChatPage() {
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
-                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl rounded-tl-md px-4 py-3 space-y-2 max-w-[75%]">
+                <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl rounded-tl-md px-4 py-3 space-y-2 max-w-[85%] sm:max-w-[75%]">
                   {streamingEvents.length === 0 ? (
                     <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
                       <Loader2 className="w-4 h-4 animate-spin" />

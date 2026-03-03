@@ -11,7 +11,7 @@ export default function SettingsPage() {
           Manage your account and preferences
         </p>
       </div>
-      <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-6">
+      <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-6 overflow-x-hidden">
         <UserProfile
           routing="path"
           path="/dashboard/settings"

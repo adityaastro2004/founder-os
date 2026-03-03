@@ -300,7 +300,7 @@ async def get_task_detail(
 @router.post("/tasks/{task_id}/approve")
 async def approve_task(
     task_id: str,
-    body: ApproveRequest = ApproveRequest(),
+    body: ApproveRequest = ApproveRequest(notes=None),
     user: ClerkUser = Depends(require_auth),
     db: AsyncSession = Depends(get_db),
 ):

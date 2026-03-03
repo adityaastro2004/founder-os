@@ -589,7 +589,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
         deleted = []
         failed = []
         for event in ai_events:
-            eid = event.get("event_id")
+            eid = event.get("event_id") or ""
             try:
                 await delete_event(
                     user_id=self._user_id,
@@ -722,7 +722,7 @@ class MCPToolManager:
         """Shut down all external MCP connections."""
         for provider in self._external_providers:
             if hasattr(provider, "close"):
-                await provider.close()
+                await provider.close()  # type: ignore[attr-defined]
 
 
 # ============================================================================

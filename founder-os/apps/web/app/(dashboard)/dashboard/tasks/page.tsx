@@ -257,6 +257,8 @@ function TaskDetailPanel({
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const [actionError, setActionError] = useState<string | null>(null);
+
   // Edit mode
   const [editMode, setEditMode] = useState(false);
   const [editContent, setEditContent] = useState("");
@@ -293,6 +295,7 @@ function TaskDetailPanel({
 
   async function handleApprove() {
     setActionLoading("approve");
+    setActionError(null);
     try {
       await api(`/api/review/tasks/${taskId}/approve`, {
         method: "POST",
@@ -300,6 +303,8 @@ function TaskDetailPanel({
         body: JSON.stringify({ notes: "Approved from dashboard" }),
       });
       onAction();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to approve task");
     } finally {
       setActionLoading(null);
     }
@@ -308,6 +313,7 @@ function TaskDetailPanel({
   async function handleReject() {
     if (!rejectReason.trim()) return;
     setActionLoading("reject");
+    setActionError(null);
     try {
       await api(`/api/review/tasks/${taskId}/reject`, {
         method: "POST",
@@ -315,6 +321,8 @@ function TaskDetailPanel({
         body: JSON.stringify({ reason: rejectReason, retry: retryOnReject }),
       });
       onAction();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to reject task");
     } finally {
       setActionLoading(null);
       setRejectMode(false);
@@ -324,6 +332,7 @@ function TaskDetailPanel({
   async function handleEdit() {
     if (!editContent.trim()) return;
     setActionLoading("edit");
+    setActionError(null);
     try {
       await api(`/api/review/tasks/${taskId}/edit`, {
         method: "POST",
@@ -334,6 +343,8 @@ function TaskDetailPanel({
         }),
       });
       onAction();
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to save edits");
     } finally {
       setActionLoading(null);
       setEditMode(false);
@@ -343,6 +354,7 @@ function TaskDetailPanel({
   async function handleFeedback() {
     if (feedbackRating === 0) return;
     setActionLoading("feedback");
+    setActionError(null);
     try {
       await api(`/api/review/tasks/${taskId}/feedback`, {
         method: "POST",
@@ -356,6 +368,8 @@ function TaskDetailPanel({
       // Reload task to show updated rating
       const data = await api(`/api/review/tasks/${taskId}`);
       setTask(data);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to submit feedback");
     } finally {
       setActionLoading(null);
     }
@@ -656,6 +670,14 @@ function TaskDetailPanel({
       </div>
 
       {/* Action bar */}
+      {actionError && (
+        <div className="mx-5 mb-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
+          <p className="text-xs text-red-700 dark:text-red-400 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            {actionError}
+          </p>
+        </div>
+      )}
       {canReview && !editMode && !rejectMode && !feedbackMode && (
         <div className="px-5 py-3 border-t border-[var(--color-border)] flex items-center gap-2 bg-[var(--color-surface)]">
           <button
@@ -818,7 +840,7 @@ export default function TasksPage() {
       )}
 
       {/* Main content — list + detail split */}
-      <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] overflow-hidden min-h-[600px] flex">
+      <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] overflow-hidden min-h-[400px] sm:min-h-[600px] flex">
         {/* Task list panel */}
         <div
           className={clsx(

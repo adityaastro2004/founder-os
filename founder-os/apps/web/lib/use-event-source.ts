@@ -3,6 +3,9 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useAuth } from "@clerk/nextjs";
 
+const MAX_RECONNECT_ATTEMPTS = 10;
+const BASE_RECONNECT_MS = 2000;
+
 /**
  * Hook for consuming Server-Sent Events with Clerk auth.
  *
@@ -30,10 +33,13 @@ export function useEventSource<T = unknown>(
   const [error, setError] = useState<Error | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const reconnectTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const attemptsRef = useRef(0);
   const onEventRef = useRef(onEvent);
   const onErrorRef = useRef(onError);
+  const getTokenRef = useRef(getToken);
   onEventRef.current = onEvent;
   onErrorRef.current = onError;
+  getTokenRef.current = getToken;
 
   const connect = useCallback(async () => {
     // Clean up any existing connection
@@ -43,7 +49,7 @@ export function useEventSource<T = unknown>(
     abortRef.current = controller;
 
     try {
-      const token = await getToken();
+      const token = await getTokenRef.current();
 
       const res = await fetch(path, {
         headers: {
@@ -59,6 +65,7 @@ export function useEventSource<T = unknown>(
 
       setConnected(true);
       setError(null);
+      attemptsRef.current = 0; // reset on successful connection
 
       const reader = res.body?.getReader();
       if (!reader) throw new Error("No readable stream");
@@ -93,13 +100,18 @@ export function useEventSource<T = unknown>(
       setConnected(false);
       onErrorRef.current?.(e);
 
-      // Auto-reconnect after 5 seconds
-      reconnectTimeout.current = setTimeout(connect, 5000);
+      // Auto-reconnect with exponential backoff up to MAX_RECONNECT_ATTEMPTS
+      if (attemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
+        const delay = Math.min(BASE_RECONNECT_MS * 2 ** attemptsRef.current, 30000);
+        attemptsRef.current += 1;
+        reconnectTimeout.current = setTimeout(connect, delay);
+      }
     }
-  }, [path, getToken]);
+  }, [path]); // stable — getToken accessed via ref
 
   useEffect(() => {
     if (!enabled) return;
+    attemptsRef.current = 0;
     connect();
 
     return () => {

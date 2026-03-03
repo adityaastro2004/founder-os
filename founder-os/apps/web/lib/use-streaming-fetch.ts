@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useCallback } from "react";
+import { useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 
 /**
@@ -14,10 +14,15 @@ import { useAuth } from "@clerk/nextjs";
 export function useStreamingFetch() {
   const { getToken } = useAuth();
   const abortRef = useRef<AbortController | null>(null);
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken;
 
   const cancel = useCallback(() => {
     abortRef.current?.abort();
   }, []);
+
+  // Abort in-flight request on unmount
+  useEffect(() => cancel, [cancel]);
 
   const streamFetch = useCallback(
     async (
@@ -36,7 +41,7 @@ export function useStreamingFetch() {
       abortRef.current = controller;
 
       try {
-        const token = await getToken();
+        const token = await getTokenRef.current();
 
         const res = await fetch(path, {
           method: options.method || "POST",
@@ -109,7 +114,7 @@ export function useStreamingFetch() {
         throw e;
       }
     },
-    [getToken, cancel]
+    [cancel] // stable — getToken accessed via ref
   );
 
   return { streamFetch, cancel };

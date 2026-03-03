@@ -235,13 +235,14 @@ export default function OnboardingPage() {
           working_hours: form.working_hours,
         }),
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
       // If it's a network error (API not running), store locally and continue
       if (err instanceof TypeError && err.message.includes("fetch")) {
         console.warn("API unreachable — saving onboarding data to localStorage");
         localStorage.setItem("founder_os_onboarding", JSON.stringify(form));
       } else {
-        setError(err.message || "Something went wrong. Please try again.");
+        const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+        setError(message);
         setSubmitting(false);
         return;
       }

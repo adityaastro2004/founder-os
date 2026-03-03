@@ -10,7 +10,7 @@ import {
   ListTodo,
   Zap,
   TrendingUp,
-  Clock,
+
   CheckCircle2,
   ArrowRight,
   Sparkles,
