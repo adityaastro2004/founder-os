@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, FormEvent } from "react";
 import { useApi } from "@/lib/use-api";
+import { DIRECT_API_URL } from "@/lib/api";
+import { useAuth } from "@clerk/nextjs";
 import {
   CalendarDays,
   Send,
@@ -20,6 +22,9 @@ import {
   Wrench,
   Plug,
   Zap,
+  Bot,
+  User,
+  Trash2,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -71,21 +76,36 @@ interface MCPToolsStatus {
   total_tools: number;
 }
 
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+  toolsUsed?: string[];
+  mcpToolsUsed?: string[];
+  tokensUsed?: number;
+  durationSeconds?: number;
+  status?: "sending" | "completed" | "error" | "clarification";
+}
+
 /* ── Planner Page ─────────────────────────────────── */
 export default function PlannerPage() {
   const api = useApi();
+  const { getToken } = useAuth();
   const [status, setStatus] = useState<PlannerStatus | null>(null);
   const [history, setHistory] = useState<PlanHistory | null>(null);
   const [loading, setLoading] = useState(true);
   const [prompt, setPrompt] = useState("");
   const [sending, setSending] = useState(false);
-  const [promptResult, setPromptResult] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [mcpTools, setMcpTools] = useState<MCPToolsStatus | null>(null);
   const [showMcpTools, setShowMcpTools] = useState(false);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const hasRetriedRef = useRef(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const sessionIdRef = useRef<string>(`planner-chat-${Date.now()}`);
 
   const fetchData = useCallback(async () => {
     try {
@@ -143,30 +163,97 @@ export default function PlannerPage() {
     }
   }, [api, fetchData]);
 
+  // Auto-scroll chat
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chatMessages]);
+
   const handlePrompt = async (e: FormEvent) => {
     e.preventDefault();
     if (!prompt.trim() || sending) return;
+    const userMessage = prompt.trim();
     setSending(true);
-    setPromptResult(null);
+    setPrompt("");
+
+    // Add user message to chat
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: userMessage,
+      timestamp: new Date(),
+    };
+    setChatMessages((prev) => [...prev, userMsg]);
+
+    // Add placeholder assistant message
+    const assistantId = `assistant-${Date.now()}`;
+    const pendingMsg: ChatMessage = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+      status: "sending",
+    };
+    setChatMessages((prev) => [...prev, pendingMsg]);
+
     try {
-      const data = await api("/api/planner/prompt", {
+      // Use the agent-based /api/planner/chat endpoint (MCP-powered)
+      const token = await getToken();
+      const res = await fetch(`${DIRECT_API_URL}/api/planner/chat`, {
         method: "POST",
-        body: JSON.stringify({ message: prompt.trim() }),
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          message: userMessage,
+          session_id: sessionIdRef.current,
+        }),
       });
-      setPromptResult(
-        data.summary || data.content || data.message || "Plan updated successfully."
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || `API error ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Update the assistant message with the response
+      setChatMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content: data.reply || data.content || "Done.",
+                status: data.status === "clarification_needed" ? "clarification" : "completed",
+                toolsUsed: data.tool_names || [],
+                mcpToolsUsed: data.mcp_tools_used || [],
+                tokensUsed: data.tokens_used,
+                durationSeconds: data.duration_seconds,
+              }
+            : m
+        )
       );
-      setPrompt("");
       fetchData(); // refresh status
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("Calendar not connected") || msg.includes("not connected")) {
-        setPromptResult("Google Calendar not connected. Opening setup...");
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, content: "Google Calendar not connected. Opening setup...", status: "error" }
+              : m
+          )
+        );
         handleConnect();
+        setSending(false);
         return;
       }
-      setPromptResult(
-        msg ? `Error: ${msg}` : "Something went wrong."
+      setChatMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? { ...m, content: msg || "Something went wrong.", status: "error" }
+            : m
+        )
       );
     } finally {
       setSending(false);
@@ -175,8 +262,24 @@ export default function PlannerPage() {
 
   const handleGenerate = async () => {
     setSending(true);
-    setPromptResult(null);
-    setPromptResult("Generating your weekly plan… This may take 30-60 seconds.");
+
+    // Add a user message for the generate action
+    const userMsg: ChatMessage = {
+      id: `user-gen-${Date.now()}`,
+      role: "user",
+      content: "Generate my weekly plan",
+      timestamp: new Date(),
+    };
+    const assistantId = `assistant-gen-${Date.now()}`;
+    const pendingMsg: ChatMessage = {
+      id: assistantId,
+      role: "assistant",
+      content: "Generating your weekly plan… This may take 30-60 seconds.",
+      timestamp: new Date(),
+      status: "sending",
+    };
+    setChatMessages((prev) => [...prev, userMsg, pendingMsg]);
+
     try {
       const data = await api("/api/planner/generate", {
         method: "POST",
@@ -184,43 +287,60 @@ export default function PlannerPage() {
         direct: true,    // bypass Next.js proxy (this request takes 30-60s)
         timeoutMs: 120000, // 2 minute timeout
       });
-      setPromptResult(
-        data.message ||
-          `Weekly plan generated! ${data.events_created ?? 0} events added to Google Calendar.`
+
+      setChatMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content: data.message || `Weekly plan generated! ${data.events_created ?? 0} events added to Google Calendar.`,
+                status: "completed" as const,
+              }
+            : m
+        )
       );
       hasRetriedRef.current = false;
       fetchData();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
       if (msg.includes("Calendar not connected") || msg.includes("not connected")) {
-        setPromptResult("Google Calendar not connected. Opening setup...");
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, content: "Google Calendar not connected. Opening setup...", status: "error" as const }
+              : m
+          )
+        );
         handleConnect();
+        setSending(false);
         return;
       }
-      // User-friendly error messages for common failures
+
+      let errorMsg = msg || "Generation failed. Please try again.";
       if (msg.includes("rate") || msg.includes("429") || msg.includes("Too Many")) {
-        setPromptResult(
-          "The AI service is temporarily rate-limited. Please wait a minute and try again."
-        );
+        errorMsg = "The AI service is temporarily rate-limited. Please wait a minute and try again.";
       } else if (msg.includes("Plan generation failed") && !hasRetriedRef.current) {
-        setPromptResult(
-          "Plan generation failed — retrying once..."
-        );
+        errorMsg = "Plan generation failed — retrying once...";
         hasRetriedRef.current = true;
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, content: errorMsg, status: "sending" as const } : m
+          )
+        );
         if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
         retryTimerRef.current = setTimeout(() => handleGenerate(), 5000);
-        return; // don't setSending(false) yet
+        return;
       } else if (msg.includes("Calendar push failed")) {
-        setPromptResult(
-          "Plan was generated but couldn't be pushed to Google Calendar. Please check your calendar connection."
-        );
+        errorMsg = "Plan was generated but couldn't be pushed to Google Calendar. Check your calendar connection.";
       } else if (msg.includes("API error 5")) {
-        setPromptResult(
-          "Server error — please try again in a moment. If this persists, check the backend logs."
-        );
-      } else {
-        setPromptResult(msg ? `Error: ${msg}` : "Generation failed. Please try again.");
+        errorMsg = "Server error — please try again in a moment.";
       }
+
+      setChatMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: errorMsg, status: "error" as const } : m
+        )
+      );
       hasRetriedRef.current = false;
     } finally {
       setSending(false);
@@ -398,19 +518,110 @@ export default function PlannerPage() {
         )}
       </div>
 
-      {/* Prompt Input */}
+      {/* Chat Interface */}
       {isOnboarded && (
         <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-5">
-          <h2 className="text-lg font-semibold mb-2">Plan with AI</h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Bot className="w-5 h-5 text-indigo-500" />
+              Plan with AI
+            </h2>
+            {chatMessages.length > 0 && (
+              <button
+                onClick={() => {
+                  setChatMessages([]);
+                  sessionIdRef.current = `planner-chat-${Date.now()}`;
+                }}
+                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] flex items-center gap-1 transition-colors"
+              >
+                <Trash2 className="w-3 h-3" />
+                Clear chat
+              </button>
+            )}
+          </div>
           <p className="text-xs text-[var(--color-text-secondary)] mb-4">
-            Tell the planner anything — schedule meetings, update goals, replan your week.
+            Ask anything — schedule meetings, delete events, update goals, replan your week.
+            The AI will ask for details if needed.
           </p>
+
+          {/* Chat Messages */}
+          {chatMessages.length > 0 && (
+            <div className="mb-4 max-h-[400px] overflow-y-auto space-y-3 pr-1">
+              {chatMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={clsx(
+                    "flex gap-2.5",
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  )}
+                >
+                  {msg.role === "assistant" && (
+                    <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-500/10 flex items-center justify-center shrink-0 mt-0.5">
+                      <Bot className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                  )}
+                  <div
+                    className={clsx(
+                      "max-w-[80%] rounded-2xl px-4 py-2.5 text-sm",
+                      msg.role === "user"
+                        ? "bg-indigo-600 text-white rounded-br-md"
+                        : msg.status === "error"
+                        ? "bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400 rounded-bl-md"
+                        : msg.status === "clarification"
+                        ? "bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 text-amber-800 dark:text-amber-300 rounded-bl-md"
+                        : msg.status === "sending"
+                        ? "bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-bl-md"
+                        : "bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-bl-md"
+                    )}
+                  >
+                    {msg.status === "sending" ? (
+                      <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Thinking...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                        {/* Tool badges */}
+                        {msg.mcpToolsUsed && msg.mcpToolsUsed.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {msg.mcpToolsUsed.map((tool) => (
+                              <span
+                                key={tool}
+                                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-mono"
+                              >
+                                <Plug className="w-2.5 h-2.5" />
+                                {tool}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {msg.durationSeconds && msg.role === "assistant" && (
+                          <div className="mt-1.5 text-[10px] text-[var(--color-text-muted)]">
+                            {msg.durationSeconds.toFixed(1)}s
+                            {msg.tokensUsed ? ` · ${msg.tokensUsed} tokens` : ""}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {msg.role === "user" && (
+                    <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center shrink-0 mt-0.5">
+                      <User className="w-4 h-4 text-gray-600 dark:text-gray-300" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+          )}
+
           <form onSubmit={handlePrompt} className="flex gap-2">
             <input
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g., Board meeting Friday at 2 PM, focus this week on fundraising..."
+              placeholder="e.g., Delete all events this week, Board meeting Friday at 2 PM..."
               disabled={sending}
               className="flex-1 px-4 py-2.5 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-indigo-400 disabled:opacity-50 placeholder:text-[var(--color-text-muted)]"
             />
@@ -427,9 +638,24 @@ export default function PlannerPage() {
               {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>
           </form>
-          {promptResult && (
-            <div className="mt-3 p-3 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border)] text-sm whitespace-pre-wrap">
-              {promptResult}
+
+          {/* Suggested prompts */}
+          {chatMessages.length === 0 && (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {[
+                "What's on my calendar this week?",
+                "Delete all events for this week",
+                "Schedule a team standup tomorrow at 10 AM",
+                "Plan my week focused on product launch",
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => setPrompt(suggestion)}
+                  className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)] transition-colors"
+                >
+                  {suggestion}
+                </button>
+              ))}
             </div>
           )}
         </div>

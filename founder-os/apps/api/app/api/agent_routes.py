@@ -90,6 +90,7 @@ class OrchestrationResponse(BaseModel):
     tool_names: list[str] = []
     delegations_made: int
     agents_used: list[str]
+    delegation_details: list[dict] = []
     duration_seconds: float
     stop_reason: str
     cost_usd: float = 0.0
@@ -219,6 +220,17 @@ async def orchestrate(
 
     # Extract delegation info from the orchestrator trace
     agents_used = list({d.to_agent for d in result.delegations}) if result.delegations else []
+    delegation_details = [
+        {
+            "agent": d.to_agent,
+            "task": d.task[:200],
+            "success": d.success,
+            "tokens_used": d.tokens_used,
+            "duration_seconds": round(d.duration_seconds, 2),
+            "error": d.error or None,
+        }
+        for d in (result.delegations or [])
+    ]
 
     return OrchestrationResponse(
         content=result.content,
@@ -228,6 +240,7 @@ async def orchestrate(
         tool_names=list({tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")}),
         delegations_made=len(result.delegations) if result.delegations else 0,
         agents_used=agents_used,
+        delegation_details=delegation_details,
         duration_seconds=round(result.duration_seconds, 2),
         stop_reason=result.stop_reason,
         cost_usd=round(result.cost_usd, 6),
@@ -288,7 +301,12 @@ async def orchestrate_stream(
         from app.agents.event_bus import Event
 
         pubsub = redis.pubsub()
-        await pubsub.psubscribe("fos:events:tool.*", "fos:events:agent.*")
+        await pubsub.psubscribe(
+            "fos:events:tool.*",
+            "fos:events:agent.*",
+            "fos:events:delegation.*",
+            "fos:events:orchestration.*",
+        )
 
         yield _sse({"type": "started", "timestamp": time.time()})
 
@@ -332,11 +350,69 @@ async def orchestrate_stream(
                                 "duration_ms": event.data.get("duration_ms", 0),
                                 "timestamp": event.timestamp,
                             })
+                        elif event.type == "delegation.starting":
+                            yield _sse({
+                                "type": "delegation_starting",
+                                "agent": event.agent,
+                                "target_agent": event.data.get("target_agent", ""),
+                                "task_preview": event.data.get("task_preview", ""),
+                                "timestamp": event.timestamp,
+                            })
+                        elif event.type == "delegation.executing":
+                            yield _sse({
+                                "type": "delegation_executing",
+                                "agent": event.agent,
+                                "task_preview": event.data.get("task_preview", ""),
+                                "attempt": event.data.get("attempt", 1),
+                                "timestamp": event.timestamp,
+                            })
+                        elif event.type == "delegation.completed":
+                            yield _sse({
+                                "type": "delegation_completed",
+                                "agent": event.agent,
+                                "success": event.data.get("success", False),
+                                "tokens_used": event.data.get("tokens_used", 0),
+                                "duration": event.data.get("duration", 0),
+                                "result_preview": event.data.get("result_preview", "")[:200],
+                                "timestamp": event.timestamp,
+                            })
+                        elif event.type == "delegation.failed":
+                            yield _sse({
+                                "type": "delegation_failed",
+                                "agent": event.agent,
+                                "error": event.data.get("error", ""),
+                                "attempts": event.data.get("attempts", 1),
+                                "timestamp": event.timestamp,
+                            })
+                        elif event.type == "delegation.retrying":
+                            yield _sse({
+                                "type": "delegation_retrying",
+                                "agent": event.agent,
+                                "attempt": event.data.get("attempt", 2),
+                                "reason": event.data.get("reason", ""),
+                                "timestamp": event.timestamp,
+                            })
                         elif event.type in ("agent.started", "agent.completed"):
                             yield _sse({
                                 "type": event.type.replace(".", "_"),
                                 "agent": event.agent,
                                 "data": event.data,
+                                "timestamp": event.timestamp,
+                            })
+                        elif event.type == "orchestration.started":
+                            yield _sse({
+                                "type": "orchestration_started",
+                                "agent": event.agent,
+                                "phase": event.data.get("phase", "starting"),
+                                "timestamp": event.timestamp,
+                            })
+                        elif event.type == "orchestration.completed":
+                            yield _sse({
+                                "type": "orchestration_completed",
+                                "agents_used": event.data.get("agents_used", []),
+                                "delegations": event.data.get("delegations", 0),
+                                "total_tokens": event.data.get("total_tokens", 0),
+                                "retries": event.data.get("retries", 0),
                                 "timestamp": event.timestamp,
                             })
                     except (json.JSONDecodeError, KeyError):
@@ -358,6 +434,18 @@ async def orchestrate_stream(
                         list({d.to_agent for d in result.delegations})
                         if result.delegations else []
                     )
+                    # Build delegation_details for streaming response
+                    _deleg_details = []
+                    if result.delegations:
+                        for d in result.delegations:
+                            _deleg_details.append({
+                                "agent": d.to_agent,
+                                "task": d.task[:200],
+                                "success": d.success,
+                                "tokens": d.tokens_used,
+                                "duration": round(d.duration_seconds, 2) if d.duration_seconds else None,
+                                "error": d.error,
+                            })
                     yield _sse({
                         "type": "done",
                         "content": result.content,
@@ -371,6 +459,7 @@ async def orchestrate_stream(
                         }),
                         "delegations_made": len(result.delegations) if result.delegations else 0,
                         "agents_used": agents_used,
+                        "delegation_details": _deleg_details,
                         "duration_seconds": round(result.duration_seconds, 2),
                         "stop_reason": result.stop_reason,
                         "cost_usd": round(result.cost_usd, 6),

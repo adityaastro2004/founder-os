@@ -699,8 +699,10 @@ Day-to-date mapping (use these exact dates):
 
 Return ONLY a JSON object with this structure (omit sections not needed):
 {{
-  "intent": "add_events | update_context | full_replan | mixed",
+  "intent": "add_events | delete_events | update_events | update_context | full_replan | clarification | mixed",
   "reply": "Brief human-friendly confirmation message",
+  "needs_clarification": false,
+  "clarification_question": "Only if needs_clarification is true — what you need to know",
   "events_to_create": [
     {{
       "summary": "Event title",
@@ -709,6 +711,23 @@ Return ONLY a JSON object with this structure (omit sections not needed):
       "end_time": "HH:MM",
       "description": "Optional details",
       "all_day": false
+    }}
+  ],
+  "events_to_delete": {{
+    "scope": "all_ai | by_keyword | by_date_range | specific_ids",
+    "keyword": "Optional keyword to match in event titles",
+    "date_range_start": "YYYY-MM-DDTHH:MM:SS (start of range to delete)",
+    "date_range_end": "YYYY-MM-DDTHH:MM:SS (end of range to delete)",
+    "event_ids": ["Optional list of specific event IDs to delete"],
+    "delete_all_in_range": false
+  }},
+  "events_to_update": [
+    {{
+      "event_id": "Google Calendar event ID (from the existing events list)",
+      "new_summary": "Optional new title",
+      "new_start": "YYYY-MM-DDTHH:MM:SS (optional)",
+      "new_end": "YYYY-MM-DDTHH:MM:SS (optional)",
+      "new_description": "Optional new description"
     }}
   ],
   "context_updates": {{
@@ -725,10 +744,32 @@ Return ONLY a JSON object with this structure (omit sections not needed):
 RULES:
 - Always compute real dates from day names using today={today.isoformat()} ({today.strftime('%A')})
 - "Friday" means the NEXT upcoming Friday from today
+- "this week" means from today through the upcoming Sunday
 - Time slots should be within work hours ({user.preferred_work_hours}) unless specified
 - Default meeting duration is 1 hour unless stated otherwise
 - If the founder mentions metrics (MRR, users, revenue), include context_updates
 - Set needs_full_replan=true only if they ask to "plan my week" or similar
+
+DELETE RULES:
+- When asked to delete/remove/cancel/clear events, set intent to "delete_events"
+- For "delete all events this week": set scope="all_ai", provide date_range_start (today) and date_range_end (end of week), and set delete_all_in_range=true
+- For "delete all events": same but wider range
+- For deleting specific events by name: set scope="by_keyword" and provide the keyword
+- For deleting events the user can see in the list above: use scope="specific_ids" with event IDs from the existing events list
+- ALWAYS include date_range_start and date_range_end for bulk deletes
+- If the user's delete request is ambiguous (e.g. which events?), set needs_clarification=true and ask
+
+CLARIFICATION RULES:
+- If the user's request is ambiguous, missing critical info (date, time, which event), set needs_clarification=true
+- Set intent to "clarification" and provide a clear clarification_question
+- Include in reply what you understood and what's missing
+- Examples: "Schedule a meeting" (missing: when, with whom, how long), "Delete that event" (which one?)
+
+UPDATE RULES:
+- When asked to reschedule/move/change events, use events_to_update with event IDs from the existing events list
+- If you can identify the event from the list, include its event_id
+- If you can't identify which event, set needs_clarification=true
+
 - Return ONLY valid JSON, no markdown fences, no commentary"""
 
     user_msg = f"Founder's prompt:\n{body.message}\n\nFounder Context:\n{context_block}"
@@ -788,6 +829,14 @@ RULES:
         "reply": actions.get("reply", "Done."),
     }
 
+    # 4-pre. Handle clarification — don't execute anything, just ask
+    if actions.get("needs_clarification"):
+        results["status"] = "clarification_needed"
+        results["reply"] = actions.get("reply", actions.get("clarification_question", "I need more information."))
+        results["clarification_question"] = actions.get("clarification_question", "")
+        results["duration_seconds"] = round(time.time() - start_time, 1)
+        return results
+
     # 4a. Apply context updates
     ctx_updates = actions.get("context_updates", {})
     if ctx_updates:
@@ -834,7 +883,178 @@ RULES:
         if failed_events:
             results["errors"] = failed_events
 
-    # 4c. Full weekly replan if requested
+    # 4c. Delete calendar events (via MCP)
+    delete_spec = actions.get("events_to_delete", {})
+    if delete_spec and actions.get("intent") in ("delete_events", "mixed"):
+        deleted_events: list[dict] = []
+        delete_failed: list[dict] = []
+        scope = delete_spec.get("scope", "all_ai")
+
+        try:
+            if scope == "specific_ids" and delete_spec.get("event_ids"):
+                # Delete specific events by ID
+                for eid in delete_spec["event_ids"]:
+                    try:
+                        result = await _mcp_call(user, "gcal_delete_event", {"event_id": eid})
+                        if result.get("deleted"):
+                            deleted_events.append({"event_id": eid, "deleted": True})
+                        else:
+                            delete_failed.append({"event_id": eid, "error": "Not found or already deleted"})
+                    except Exception as del_exc:
+                        delete_failed.append({"event_id": eid, "error": str(del_exc)})
+
+            elif scope in ("all_ai", "by_keyword"):
+                # Use gcal_smart_delete via MCP for bulk deletion
+                smart_args: dict[str, Any] = {}
+                if delete_spec.get("date_range_start"):
+                    smart_args["time_min"] = delete_spec["date_range_start"]
+                if delete_spec.get("date_range_end"):
+                    smart_args["time_max"] = delete_spec["date_range_end"]
+                if scope == "by_keyword" and delete_spec.get("keyword"):
+                    smart_args["keyword"] = delete_spec["keyword"]
+
+                if delete_spec.get("delete_all_in_range"):
+                    # Delete ALL events in range (not just AI-generated)
+                    # First list events, then delete each one
+                    list_args: dict[str, Any] = {"max_results": 100}
+                    if delete_spec.get("date_range_start"):
+                        list_args["time_min"] = delete_spec["date_range_start"]
+                    all_events_in_range = await _mcp_call(user, "gcal_list_events", list_args)
+
+                    # Filter by date_range_end if provided
+                    if delete_spec.get("date_range_end"):
+                        from datetime import datetime as _dt_del
+                        try:
+                            end_dt = _dt_del.fromisoformat(delete_spec["date_range_end"].replace("Z", "+00:00"))
+                            filtered_events = []
+                            for ev in (all_events_in_range if isinstance(all_events_in_range, list) else []):
+                                ev_start = ev.get("start", "")
+                                if ev_start:
+                                    try:
+                                        ev_t = _dt_del.fromisoformat(ev_start.replace("Z", "+00:00"))
+                                        if ev_t <= end_dt:
+                                            filtered_events.append(ev)
+                                    except (ValueError, TypeError):
+                                        filtered_events.append(ev)
+                                else:
+                                    filtered_events.append(ev)
+                            all_events_in_range = filtered_events
+                        except (ValueError, TypeError):
+                            pass
+
+                    # Apply keyword filter if any
+                    if scope == "by_keyword" and delete_spec.get("keyword"):
+                        kw = delete_spec["keyword"].lower()
+                        all_events_in_range = [
+                            ev for ev in (all_events_in_range if isinstance(all_events_in_range, list) else [])
+                            if kw in ev.get("summary", "").lower()
+                        ]
+
+                    # Delete each event
+                    for ev in (all_events_in_range if isinstance(all_events_in_range, list) else []):
+                        eid = ev.get("event_id") or ev.get("id", "")
+                        if not eid:
+                            continue
+                        try:
+                            result = await _mcp_call(user, "gcal_delete_event", {"event_id": eid})
+                            deleted_events.append({
+                                "event_id": eid,
+                                "summary": ev.get("summary", ""),
+                                "deleted": True,
+                            })
+                        except Exception as del_exc:
+                            delete_failed.append({
+                                "event_id": eid,
+                                "summary": ev.get("summary", ""),
+                                "error": str(del_exc),
+                            })
+                else:
+                    # AI-only events: use gcal_smart_delete
+                    smart_args["dry_run"] = False
+                    smart_result = await _mcp_call(user, "gcal_smart_delete", smart_args)
+                    deleted_events = smart_result.get("deleted", [])
+                    delete_failed = smart_result.get("failed", [])
+
+            elif scope == "by_date_range":
+                # List events in range, then delete all
+                list_args = {"max_results": 100}
+                if delete_spec.get("date_range_start"):
+                    list_args["time_min"] = delete_spec["date_range_start"]
+                events_in_range = await _mcp_call(user, "gcal_list_events", list_args)
+
+                if delete_spec.get("date_range_end"):
+                    from datetime import datetime as _dt_del2
+                    try:
+                        end_dt = _dt_del2.fromisoformat(delete_spec["date_range_end"].replace("Z", "+00:00"))
+                        events_in_range = [
+                            ev for ev in (events_in_range if isinstance(events_in_range, list) else [])
+                            if ev.get("start", "") and
+                            _dt_del2.fromisoformat(ev["start"].replace("Z", "+00:00")) <= end_dt
+                        ]
+                    except (ValueError, TypeError):
+                        pass
+
+                for ev in (events_in_range if isinstance(events_in_range, list) else []):
+                    eid = ev.get("event_id") or ev.get("id", "")
+                    if not eid:
+                        continue
+                    try:
+                        result = await _mcp_call(user, "gcal_delete_event", {"event_id": eid})
+                        deleted_events.append({
+                            "event_id": eid,
+                            "summary": ev.get("summary", ""),
+                            "deleted": True,
+                        })
+                    except Exception as del_exc:
+                        delete_failed.append({
+                            "event_id": eid,
+                            "summary": ev.get("summary", ""),
+                            "error": str(del_exc),
+                        })
+
+        except Exception as exc:
+            logger.error("Delete operation failed: %s", exc)
+            results["delete_error"] = str(exc)
+
+        results["events_deleted"] = len(deleted_events)
+        results["delete_failed"] = len(delete_failed)
+        results["deleted_events"] = deleted_events
+        if delete_failed:
+            results["delete_errors"] = delete_failed
+
+    # 4d. Update calendar events (via MCP)
+    events_to_update = actions.get("events_to_update", [])
+    if events_to_update:
+        updated_events: list[dict] = []
+        update_failed: list[dict] = []
+        for ev_update in events_to_update:
+            eid = ev_update.get("event_id", "")
+            if not eid:
+                update_failed.append({"error": "No event_id provided", "update": ev_update})
+                continue
+            try:
+                update_args: dict[str, Any] = {"event_id": eid}
+                if ev_update.get("new_summary"):
+                    update_args["summary"] = ev_update["new_summary"]
+                if ev_update.get("new_start"):
+                    update_args["start_datetime"] = ev_update["new_start"]
+                if ev_update.get("new_end"):
+                    update_args["end_datetime"] = ev_update["new_end"]
+                if ev_update.get("new_description"):
+                    update_args["description"] = ev_update["new_description"]
+                result = await _mcp_call(user, "gcal_update_event", update_args)
+                updated_events.append(result)
+            except Exception as upd_exc:
+                update_failed.append({"event_id": eid, "error": str(upd_exc)})
+
+        results["events_updated"] = len(updated_events)
+        results["update_failed"] = len(update_failed)
+        if updated_events:
+            results["updated_events"] = updated_events
+        if update_failed:
+            results["update_errors"] = update_failed
+
+    # 4e. Full weekly replan if requested
     if actions.get("needs_full_replan"):
         try:
             plan = await _generate_plan_for_user(
@@ -900,6 +1120,120 @@ RULES:
 
     results["duration_seconds"] = round(time.time() - start_time, 1)
     return results
+
+
+# ============================================================================
+# 7b. CHAT — Full agent-based conversational endpoint (MCP-powered)
+# ============================================================================
+
+class ChatRequest(BaseModel):
+    """
+    Chat with the PlannerAgent using the full agentic loop.
+    Supports multi-turn conversation, tool calls (via MCP), confirmation,
+    deletion, and clarification — everything the PlannerAgent can do.
+    """
+    user_id: str = Field("default-user")
+    message: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="Your message to the planner agent",
+    )
+    session_id: str | None = Field(
+        None,
+        description="Session ID for conversation continuity",
+    )
+
+
+@router.post("/chat")
+async def planner_chat(body: ChatRequest):
+    """
+    **Conversational planner endpoint** — uses the full PlannerAgent with MCP tools.
+
+    Unlike /prompt (which does a single LLM call for JSON actions), /chat
+    runs the full agentic loop:
+    - Multi-turn conversation with memory
+    - MCP tool calls (gcal_list_events, gcal_delete_event, gcal_smart_delete, etc.)
+    - Automatic clarification when information is missing
+    - Confirmation before destructive actions
+    - Intent detection via detect_calendar_intent tool
+
+    Use this for conversational interactions like:
+    - "Delete all events this week"
+    - "What's on my calendar tomorrow?"
+    - "Schedule a meeting" (will ask for details)
+    - "Remove the 2pm meeting on Friday"
+    """
+    import uuid as _uuid
+    from app.agents.registry import AgentRegistry
+    from app.config import get_settings
+    from app.redis import get_redis
+
+    user = get_user(body.user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail=f"User '{body.user_id}' not found. Call POST /api/planner/onboard first.",
+        )
+
+    if not user.gcal_connected or not user.has_valid_gcal_tokens():
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Google Calendar not connected. "
+                "One-time setup: GET /api/planner/connect?user_id=" + body.user_id
+            ),
+        )
+
+    settings = get_settings()
+    redis = get_redis()
+    start_time = time.time()
+
+    # Create a deterministic UUID from the user_id string
+    user_uuid = _uuid.uuid5(_uuid.NAMESPACE_URL, f"planner:{body.user_id}")
+    session_id = body.session_id or f"planner-chat-{body.user_id}"
+
+    try:
+        from app.database import async_session as _async_session
+        async with _async_session() as db:
+            registry = AgentRegistry(db=db, redis=redis, settings=settings)
+            agent = await registry.get(
+                "planner",
+                user_id=user_uuid,
+                session_id=session_id,
+                planner_user_id=body.user_id,
+            )
+
+            result = await agent.run(body.message)
+
+            # Extract tool call info
+            tool_names = list({
+                tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")
+            })
+            mcp_tools_used = [t for t in tool_names if t.startswith("gcal_")]
+
+            return {
+                "status": "completed",
+                "user_id": body.user_id,
+                "reply": result.content,
+                "agent": "planner",
+                "model": result.model,
+                "tokens_used": result.tokens_used,
+                "tool_calls_made": len(result.tool_calls_made),
+                "tool_names": tool_names,
+                "mcp_tools_used": mcp_tools_used,
+                "duration_seconds": round(time.time() - start_time, 2),
+                "stop_reason": result.stop_reason,
+                "cost_usd": round(result.cost_usd, 6),
+                "session_id": session_id,
+                "pending_approvals": result.pending_approvals,
+            }
+
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    except Exception as exc:
+        logger.exception("Planner chat failed")
+        raise HTTPException(status_code=502, detail=f"Planner agent error: {exc}")
 
 
 # ============================================================================

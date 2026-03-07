@@ -291,41 +291,75 @@ GUIDELINES
 
 class ContentAgent(BaseAgent):
     name = "content"
-    capabilities = ["writing", "content_creation", "copywriting", "editing", "social_media"]
-    tags = ["write", "blog", "post", "tweet", "newsletter", "email", "copy", "draft", "article"]
+    capabilities = [
+        "writing", "content_creation", "copywriting", "editing",
+        "social_media", "blog_writing", "email_marketing",
+        "content_strategy", "repurposing",
+    ]
+    tags = [
+        "write", "blog", "post", "tweet", "newsletter", "email",
+        "copy", "draft", "article", "thread", "linkedin", "social",
+        "content", "headline", "subject line", "sequence", "campaign",
+    ]
     default_tools = [
         "search_knowledge",
         "web_search",
         "save_draft",
         "get_writing_style",
+        "detect_content_type",
+        "generate_structured_content",
+        "get_content_format_guide",
+        "repurpose_content",
         "get_current_datetime",
         "store_working_memory",
     ]
-    default_system_prompt = """\
-You are the Content Agent for Founder OS — a specialist in creating high-quality \
-written content for startups.
 
-Your role:
-- Write blog posts, social media threads, newsletters, landing page copy, and emails
-- Adapt to the founder's unique voice and writing style
-- Research topics thoroughly before writing
-- Optimise content for the target audience and platform
+    # Import the full system prompt from content_prompts module
+    from app.agents.content_prompts import CONTENT_AGENT_SYSTEM_PROMPT
+    default_system_prompt = CONTENT_AGENT_SYSTEM_PROMPT
 
-Guidelines:
-- ALWAYS check the user's writing style preferences before generating content
-- Search knowledge base for relevant company context (product details, positioning)
-- For long-form content, outline first, then write section by section
-- Include compelling hooks, clear structure, and strong CTAs
-- When editing, explain your changes and reasoning
-- Save all drafts — never lose work
-- Check shared memory for any plan context from the planner agent
+    async def before_run(self, user_input: str) -> None:
+        """Load context from shared memory and detect content format."""
+        # Pull weekly plan context so content aligns with founder goals
+        plan_summary = await self.memory.get_from_shared("weekly_plan_summary")
+        if plan_summary:
+            await self.memory.save_to_working(
+                "weekly_plan_context", plan_summary[:1000],
+            )
 
-Output format:
-- Return content in clean Markdown
-- For social media, respect platform character limits
-- Include suggested headlines/titles when writing articles
-- Add [NOTE] tags for sections where the founder should add personal anecdotes
-"""
+        # Pull any prior content drafts for continuity
+        prior_draft = await self.memory.get_from_shared("latest_content_draft")
+        if prior_draft:
+            await self.memory.save_to_working(
+                "prior_draft_preview", prior_draft[:1500],
+            )
+
+        # Pull research findings for grounding content in data
+        research = await self.memory.get_from_shared("research_findings")
+        if research:
+            await self.memory.save_to_working(
+                "research_context", research[:1500],
+            )
+
+    async def after_run(self, user_input: str, result: AgentResult) -> None:
+        """Save content output to shared and working memory."""
+        if not result.content:
+            return
+
+        # Save the latest draft for other agents and future continuity
+        await self.memory.save_to_working(
+            "latest_content_output", result.content[:2000],
+        )
+        await self.memory.save_to_shared(
+            "latest_content_draft", result.content[:2000],
+        )
+
+        # Timestamp
+        from datetime import datetime, timezone
+        await self.memory.save_to_working(
+            "content_generated_at",
+            datetime.now(timezone.utc).isoformat(),
+        )
 
 
 # ============================================================================

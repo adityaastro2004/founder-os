@@ -619,7 +619,11 @@ INSERT INTO agents (name, display_name, description, system_prompt, capabilities
 ('support', 'Support Agent', 'Handles customer communications and creates support materials',
  'You are a customer support specialist who provides clear, helpful assistance.',
  '["customer_communication", "faq_creation", "troubleshooting"]'::jsonb,
- '["email_drafting", "faq_generation", "doc_search"]'::jsonb);
+ '["email_drafting", "faq_generation", "doc_search"]'::jsonb),
+('orchestrator', 'Orchestrator', 'Chief-of-staff agent that understands the big picture, routes tasks to specialist agents, synthesises their outputs, and conveys results to the user',
+ 'You are the chief-of-staff orchestrator for Founder OS. You understand the full picture, break complex requests into sub-tasks, delegate to specialist agents, and synthesise their outputs into a coherent response.',
+ '["orchestration", "delegation", "synthesis", "planning", "routing"]'::jsonb,
+ '["delegate_task", "get_current_datetime", "get_user_profile", "ask_user_clarification", "store_working_memory", "search_knowledge", "recall_last_orchestration", "list_available_agents", "check_delegation_health"]'::jsonb);
 
 -- Default workflow templates
 INSERT INTO workflow_templates (name, slug, description, category, steps, trigger_type, estimated_duration_minutes) VALUES

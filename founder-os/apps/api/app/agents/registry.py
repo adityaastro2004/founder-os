@@ -326,6 +326,77 @@ class AgentRegistry:
                     "delegate_task", _delegate_task_impl,
                 )
 
+                # 8b. Wire recall_last_orchestration with shared memory
+                _shared_mem = shared
+
+                async def _recall_last_orchestration_impl() -> str:
+                    """Fetch the last orchestration summary from shared memory."""
+                    try:
+                        last = await _shared_mem.get("last_orchestration")
+                        if last:
+                            return json.dumps({
+                                "last_orchestration": json.loads(last),
+                                "note": "Prior conversation context loaded.",
+                            })
+                        return json.dumps({
+                            "last_orchestration": None,
+                            "note": "No prior orchestration found (first interaction).",
+                        })
+                    except Exception as exc:
+                        return json.dumps({
+                            "last_orchestration": None,
+                            "error": str(exc),
+                        })
+
+                tool_registry.override_tool_impl(
+                    "recall_last_orchestration", _recall_last_orchestration_impl,
+                )
+
+                # 8c. Wire list_available_agents with router introspection
+                _router_ref = self._router
+
+                async def _list_available_agents_impl() -> str:
+                    """List all agents with their live capabilities."""
+                    agents_info = []
+                    for card in _router_ref.list_cards():
+                        if card.name == "orchestrator":
+                            continue  # Don't list self
+                        agents_info.append({
+                            "name": card.name,
+                            "display_name": card.display_name,
+                            "capabilities": card.capabilities,
+                            "tags": card.tags,
+                            "description": card.description[:150] if card.description else "",
+                        })
+                    return json.dumps({
+                        "agents": agents_info,
+                        "total": len(agents_info),
+                    })
+
+                tool_registry.override_tool_impl(
+                    "list_available_agents", _list_available_agents_impl,
+                )
+
+                # 8d. Wire check_delegation_health with live router state
+                async def _check_delegation_health_impl() -> str:
+                    """Check if the delegation system is healthy."""
+                    registered = _router_ref.registered_agents
+                    factories_ok = all(
+                        n in _router_ref._agent_factory
+                        for n in registered
+                    )
+                    return json.dumps({
+                        "status": "healthy" if factories_ok else "degraded",
+                        "agents_registered": registered,
+                        "agents_available": len(registered),
+                        "router_connected": True,
+                        "factories_wired": factories_ok,
+                    })
+
+                tool_registry.override_tool_impl(
+                    "check_delegation_health", _check_delegation_health_impl,
+                )
+
         # 9. Wire get_user_profile with the real user-store data
         _mcp_uid = mcp_uid
         _settings_ref = self._settings

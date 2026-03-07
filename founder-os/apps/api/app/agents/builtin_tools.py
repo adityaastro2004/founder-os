@@ -76,6 +76,225 @@ async def get_writing_style() -> str:
 
 
 # ============================================================================
+# Content Agent — Format Detection & Structured Generation
+# ============================================================================
+
+@tool(
+    name="detect_content_type",
+    description=(
+        "Analyse a user message and detect the content type they want. "
+        "Returns the format (blog, social, email, general), suggested "
+        "output schema, and any extracted parameters (topic, audience, "
+        "platform, tone). ALWAYS call this first for content requests."
+    ),
+)
+async def detect_content_type(user_message: str) -> str:
+    """Rule-based content type detection to bootstrap the LLM's judgment."""
+    import re
+    msg = user_message.lower().strip()
+
+    content_type = "general"
+    platform = None
+    params: dict = {}
+
+    # Blog detection
+    if any(w in msg for w in ("blog", "article", "post about", "write about", "long-form", "longform")):
+        content_type = "blog"
+    # Social media detection
+    elif any(w in msg for w in ("tweet", "twitter", "thread", "x post")):
+        content_type = "social"
+        platform = "twitter"
+    elif any(w in msg for w in ("linkedin", "li post")):
+        content_type = "social"
+        platform = "linkedin"
+    elif any(w in msg for w in ("social", "social media", "social post")):
+        content_type = "social"
+        platform = "both"
+    # Email detection
+    elif any(w in msg for w in ("email", "newsletter", "welcome sequence", "drip", "outreach", "cold email")):
+        content_type = "email"
+        if "welcome" in msg or "onboard" in msg or "sequence" in msg or "drip" in msg:
+            params["email_type"] = "welcome_sequence"
+        elif "newsletter" in msg:
+            params["email_type"] = "newsletter"
+        elif "cold" in msg or "outreach" in msg or "sales" in msg:
+            params["email_type"] = "sales"
+        elif "update" in msg or "announce" in msg or "launch" in msg:
+            params["email_type"] = "product_update"
+        else:
+            params["email_type"] = "newsletter"
+
+    # Extract topic (quoted text or after "about")
+    topic_match = re.search(r'["\'](.+?)["\']', user_message)
+    if topic_match:
+        params["topic"] = topic_match.group(1)
+    else:
+        about_match = re.search(r'(?:about|on|regarding|topic[:\s]+)\s+(.+?)(?:\.|$)', msg)
+        if about_match:
+            params["topic"] = about_match.group(1).strip()
+
+    # Extract audience cues
+    for_match = re.search(r'(?:for|targeting|aimed at)\s+(.+?)(?:\.|,|$)', msg)
+    if for_match:
+        params["target_audience"] = for_match.group(1).strip()
+
+    # Tone cues
+    tone_keywords = {
+        "professional": "professional", "casual": "casual",
+        "funny": "humorous", "serious": "serious",
+        "technical": "technical", "simple": "simple",
+        "inspiring": "inspirational", "urgent": "urgent",
+    }
+    for kw, tone in tone_keywords.items():
+        if kw in msg:
+            params["tone"] = tone
+            break
+
+    # Get the output schema name
+    from app.agents.content_prompts import get_output_schema
+    schema = get_output_schema(content_type)
+
+    return json.dumps({
+        "content_type": content_type,
+        "platform": platform,
+        "params": params,
+        "has_structured_schema": schema is not None,
+        "schema_fields": list(schema.get("properties", {}).keys()) if schema else [],
+        "original_message": user_message,
+    }, default=str)
+
+
+@tool(
+    name="generate_structured_content",
+    description=(
+        "Generate content and return it as structured JSON matching the "
+        "format's output schema. This tool wraps the generated content "
+        "into a structured format that downstream systems (CMS, social "
+        "schedulers, email tools) can consume. Pass: content_type (blog, "
+        "social, email), the generated content as JSON string, and an "
+        "optional title. The tool validates the structure and saves it."
+    ),
+)
+async def generate_structured_content(
+    content_type: str,
+    content_json: str,
+    title: str = "",
+) -> str:
+    """Validate and store structured content output."""
+    import json as _json
+    from app.agents.content_prompts import get_output_schema
+
+    # Parse the content JSON
+    try:
+        content_data = _json.loads(content_json)
+    except _json.JSONDecodeError as e:
+        return _json.dumps({
+            "status": "error",
+            "error": f"Invalid JSON: {e}",
+            "hint": "Ensure the content is valid JSON matching the schema.",
+        })
+
+    # Get expected schema
+    schema = get_output_schema(content_type)
+    if not schema:
+        return _json.dumps({
+            "status": "warning",
+            "message": f"No schema for content_type '{content_type}', saving as-is.",
+            "content": content_data,
+        })
+
+    # Validate required fields
+    required = schema.get("required", [])
+    missing = [f for f in required if f not in content_data]
+
+    if missing:
+        return _json.dumps({
+            "status": "incomplete",
+            "missing_fields": missing,
+            "hint": f"Add these fields: {', '.join(missing)}",
+            "partial_content": content_data,
+        })
+
+    # Enrich with metadata
+    from datetime import datetime, timezone
+    content_data["_metadata"] = {
+        "content_type": content_type,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "title": title or content_data.get("title", "Untitled"),
+        "schema_version": "1.0",
+    }
+
+    return _json.dumps({
+        "status": "success",
+        "content_type": content_type,
+        "title": title or content_data.get("title", "Untitled"),
+        "content": content_data,
+        "fields_present": list(content_data.keys()),
+    }, default=str)
+
+
+@tool(
+    name="get_content_format_guide",
+    description=(
+        "Retrieve the detailed format guide and few-shot examples for a "
+        "specific content type (blog, social, email). Returns platform-specific "
+        "structure, guidelines, and quality examples. Call this after "
+        "detect_content_type to get format-specific writing instructions."
+    ),
+)
+async def get_content_format_guide(content_type: str) -> str:
+    """Return the format-specific prompt and examples."""
+    from app.agents.content_prompts import get_format_prompt, get_output_schema
+
+    prompt = get_format_prompt(content_type)
+    schema = get_output_schema(content_type)
+
+    if not prompt:
+        return json.dumps({
+            "content_type": content_type,
+            "guide": "No specific guide for this type. Use general writing best practices.",
+            "available_types": ["blog", "social", "email", "newsletter", "twitter", "linkedin"],
+        })
+
+    return json.dumps({
+        "content_type": content_type,
+        "format_guide": prompt,
+        "output_schema_fields": list(schema.get("properties", {}).keys()) if schema else [],
+        "required_fields": schema.get("required", []) if schema else [],
+    }, default=str)
+
+
+@tool(
+    name="repurpose_content",
+    description=(
+        "Take existing content (e.g., a blog post) and repurpose it into "
+        "other formats (social posts, email, etc.). Pass the source content "
+        "and the target format(s). Returns structured content for each target."
+    ),
+)
+async def repurpose_content(
+    source_content: str,
+    source_type: str = "blog",
+    target_types: str = "social,email",
+) -> str:
+    """Flag the content for repurposing — the LLM does the actual transformation."""
+    targets = [t.strip() for t in target_types.split(",")]
+
+    return json.dumps({
+        "status": "ready_for_repurposing",
+        "source_type": source_type,
+        "source_length": len(source_content),
+        "target_formats": targets,
+        "instructions": (
+            "Generate content for each target format. For each, use the "
+            "format-specific structure and few-shot examples. Extract the "
+            "key insight from the source and adapt it for each platform. "
+            "Use generate_structured_content to save each piece."
+        ),
+    }, default=str)
+
+
+# ============================================================================
 # Analytics & Metrics
 # ============================================================================
 
@@ -407,10 +626,18 @@ async def validate_event_fields(
 @tool(
     name="delegate_task",
     description=(
-        "Delegate a task to a specialist agent. Use this when a request "
-        "requires domain expertise. Available agents: planner, content, "
-        "research, ops, product, support. Pass a clear, specific task "
-        "description — don't just forward the user's message verbatim."
+        "Delegate a task to a specialist agent. This is your PRIMARY tool for "
+        "getting work done. Available agents: planner, content, research, ops, "
+        "product, support.\n\n"
+        "IMPORTANT RULES:\n"
+        "1. ALWAYS rewrite the task as a clear, specific instruction — never "
+        "   just forward the user's raw message.\n"
+        "2. Include relevant context: user's primary goal, timezone, business "
+        "   stage, and any prior delegation results that this agent needs.\n"
+        "3. For calendar operations → delegate to 'planner' with timezone.\n"
+        "4. For multi-step work → delegate sequentially, passing output of "
+        "   step N as context to step N+1.\n\n"
+        "The agent will execute the task and return its full response."
     ),
 )
 async def delegate_task(
@@ -426,4 +653,92 @@ async def delegate_task(
     """
     return json.dumps({
         "error": "delegate_task not wired — must be called via orchestrator",
+    })
+
+
+# ============================================================================
+# Orchestrator — Memory & Context Tools
+# ============================================================================
+
+@tool(
+    name="recall_last_orchestration",
+    description=(
+        "Recall what happened in the most recent orchestration for this user. "
+        "Returns: the user's last request, which agents were used, what was "
+        "discussed, and what actions were taken. Use this at the START of "
+        "every orchestration to maintain conversation continuity. If the "
+        "user says 'also' or 'and' or refers to something prior, this gives "
+        "you the context."
+    ),
+)
+async def recall_last_orchestration() -> str:
+    """Placeholder — wired at runtime by the registry."""
+    return json.dumps({
+        "last_orchestration": None,
+        "note": "No prior orchestration found (first interaction).",
+    })
+
+
+@tool(
+    name="list_available_agents",
+    description=(
+        "List all currently available specialist agents with their capabilities. "
+        "Use this when you need to understand what agents are available, or "
+        "when you want to explain to the user what the system can do. "
+        "Returns each agent's name, capabilities, and what they're best at."
+    ),
+)
+async def list_available_agents() -> str:
+    """Placeholder — wired at runtime by the registry."""
+    return json.dumps({
+        "agents": [
+            {
+                "name": "planner",
+                "best_for": "Planning, scheduling, calendar, tasks, prioritisation",
+                "has_calendar": True,
+            },
+            {
+                "name": "content",
+                "best_for": "Writing, blog posts, emails, social media, copy",
+                "has_calendar": False,
+            },
+            {
+                "name": "research",
+                "best_for": "Market research, competitor analysis, data analysis",
+                "has_calendar": False,
+            },
+            {
+                "name": "ops",
+                "best_for": "Operations, metrics, integrations, system health",
+                "has_calendar": True,
+            },
+            {
+                "name": "product",
+                "best_for": "PRDs, features, roadmap, user stories",
+                "has_calendar": False,
+            },
+            {
+                "name": "support",
+                "best_for": "Customer emails, FAQs, support playbooks",
+                "has_calendar": False,
+            },
+        ],
+    })
+
+
+@tool(
+    name="check_delegation_health",
+    description=(
+        "Check the health status of the delegation system. Returns whether "
+        "agents are available and the router is functioning. Use this if a "
+        "delegation fails to diagnose the issue."
+    ),
+)
+async def check_delegation_health() -> str:
+    """Placeholder — wired at runtime by the registry."""
+    return json.dumps({
+        "status": "healthy",
+        "agents_available": 6,
+        "router_connected": True,
+        "note": "All systems operational.",
     })
