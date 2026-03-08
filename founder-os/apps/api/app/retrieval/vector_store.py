@@ -474,3 +474,158 @@ class VectorStore:
             )
         )
         await self._db.flush()
+
+    # ------------------------------------------------------------------
+    # MMR Search (Maximal Marginal Relevance)
+    # ------------------------------------------------------------------
+
+    async def search_mmr(
+        self,
+        user_id: uuid.UUID,
+        query_embedding: list[float],
+        *,
+        limit: int = 5,
+        candidates: int = 20,
+        lambda_mult: float = 0.7,
+        min_similarity: float = 0.4,
+        category: str | None = None,
+        tags: list[str] | None = None,
+    ) -> list[SearchResult]:
+        """
+        Maximal Marginal Relevance search for diverse, relevant results.
+
+        Fetches `candidates` nearest neighbours, then greedily selects
+        `limit` items that balance relevance to the query against
+        redundancy with already-selected items.
+
+        MMR(d) = λ · sim(d, q) − (1−λ) · max_{s∈S} sim(d, s)
+
+        Args:
+            query_embedding: Query vector.
+            limit: Final number of results.
+            candidates: Size of initial candidate pool (should be > limit).
+            lambda_mult: 0→max diversity, 1→max relevance. Default 0.7.
+            min_similarity: Minimum cosine similarity for candidates.
+            category: Optional category filter.
+            tags: Optional tag filter.
+        """
+        # 1. Fetch candidate pool via cosine similarity
+        filters = ["ki.user_id = :uid", "ki.is_active = true", "ki.embedding IS NOT NULL"]
+        params: dict[str, Any] = {
+            "uid": user_id,
+            "emb": str(query_embedding),
+            "lim": candidates,
+            "min_sim": min_similarity,
+        }
+        if category:
+            filters.append("ki.category = :cat")
+            params["cat"] = category
+        if tags:
+            filters.append("ki.tags && :tags")
+            params["tags"] = tags
+
+        where_clause = " AND ".join(filters)
+
+        sql = text(f"""
+            SELECT
+                ki.id,
+                ki.title,
+                ki.content,
+                ki.category,
+                ki.tags,
+                ki.source_url,
+                1 - (ki.embedding <=> :emb::vector) AS similarity,
+                ki.embedding::text AS emb_text
+            FROM knowledge_items ki
+            WHERE {where_clause}
+              AND 1 - (ki.embedding <=> :emb::vector) >= :min_sim
+            ORDER BY ki.embedding <=> :emb::vector
+            LIMIT :lim
+        """)
+
+        result = await self._db.execute(sql, params)
+        rows = result.fetchall()
+
+        if not rows:
+            return []
+
+        # 2. Parse embeddings and build candidate list
+        import json as _json
+
+        _Candidate = type("_Candidate", (), {})
+        pool: list[dict[str, Any]] = []
+        for row in rows:
+            emb_str = row.emb_text
+            # pgvector returns "[0.1,0.2,...]" format
+            try:
+                emb = _json.loads(emb_str)
+            except (ValueError, TypeError):
+                emb = [float(x) for x in emb_str.strip("[]").split(",") if x.strip()]
+            pool.append({
+                "id": row.id,
+                "title": row.title,
+                "content": row.content,
+                "category": row.category,
+                "tags": row.tags,
+                "source_url": row.source_url,
+                "similarity": float(row.similarity),
+                "embedding": emb,
+            })
+
+        # 3. Greedy MMR selection
+        selected: list[dict[str, Any]] = []
+        selected_embs: list[list[float]] = []
+        remaining = list(range(len(pool)))
+
+        for _ in range(min(limit, len(pool))):
+            best_idx = -1
+            best_score = float("-inf")
+
+            for idx in remaining:
+                cand = pool[idx]
+                relevance = cand["similarity"]
+
+                # Max similarity to already-selected items
+                max_sim_to_selected = 0.0
+                if selected_embs:
+                    cand_emb = cand["embedding"]
+                    for sel_emb in selected_embs:
+                        sim = _cosine_sim(cand_emb, sel_emb)
+                        if sim > max_sim_to_selected:
+                            max_sim_to_selected = sim
+
+                mmr_score = lambda_mult * relevance - (1 - lambda_mult) * max_sim_to_selected
+
+                if mmr_score > best_score:
+                    best_score = mmr_score
+                    best_idx = idx
+
+            if best_idx < 0:
+                break
+
+            selected.append(pool[best_idx])
+            selected_embs.append(pool[best_idx]["embedding"])
+            remaining.remove(best_idx)
+
+        return [
+            SearchResult(
+                id=s["id"],
+                title=s["title"],
+                content=s["content"],
+                category=s["category"],
+                tags=s["tags"],
+                source_url=s["source_url"],
+                score=s["similarity"],
+            )
+            for s in selected
+        ]
+
+
+def _cosine_sim(a: list[float], b: list[float]) -> float:
+    """Compute cosine similarity between two vectors."""
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = sum(x * x for x in a) ** 0.5
+    norm_b = sum(x * x for x in b) ** 0.5
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)

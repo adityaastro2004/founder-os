@@ -48,6 +48,7 @@ from app.agents.router import AgentCard, AgentRouter
 from app.agents.tool_protocol import LocalToolProvider, ToolRegistry
 from app.models import Agent as AgentModel, UserAgentConfig
 from app.retrieval.embeddings import EmbeddingProvider, create_embedding_provider
+from app.retrieval.retriever import ContextRetriever
 
 
 class AgentRegistry:
@@ -277,11 +278,20 @@ class AgentRegistry:
             user_id=user_id,
             session_id=session_id,
         )
+
+        # 6b. Build ContextRetriever for hybrid/MMR search
+        retriever = ContextRetriever(
+            db=self._db,
+            embedder=self._embedder,
+            user_id=user_id,
+        )
+
         memory = AgentMemory(
             conversation=conversation,
             working=working,
             long_term=long_term,
             shared=shared,
+            retriever=retriever,
         )
 
         # 7. Instantiate with all components
@@ -471,6 +481,41 @@ class AgentRegistry:
                 return json.dumps({"error": str(exc), "conflicts": []})
 
         tool_registry.override_tool_impl("check_calendar_conflicts", _check_conflicts_impl)
+
+        # 11. Wire search_knowledge tool with real ContextRetriever
+        _retriever = retriever
+
+        async def _search_knowledge_impl(
+            query: str,
+            category: str = "",
+            limit: int = 5,
+        ) -> str:
+            """Search the user's knowledge base using hybrid/MMR retrieval."""
+            try:
+                results = await _retriever.search(
+                    query,
+                    limit=limit,
+                    category=category or None,
+                    search_type="mmr",
+                )
+                return json.dumps({
+                    "results": [
+                        {
+                            "id": str(r.id),
+                            "title": r.title,
+                            "content": r.content[:1000],
+                            "category": r.category,
+                            "score": round(r.score, 3),
+                            "source_url": r.source_url,
+                        }
+                        for r in results
+                    ],
+                    "total": len(results),
+                })
+            except Exception as exc:
+                return json.dumps({"results": [], "error": str(exc)})
+
+        tool_registry.override_tool_impl("search_knowledge", _search_knowledge_impl)
 
         return agent
 

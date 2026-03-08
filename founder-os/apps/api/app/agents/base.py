@@ -188,6 +188,7 @@ class BaseAgent:
 
         # 2. Build system prompt with memory + router context
         system_prompt = await self._build_system_prompt(
+            query=user_input,
             query_embedding=query_embedding,
             extra_context=extra_context,
         )
@@ -332,6 +333,7 @@ class BaseAgent:
 
     async def _build_system_prompt(
         self,
+        query: str | None = None,
         query_embedding: list[float] | None = None,
         extra_context: str | None = None,
     ) -> str:
@@ -380,6 +382,7 @@ class BaseAgent:
 
         # Memory context (working memory + RAG)
         mem_ctx = await self.memory.build_context(
+            query=query,
             query_embedding=query_embedding,
         )
         if mem_ctx:

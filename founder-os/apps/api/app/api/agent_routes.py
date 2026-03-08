@@ -19,6 +19,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from sqlalchemy import select
+
 from app.auth import ClerkUser, require_auth
 from app.config import get_settings
 from app.database import get_db
@@ -28,6 +31,51 @@ from app.user_store import get_user as get_planner_user
 from app.models import AgentRun, ChatMessage as ChatMessageModel
 
 logger = logging.getLogger(__name__)
+
+
+# ── Session history loader — populates ConversationMemory from DB ──
+
+_MAX_HISTORY_MESSAGES = 50  # match ConversationMemory.max_messages
+
+
+async def _load_session_history(
+    agent: "BaseAgent",
+    db: AsyncSession,
+    user_id: str,
+    session_id: str,
+    agent_name: str,
+) -> None:
+    """
+    Load prior ChatMessage rows into the agent's ConversationMemory
+    so returning users get full conversational continuity.
+
+    Only loads messages for the same (user_id, session_id, agent_name)
+    scope, ordered oldest → newest, capped at _MAX_HISTORY_MESSAGES.
+    """
+    if not session_id:
+        return
+
+    result = await db.execute(
+        select(ChatMessageModel)
+        .where(
+            ChatMessageModel.user_id == user_id,
+            ChatMessageModel.session_id == session_id,
+            ChatMessageModel.agent_name == agent_name,
+        )
+        .order_by(ChatMessageModel.created_at.desc())
+        .limit(_MAX_HISTORY_MESSAGES)
+    )
+    rows = list(result.scalars().all())
+
+    if not rows:
+        return
+
+    # Reverse so oldest first; add to conversation memory in order
+    for msg in reversed(rows):
+        if msg.role == "user":
+            agent.memory.conversation.add_user(msg.content)
+        elif msg.role == "assistant":
+            agent.memory.conversation.add_assistant(msg.content)
 
 
 # ── Background insight extraction ─────────────────────────
@@ -44,6 +92,10 @@ async def _extract_insights_background(
     Fire-and-forget: extract user insights via lightweight rules (no LLM).
     Every 25 interactions, synthesise the user profile (uses LLM once).
     """
+    # Skip trivially short messages — no useful signal to extract
+    if not user_message or len(user_message.strip()) < 10:
+        return
+
     try:
         from app.agents.profile_intelligence import ProfileIntelligence
         from app.database import async_session
@@ -88,9 +140,6 @@ async def _extract_insights_background(
                 pi_with_llm = ProfileIntelligence(db, _gen)
                 await pi_with_llm.synthesise_profile(user_id)
                 logger.info("Auto-synthesised profile for user %s", user_id[:8])
-
-    except Exception as exc:
-        logger.warning("Background insight extraction failed: %s", exc)
 
     except Exception as exc:
         logger.warning("Background insight extraction failed: %s", exc)
@@ -231,6 +280,10 @@ async def run_agent(
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
 
+    # Load prior conversation history from DB into agent memory
+    if body.session_id:
+        await _load_session_history(agent, db, user.user_id, body.session_id, agent_name)
+
     result = await agent.run(
         body.message,
         extra_context=body.extra_context,
@@ -238,7 +291,7 @@ async def run_agent(
 
     tool_names = list({tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")})
 
-    # Persist the run to DB
+    # Persist the run + chat messages to DB
     try:
         run_record = AgentRun(
             user_id=user.user_id,
@@ -255,6 +308,29 @@ async def run_agent(
             tool_calls_count=len(result.tool_calls_made),
         )
         db.add(run_record)
+
+        # Save chat messages for session continuity
+        if body.session_id:
+            db.add(ChatMessageModel(
+                user_id=user.user_id,
+                session_id=body.session_id,
+                agent_name=agent_name,
+                role="user",
+                content=body.message,
+            ))
+            db.add(ChatMessageModel(
+                user_id=user.user_id,
+                session_id=body.session_id,
+                agent_name=agent_name,
+                role="assistant",
+                content=result.content or "",
+                model=result.model,
+                tokens_used=result.tokens_used,
+                duration_seconds=round(result.duration_seconds, 2),
+                tool_names=tool_names,
+                status="completed",
+            ))
+
         await db.commit()
     except Exception:
         await db.rollback()
@@ -314,6 +390,9 @@ async def chat_with_agent(
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
+
+    # Load prior conversation history from DB into agent memory
+    await _load_session_history(agent, db, user.user_id, session_id, agent_name)
 
     start = time.time()
     result = await agent.run(body.message, extra_context=body.extra_context)
@@ -453,6 +532,11 @@ async def orchestrate(
         )
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
+
+    # Load prior conversation history from DB into agent memory
+    orch_session = body.session_id or ""
+    if orch_session:
+        await _load_session_history(agent, db, user.user_id, orch_session, "orchestrator")
 
     result = await agent.run(
         body.message,
@@ -594,6 +678,11 @@ async def orchestrate_stream(
         )
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
+
+    # Load prior conversation history from DB into agent memory
+    stream_session = body.session_id or ""
+    if stream_session:
+        await _load_session_history(agent, db, user.user_id, stream_session, "orchestrator")
 
     async def event_generator():
         from app.agents.event_bus import Event
@@ -839,3 +928,153 @@ async def orchestrate_stream(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+# ── History & Session Endpoints ───────────────────────────
+
+@router.get("/{agent_name}/history")
+async def get_agent_history(
+    agent_name: str,
+    session_id: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    user: ClerkUser = Depends(require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Retrieve chat message history for a specific agent.
+
+    Optionally filter by session_id. Returns messages oldest → newest.
+    """
+    stmt = (
+        select(ChatMessageModel)
+        .where(
+            ChatMessageModel.user_id == user.user_id,
+            ChatMessageModel.agent_name == agent_name,
+        )
+    )
+    if session_id:
+        stmt = stmt.where(ChatMessageModel.session_id == session_id)
+    stmt = stmt.order_by(ChatMessageModel.created_at.asc()).offset(offset).limit(limit)
+
+    result = await db.execute(stmt)
+    messages = result.scalars().all()
+
+    return {
+        "agent": agent_name,
+        "session_id": session_id,
+        "count": len(messages),
+        "offset": offset,
+        "messages": [
+            {
+                "id": str(m.id),
+                "role": m.role,
+                "content": m.content,
+                "model": m.model,
+                "tokens_used": m.tokens_used,
+                "tool_names": m.tool_names,
+                "status": m.status,
+                "created_at": m.created_at.isoformat() if m.created_at else None,
+            }
+            for m in messages
+        ],
+    }
+
+
+@router.get("/history/sessions")
+async def list_sessions(
+    agent_name: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    user: ClerkUser = Depends(require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List distinct session IDs for the current user, with the last message timestamp.
+    Optionally filter by agent_name.
+    """
+    from sqlalchemy import func, distinct
+
+    stmt = (
+        select(
+            ChatMessageModel.session_id,
+            ChatMessageModel.agent_name,
+            func.max(ChatMessageModel.created_at).label("last_message_at"),
+            func.count(ChatMessageModel.id).label("message_count"),
+        )
+        .where(ChatMessageModel.user_id == user.user_id)
+    )
+    if agent_name:
+        stmt = stmt.where(ChatMessageModel.agent_name == agent_name)
+    stmt = (
+        stmt.group_by(ChatMessageModel.session_id, ChatMessageModel.agent_name)
+        .order_by(func.max(ChatMessageModel.created_at).desc())
+        .offset(offset)
+        .limit(limit)
+    )
+
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    return {
+        "count": len(rows),
+        "offset": offset,
+        "sessions": [
+            {
+                "session_id": r.session_id,
+                "agent_name": r.agent_name,
+                "last_message_at": r.last_message_at.isoformat() if r.last_message_at else None,
+                "message_count": r.message_count,
+            }
+            for r in rows
+        ],
+    }
+
+
+@router.get("/history/runs")
+async def list_runs(
+    agent_name: Optional[str] = Query(None),
+    session_id: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    user: ClerkUser = Depends(require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    List agent run records for the current user.
+    Optionally filter by agent_name and/or session_id.
+    """
+    stmt = select(AgentRun).where(AgentRun.user_id == user.user_id)
+    if agent_name:
+        stmt = stmt.where(AgentRun.agent_name == agent_name)
+    if session_id:
+        stmt = stmt.where(AgentRun.session_id == session_id)
+    stmt = stmt.order_by(AgentRun.created_at.desc()).offset(offset).limit(limit)
+
+    result = await db.execute(stmt)
+    runs = result.scalars().all()
+
+    return {
+        "count": len(runs),
+        "offset": offset,
+        "runs": [
+            {
+                "id": str(r.id),
+                "agent_name": r.agent_name,
+                "session_id": r.session_id,
+                "user_message": r.user_message[:200],
+                "agent_response": r.agent_response[:200],
+                "model": r.model,
+                "tokens_used": r.tokens_used,
+                "cost_usd": float(r.cost_usd) if r.cost_usd else 0,
+                "duration_seconds": float(r.duration_seconds) if r.duration_seconds else 0,
+                "tool_names": r.tool_names,
+                "tool_calls_count": r.tool_calls_count,
+                "agents_used": r.agents_used,
+                "delegations_made": r.delegations_made,
+                "status": r.status,
+                "created_at": r.created_at.isoformat() if r.created_at else None,
+            }
+            for r in runs
+        ],
+    }

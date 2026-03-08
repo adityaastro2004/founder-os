@@ -22,7 +22,7 @@ import uuid
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from pydantic import BaseModel, Field
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -121,7 +121,7 @@ class SearchRequest(BaseModel):
     min_similarity: float = Field(0.5, ge=0.0, le=1.0)
     category: str | None = None
     tags: list[str] | None = None
-    search_type: str = Field("hybrid", description="hybrid | semantic | fulltext")
+    search_type: str = Field("hybrid", description="hybrid | semantic | fulltext | mmr")
 
 
 class IngestionResponse(BaseModel):
@@ -316,6 +316,122 @@ async def ingest_batch(
         )
         for r in results
     ]
+
+
+# ── Allowed MIME types for file upload ─────────────────────────
+_ALLOWED_MIME_TYPES = {
+    "text/plain",
+    "text/markdown",
+    "text/csv",
+    "application/pdf",
+    "application/json",
+}
+
+_MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+
+
+@router.post("/ingest/file", response_model=IngestionResponse, status_code=201)
+async def ingest_file(
+    file: UploadFile = File(...),
+    title: str | None = Form(None),
+    category: str | None = Form(None),
+    tags: str | None = Form(None, description="Comma-separated tags"),
+    chunk_size: int = Form(512),
+    chunk_overlap: int = Form(50),
+    user: ClerkUser = Depends(require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Upload a file and ingest its content into the knowledge base.
+
+    Supported formats: .txt, .md, .csv, .json, .pdf (text-based).
+    Max file size: 10 MB.
+    """
+    # Validate file type
+    content_type = file.content_type or ""
+    filename = file.filename or "upload"
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+    allowed_extensions = {"txt", "md", "csv", "json", "pdf"}
+    if ext not in allowed_extensions and content_type not in _ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Unsupported file type: {ext or content_type}. "
+                   f"Allowed: {', '.join(sorted(allowed_extensions))}",
+        )
+
+    # Read file content with size limit
+    raw = await file.read()
+    if len(raw) > _MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="File too large. Max 10 MB.")
+
+    # Extract text based on file type
+    if ext == "pdf":
+        # Basic PDF text extraction — requires pdfplumber or fallback
+        try:
+            import pdfplumber
+            import io
+            text = ""
+            with pdfplumber.open(io.BytesIO(raw)) as pdf:
+                for page in pdf.pages:
+                    page_text = page.extract_text()
+                    if page_text:
+                        text += page_text + "\n\n"
+        except ImportError:
+            raise HTTPException(
+                status_code=501,
+                detail="PDF support requires pdfplumber. Install with: pip install pdfplumber",
+            )
+        if not text.strip():
+            raise HTTPException(status_code=422, detail="Could not extract text from PDF.")
+    elif ext == "json":
+        import json as _json
+        try:
+            data = _json.loads(raw.decode("utf-8"))
+            text = _json.dumps(data, indent=2, ensure_ascii=False)
+        except (UnicodeDecodeError, _json.JSONDecodeError) as exc:
+            raise HTTPException(status_code=422, detail=f"Invalid JSON file: {exc}")
+    else:
+        # Plain text / markdown / CSV
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            text = raw.decode("latin-1")
+
+    if not text.strip():
+        raise HTTPException(status_code=422, detail="File is empty or contains no extractable text.")
+
+    # Parse tags
+    tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else None
+
+    # Ingest
+    embedder = _get_embedder()
+    store = VectorStore(db)
+    chunker = TextChunker(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    ingester = Ingester(vector_store=store, embedder=embedder, chunker=chunker)
+
+    try:
+        result = await ingester.ingest_text(
+            user_id=_user_uuid(user),
+            content=text,
+            title=title or filename,
+            category=category,
+            tags=tag_list,
+            source_url=f"file://{filename}",
+        )
+    finally:
+        await embedder.close()
+
+    return IngestionResponse(
+        document_id=result.document_id,
+        chunks_created=result.chunks_created,
+        total_tokens=result.total_tokens,
+        knowledge_item_ids=result.knowledge_item_ids,
+        duration_seconds=result.duration_seconds,
+        title=result.title or filename,
+        category=result.category,
+        source_url=f"file://{filename}",
+    )
 
 
 @router.post("/search", response_model=SearchResponse)

@@ -130,6 +130,16 @@ for _phrases, _type, _sent, _conf in [
     for _p in _phrases:
         _PATTERNS.append((re.compile(_p, re.IGNORECASE), _type, _sent, _conf))
 
+# Module-level word sets for signal counter (avoid re-creating per call)
+_POSITIVE_WORDS = frozenset({
+    "thanks", "thank you", "perfect", "great", "awesome",
+    "love it", "exactly", "wonderful", "excellent", "helpful",
+})
+_NEGATIVE_WORDS = frozenset({
+    "wrong", "not what i", "that's not", "incorrect",
+    "bad", "useless", "redo",
+})
+
 
 def _extract_insights_rules(
     user_message: str,
@@ -138,7 +148,7 @@ def _extract_insights_rules(
     Pure-Python pattern matcher.  Returns a list of insight dicts
     extracted from the user's message.  Zero LLM calls.
     """
-    if not user_message or len(user_message.strip()) < 5:
+    if not user_message or len(user_message.strip()) < 10:
         return []
 
     msg = user_message.strip()
@@ -309,12 +319,28 @@ class ProfileIntelligence:
     ) -> list[UserInsight]:
         """
         Analyse a conversation turn using lightweight keyword/pattern rules.
-        Zero LLM calls — only DB writes.
+        Zero LLM calls.  Single DB commit for insights + signal counters.
+        Deduplicates: skips insights whose value already exists for this user
+        in the last 24 h.
         """
         insights_data = _extract_insights_rules(user_message)
 
+        # ── Deduplicate against recent insights (last 24 h) ──────────
+        existing_values: set[str] = set()
+        if insights_data:
+            recent = await self._db.execute(
+                select(UserInsight.insight_value)
+                .where(
+                    UserInsight.user_id == user_id,
+                    UserInsight.created_at >= text("NOW() - INTERVAL '24 hours'"),
+                )
+            )
+            existing_values = {row[0] for row in recent.fetchall()}
+
         records: list[UserInsight] = []
         for item in insights_data:
+            if item["value"] in existing_values:
+                continue
             record = UserInsight(
                 user_id=user_id,
                 agent_name=agent_name,
@@ -329,15 +355,41 @@ class ProfileIntelligence:
             self._db.add(record)
             records.append(record)
 
-        if records:
-            try:
-                await self._db.commit()
-            except Exception:
-                await self._db.rollback()
-                return []
+        # ── Atomic signal counter update (single SQL, no SELECT) ─────
+        msg_lower = user_message.lower()
+        pos = any(w in msg_lower for w in _POSITIVE_WORDS)
+        neg = any(w in msg_lower for w in _NEGATIVE_WORDS)
 
-        # Also update simple signal counters on the profile
-        await self._update_signal_counters(user_id, user_message, agent_response)
+        await self._db.execute(
+            text("""
+                INSERT INTO user_profiles_intel (id, user_id, total_interactions,
+                    positive_signals, negative_signals, updated_at)
+                VALUES (uuid_generate_v4(), :uid, 1, :pos, :neg, NOW())
+                ON CONFLICT (user_id) DO UPDATE SET
+                    total_interactions = user_profiles_intel.total_interactions + 1,
+                    positive_signals   = user_profiles_intel.positive_signals + :pos,
+                    negative_signals   = user_profiles_intel.negative_signals + :neg,
+                    satisfaction_score  = CASE
+                        WHEN (user_profiles_intel.positive_signals + :pos
+                            + user_profiles_intel.negative_signals + :neg) > 0
+                        THEN ROUND(
+                            (user_profiles_intel.positive_signals + :pos)::numeric
+                            / (user_profiles_intel.positive_signals + :pos
+                               + user_profiles_intel.negative_signals + :neg)
+                            * 5.0, 2)
+                        ELSE user_profiles_intel.satisfaction_score
+                    END,
+                    updated_at = NOW()
+            """),
+            {"uid": user_id, "pos": int(pos), "neg": int(neg)},
+        )
+
+        # ── Single commit for everything ─────────────────────────────
+        try:
+            await self._db.commit()
+        except Exception:
+            await self._db.rollback()
+            return []
 
         return records
 
@@ -673,40 +725,5 @@ class ProfileIntelligence:
             raise
         return profile
 
-    async def _update_signal_counters(
-        self,
-        user_id: str,
-        user_message: str,
-        agent_response: str,
-    ) -> None:
-        """Update simple positive/negative signal counters and total_interactions."""
-        profile = await self._get_or_create_profile(user_id)
-
-        positive_words = {"thanks", "thank you", "perfect", "great", "awesome",
-                          "love it", "exactly", "wonderful", "excellent", "helpful"}
-        negative_words = {"no", "wrong", "not what i", "that's not", "incorrect",
-                          "bad", "useless", "don't", "stop", "redo"}
-
-        msg_lower = user_message.lower()
-        pos = any(w in msg_lower for w in positive_words)
-        neg = any(w in msg_lower for w in negative_words)
-
-        profile.total_interactions = (profile.total_interactions or 0) + 1
-        if pos:
-            profile.positive_signals = (profile.positive_signals or 0) + 1
-        if neg:
-            profile.negative_signals = (profile.negative_signals or 0) + 1
-
-        # Update running satisfaction score
-        total = (profile.positive_signals or 0) + (profile.negative_signals or 0)
-        if total > 0:
-            profile.satisfaction_score = Decimal(str(
-                round((profile.positive_signals or 0) / total * 5.0, 2)
-            ))
-
-        profile.updated_at = datetime.now(timezone.utc)
-
-        try:
-            await self._db.commit()
-        except Exception:
-            await self._db.rollback()
+    # _update_signal_counters removed — merged into extract_insights()
+    # as a single atomic upsert for better efficiency.

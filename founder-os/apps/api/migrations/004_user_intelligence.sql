@@ -81,6 +81,7 @@ CREATE TABLE IF NOT EXISTS user_insights (
 CREATE INDEX IF NOT EXISTS idx_user_insights_user ON user_insights(user_id);
 CREATE INDEX IF NOT EXISTS idx_user_insights_type ON user_insights(insight_type);
 CREATE INDEX IF NOT EXISTS idx_user_insights_unprocessed ON user_insights(user_id, is_processed) WHERE NOT is_processed;
+CREATE INDEX IF NOT EXISTS idx_user_insights_created ON user_insights(created_at DESC);
 
 -- 3. Cross-user business intelligence (patterns across all users)
 CREATE TABLE IF NOT EXISTS business_insights (

@@ -1226,3 +1226,661 @@ web:dev: AggregateError:
 web:dev:     at ignore-listed frames {
 web:dev:   code: 'ECONNREFUSED'
 web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/recent?limit=10 AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev: AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/knowledge/stats AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev: AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/memory/stats AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev: AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/review/stats AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev: AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev: AggregateError: 
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNREFUSED'
+web:dev: }
+web:dev:  GET /dashboard/chat 200 in 32ms (compile: 9ms, proxy.ts: 4ms, render: 18ms)
+web:dev:  GET /dashboard/agents 200 in 17ms (compile: 4ms, proxy.ts: 5ms, render: 9ms)
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }

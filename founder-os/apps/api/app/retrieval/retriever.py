@@ -78,7 +78,7 @@ class ContextRetriever:
         min_similarity: float = 0.5,
         category: str | None = None,
         tags: list[str] | None = None,
-        search_type: str = "hybrid",   # "hybrid" | "semantic" | "fulltext"
+        search_type: str = "hybrid",   # "hybrid" | "semantic" | "fulltext" | "mmr"
     ) -> list[RetrievalResult]:
         """
         Search knowledge items with auto-embedding.
@@ -89,18 +89,27 @@ class ContextRetriever:
             min_similarity: Minimum cosine similarity threshold.
             category: Filter by category.
             tags: Filter by tags (any match).
-            search_type: "hybrid" (default), "semantic", or "fulltext".
+            search_type: "hybrid" (default), "semantic", "fulltext", or "mmr".
 
         Returns:
             Ranked list of RetrievalResult objects.
         """
         results: list[SearchResult] = []
 
-        if search_type in ("hybrid", "semantic"):
+        if search_type in ("hybrid", "semantic", "mmr"):
             # Embed the query
             query_embedding = await self._embedder.embed(query)
 
-            if search_type == "hybrid":
+            if search_type == "mmr":
+                results = await self._store.search_mmr(
+                    user_id=self._user_id,
+                    query_embedding=query_embedding,
+                    limit=limit,
+                    min_similarity=min_similarity,
+                    category=category,
+                    tags=tags,
+                )
+            elif search_type == "hybrid":
                 results = await self._store.hybrid_search(
                     user_id=self._user_id,
                     query=query,

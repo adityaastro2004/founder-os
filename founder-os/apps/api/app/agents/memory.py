@@ -113,7 +113,7 @@ class WorkingMemory:
     Stores structured data (current plan, intermediate results) with TTL.
     """
 
-    TTL_SECONDS = 3600 * 4  # 4 hours default
+    TTL_SECONDS = 3600 * 24  # 24 hours — survive a full workday
 
     def __init__(
         self,
@@ -194,7 +194,7 @@ class SharedMemory:
     during multi-agent workflows (A2A delegation results, plans, etc.).
     """
 
-    TTL_SECONDS = 3600 * 8  # 8 hours default
+    TTL_SECONDS = 3600 * 48  # 48 hours — persist across sessions
 
     def __init__(
         self,
@@ -359,6 +359,7 @@ class AgentMemory:
     - working (Redis — per-agent)
     - shared (Redis — cross-agent)
     - long_term (PostgreSQL + pgvector)
+    - retriever (optional — full ContextRetriever with hybrid/MMR search)
     """
 
     def __init__(
@@ -367,20 +368,26 @@ class AgentMemory:
         working: WorkingMemory,
         long_term: LongTermMemory,
         shared: SharedMemory | None = None,
+        retriever: Any | None = None,
     ) -> None:
         self.conversation = conversation
         self.working = working
         self.long_term = long_term
         self.shared = shared
+        self.retriever = retriever  # ContextRetriever when available
 
     async def build_context(
         self,
+        query: str | None = None,
         query_embedding: list[float] | None = None,
         rag_limit: int = 5,
     ) -> str:
         """
         Assemble all memory layers into a context block
         that gets prepended to the system prompt.
+
+        When a ContextRetriever is available, uses hybrid/MMR search
+        instead of basic cosine similarity for better retrieval quality.
         """
         parts: list[str] = []
 
@@ -395,8 +402,23 @@ class AgentMemory:
             if sm:
                 parts.append(sm)
 
-        # Long-term RAG (only if we have an embedding for the query)
-        if query_embedding:
+        # Long-term RAG — prefer ContextRetriever (hybrid/MMR) over basic cosine
+        if self.retriever and query:
+            try:
+                ctx = await self.retriever.get_context(
+                    query,
+                    limit=rag_limit,
+                    search_type="mmr",
+                )
+                if ctx:
+                    parts.append(ctx)
+            except Exception:
+                logger.warning("ContextRetriever failed, falling back to LongTermMemory", exc_info=True)
+                if query_embedding:
+                    ltm = await self.long_term.to_context_string(query_embedding, limit=rag_limit)
+                    if ltm:
+                        parts.append(ltm)
+        elif query_embedding:
             ltm = await self.long_term.to_context_string(query_embedding, limit=rag_limit)
             if ltm:
                 parts.append(ltm)
