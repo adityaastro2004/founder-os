@@ -65,8 +65,8 @@ export function OnboardingGuard({ children }: { children: React.ReactNode }) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
-          <p className="text-sm text-[var(--color-text-muted)]">Loading...</p>
+          <div className="w-6 h-6 border-2 border-[var(--color-border)] border-t-[var(--color-text)] rounded-full animate-spin" />
+          <p className="text-xs text-[var(--color-text-muted)]">Loading...</p>
         </div>
       </div>
     );

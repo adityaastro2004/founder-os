@@ -6,7 +6,6 @@ import { clsx } from "clsx";
 import {
   LayoutDashboard,
   Bot,
-  CalendarDays,
   Brain,
   ListTodo,
   Settings,
@@ -18,11 +17,10 @@ import {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Chat", href: "/dashboard/chat", icon: MessageSquare },
   { name: "Agents", href: "/dashboard/agents", icon: Bot },
-  { name: "Planner", href: "/dashboard/planner", icon: CalendarDays },
   { name: "Tasks", href: "/dashboard/tasks", icon: ListTodo },
   { name: "Memory", href: "/dashboard/memory", icon: Brain },
-  { name: "Chat", href: "/dashboard/chat", icon: MessageSquare },
   { name: "Knowledge", href: "/dashboard/knowledge", icon: BookOpen },
   { name: "Automations", href: "/dashboard/automations", icon: Zap },
 ];
@@ -43,18 +41,18 @@ export function Sidebar({
   return (
     <aside
       className={clsx(
-        "fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width)] bg-[var(--color-surface)] border-r border-[var(--color-border)] flex flex-col transition-transform duration-200 ease-in-out",
+        "fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width)] bg-white border-r border-[var(--color-border)] flex flex-col transition-transform duration-200 ease-in-out",
         "lg:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full"
       )}
     >
       {/* Brand */}
-      <div className="flex items-center justify-between h-16 px-5 border-b border-[var(--color-border)]">
-        <Link href="/dashboard" className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-            <span className="text-white font-bold text-sm">F</span>
+      <div className="flex items-center justify-between h-14 px-4">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <div className="w-7 h-7 rounded-md bg-[var(--color-accent)] flex items-center justify-center">
+            <span className="text-[var(--color-accent-foreground)] font-bold text-xs">F</span>
           </div>
-          <span className="font-semibold text-lg tracking-tight">
+          <span className="font-semibold text-sm tracking-tight">
             Founder OS
           </span>
         </Link>
@@ -62,12 +60,12 @@ export function Sidebar({
           onClick={onClose}
           className="lg:hidden p-1 rounded-md hover:bg-[var(--color-surface-muted)] transition-colors"
         >
-          <X className="w-5 h-5 text-[var(--color-text-secondary)]" />
+          <X className="w-4 h-4 text-[var(--color-text-muted)]" />
         </button>
       </div>
 
       {/* Main navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {navigation.map((item) => {
           const isActive =
             pathname === item.href ||
@@ -79,31 +77,28 @@ export function Sidebar({
               href={item.href}
               onClick={onClose}
               className={clsx(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors duration-100",
                 isActive
-                  ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400 shadow-sm"
+                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)]"
                   : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text)]"
               )}
             >
               <item.icon
                 className={clsx(
-                  "w-5 h-5 shrink-0",
+                  "w-4 h-4 shrink-0",
                   isActive
-                    ? "text-indigo-600 dark:text-indigo-400"
+                    ? "text-[var(--color-text)]"
                     : "text-[var(--color-text-muted)]"
                 )}
               />
               {item.name}
-              {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />
-              )}
             </Link>
           );
         })}
       </nav>
 
       {/* Bottom navigation */}
-      <div className="px-3 py-4 border-t border-[var(--color-border)] space-y-1">
+      <div className="px-3 py-3 border-t border-[var(--color-border)] space-y-0.5">
         {bottomNav.map((item) => {
           const isActive = pathname.startsWith(item.href);
           return (
@@ -112,13 +107,13 @@ export function Sidebar({
               href={item.href}
               onClick={onClose}
               className={clsx(
-                "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors duration-100",
                 isActive
-                  ? "bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text)]"
+                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)]"
+                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)] hover:text-[var(--color-text)]"
               )}
             >
-              <item.icon className="w-5 h-5 shrink-0 text-[var(--color-text-muted)]" />
+              <item.icon className="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
               {item.name}
             </Link>
           );

@@ -60,12 +60,12 @@ interface Chapter {
 
 /* ── Page Type Badge ──────────────────────────────── */
 const typeColors: Record<string, string> = {
-  event: "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
-  decision: "bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
-  milestone: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
-  metric: "bg-purple-100 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400",
-  insight: "bg-pink-100 text-pink-600 dark:bg-pink-500/10 dark:text-pink-400",
-  note: "bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400",
+  event: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
+  decision: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
+  milestone: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
+  metric: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
+  insight: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
+  note: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
 };
 
 /* ── Memory Card ──────────────────────────────────── */
@@ -89,18 +89,18 @@ function MemoryCard({
   return (
     <div
       className={clsx(
-        "p-4 rounded-xl border transition-colors",
+        "p-4 rounded-lg border transition-colors",
         memory.is_pinned
-          ? "border-amber-300 dark:border-amber-500/30 bg-amber-50/50 dark:bg-amber-500/5"
+          ? "border-[var(--color-text-muted)] bg-[var(--color-surface-subtle)]"
           : "border-[var(--color-border)] hover:bg-[var(--color-surface-subtle)]"
       )}
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 shrink-0">
           {memory.is_pinned ? (
-            <Pin className="w-4 h-4 text-amber-500" />
+            <Pin className="w-4 h-4 text-[var(--color-text)]" />
           ) : (
-            <Brain className="w-4 h-4 text-indigo-500" />
+            <Brain className="w-4 h-4 text-[var(--color-text-secondary)]" />
           )}
         </div>
         <button onClick={onToggle} className="flex-1 text-left min-w-0">
@@ -144,8 +144,8 @@ function MemoryCard({
             className={clsx(
               "p-1.5 rounded-lg transition-colors",
               memory.is_pinned
-                ? "text-amber-500 hover:bg-amber-100 dark:hover:bg-amber-500/10"
-                : "text-[var(--color-text-muted)] hover:text-amber-500 hover:bg-[var(--color-surface-subtle)]"
+                ? "text-[var(--color-text)] hover:bg-[var(--color-surface-muted)]"
+                : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-subtle)]"
             )}
             title={memory.is_pinned ? "Unpin" : "Pin"}
           >
@@ -154,7 +154,7 @@ function MemoryCard({
           <button
             onClick={onDelete}
             disabled={deleting}
-            className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-red-500 hover:bg-[var(--color-surface-subtle)] transition-colors"
+            className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-surface-subtle)] transition-colors"
           >
             {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
           </button>
@@ -171,7 +171,7 @@ function MemoryCard({
               {memory.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 flex items-center gap-0.5"
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] flex items-center gap-0.5"
                 >
                   <Hash className="w-2.5 h-2.5" />
                   {tag}
@@ -325,7 +325,7 @@ export default function MemoryPage() {
   const chapterCount = chapters.length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
@@ -336,7 +336,7 @@ export default function MemoryPage() {
         </div>
         <button
           onClick={() => setShowStore(!showStore)}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
         >
           {showStore ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           {showStore ? "Cancel" : "Add Memory"}
@@ -345,21 +345,21 @@ export default function MemoryPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-3">
+        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3">
           <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] mb-1">
             <Database className="w-3.5 h-3.5" />
             Total Memories
           </div>
           <p className="text-lg font-bold">{loading ? "—" : totalMemories}</p>
         </div>
-        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-3">
+        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3">
           <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] mb-1">
             <Pin className="w-3.5 h-3.5" />
             Pinned
           </div>
           <p className="text-lg font-bold">{loading ? "—" : pinnedCount}</p>
         </div>
-        <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-3">
+        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3">
           <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] mb-1">
             <Layers className="w-3.5 h-3.5" />
             Chapters
@@ -372,7 +372,7 @@ export default function MemoryPage() {
       {showStore && (
         <form
           onSubmit={handleStore}
-          className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-5 space-y-3"
+          className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5 space-y-3"
         >
           <h3 className="text-sm font-semibold">Store a New Memory</h3>
           <input
@@ -380,20 +380,20 @@ export default function MemoryPage() {
             value={storeTitle}
             onChange={(e) => setStoreTitle(e.target.value)}
             placeholder="What happened?"
-            className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-indigo-400 placeholder:text-[var(--color-text-muted)]"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
           />
           <textarea
             value={storeContent}
             onChange={(e) => setStoreContent(e.target.value)}
             placeholder="Full details..."
             rows={3}
-            className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-indigo-400 resize-none placeholder:text-[var(--color-text-muted)]"
+            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] resize-none placeholder:text-[var(--color-text-muted)]"
           />
           <div className="grid grid-cols-2 gap-3">
             <select
               value={storeType}
               onChange={(e) => setStoreType(e.target.value)}
-              className="px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none"
+              className="px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none"
             >
               <option value="note">Note</option>
               <option value="event">Event</option>
@@ -407,13 +407,13 @@ export default function MemoryPage() {
               value={storeChapter}
               onChange={(e) => setStoreChapter(e.target.value)}
               placeholder="Chapter (e.g., product, hiring)"
-              className="px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-indigo-400 placeholder:text-[var(--color-text-muted)]"
+              className="px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
             />
           </div>
           <button
             type="submit"
             disabled={!storeTitle.trim() || !storeContent.trim() || storing}
-            className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 text-sm font-medium text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
           >
             {storing ? (
               <span className="flex items-center gap-2">
@@ -437,13 +437,13 @@ export default function MemoryPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Recall memories..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] outline-none focus:border-indigo-400 placeholder:text-[var(--color-text-muted)]"
+              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
             />
           </div>
           <button
             type="submit"
             disabled={searching}
-            className="px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            className="px-4 py-2.5 text-sm font-medium text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
           >
             {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : "Recall"}
           </button>
@@ -461,7 +461,7 @@ export default function MemoryPage() {
               className={clsx(
                 "px-2.5 py-1.5 text-xs rounded-lg transition-colors",
                 !selectedChapter
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400"
+                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
                   : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
               )}
             >
@@ -476,7 +476,7 @@ export default function MemoryPage() {
                 className={clsx(
                   "px-2.5 py-1.5 text-xs rounded-lg transition-colors",
                   selectedChapter === ch.name
-                    ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400"
+                    ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
                 )}
               >
@@ -491,10 +491,10 @@ export default function MemoryPage() {
       <div className="space-y-2">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+            <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
           </div>
         ) : memories.length === 0 ? (
-          <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-12 text-center">
+          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-12 text-center">
             <Brain className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-3" />
             <h2 className="text-lg font-semibold mb-2">No memories yet</h2>
             <p className="text-sm text-[var(--color-text-secondary)] max-w-sm mx-auto">

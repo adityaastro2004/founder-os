@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, FormEvent } from "react";
 import { useApi } from "@/lib/use-api";
 import { useEventSource } from "@/lib/use-event-source";
 import { DIRECT_API_URL } from "@/lib/api";
@@ -25,6 +25,10 @@ import {
   AlertTriangle,
   Send,
   X,
+  ArrowLeft,
+  Trash2,
+  User,
+  MessageSquare,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -59,16 +63,82 @@ interface ActivityStats {
   pending_approvals: number;
 }
 
-/* ── Agent colors & icons ────────────────────────────── */
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+  toolsUsed?: string[];
+  tokensUsed?: number;
+  durationSeconds?: number;
+  status?: "sending" | "completed" | "error" | "clarification";
+}
+
+/* ── Agent colors ────────────────────────────────────── */
 const agentColors: Record<string, string> = {
-  orchestrator: "from-violet-500 to-purple-600",
-  planner: "from-blue-500 to-indigo-600",
-  content: "from-pink-500 to-rose-600",
-  research: "from-emerald-500 to-teal-600",
-  ops: "from-amber-500 to-orange-600",
-  product: "from-cyan-500 to-blue-600",
-  support: "from-lime-500 to-green-600",
-  system: "from-gray-500 to-slate-600",
+  orchestrator: "bg-neutral-900",
+  planner: "bg-neutral-800",
+  content: "bg-neutral-700",
+  research: "bg-neutral-600",
+  ops: "bg-neutral-500",
+  product: "bg-neutral-400",
+  support: "bg-neutral-300",
+  system: "bg-neutral-200",
+};
+
+const agentDescriptions: Record<string, string> = {
+  orchestrator: "Routes tasks to the right specialist, monitors all agents",
+  planner: "AI-powered scheduling, calendar management, weekly planning",
+  content: "Blog posts, social media, marketing copy, newsletters",
+  research: "Market research, competitor analysis, trend reports",
+  ops: "DevOps, infrastructure, deployment, monitoring",
+  product: "Product strategy, roadmaps, feature specs, user stories",
+  support: "Customer support drafts, FAQ generation, ticket triage",
+};
+
+const agentSuggestions: Record<string, string[]> = {
+  orchestrator: [
+    "What did my agents do today?",
+    "Summarize recent activity",
+    "Which agent should handle investor outreach?",
+    "Run a full status check on all systems",
+  ],
+  planner: [
+    "What's on my calendar this week?",
+    "Schedule a team standup tomorrow at 10 AM",
+    "Plan my week focused on product launch",
+    "Delete all events for this week",
+  ],
+  content: [
+    "Write a blog post about AI for startups",
+    "Draft a Twitter thread about our launch",
+    "Create a newsletter for this week",
+    "Write product announcement copy",
+  ],
+  research: [
+    "Analyze competitors in the AI agent space",
+    "What are the latest trends in SaaS?",
+    "Research best pricing strategies for B2B",
+    "Find market data on developer tools",
+  ],
+  ops: [
+    "Check system health and status",
+    "What's our current uptime?",
+    "Review deployment pipeline configuration",
+    "Suggest infrastructure improvements",
+  ],
+  product: [
+    "Draft a feature spec for user onboarding",
+    "Create a product roadmap for Q2",
+    "Write user stories for the dashboard",
+    "Analyze our feature prioritization",
+  ],
+  support: [
+    "Draft a response for a billing inquiry",
+    "Generate FAQ for our new feature",
+    "Triage these customer tickets",
+    "Write a help article on getting started",
+  ],
 };
 
 const statusIcons: Record<string, React.ElementType> = {
@@ -81,12 +151,12 @@ const statusIcons: Record<string, React.ElementType> = {
 };
 
 const statusColors: Record<string, string> = {
-  started: "text-blue-500 bg-blue-500/10",
-  completed: "text-emerald-500 bg-emerald-500/10",
-  failed: "text-red-500 bg-red-500/10",
-  tool_call: "text-amber-500 bg-amber-500/10",
-  delegation: "text-purple-500 bg-purple-500/10",
-  info: "text-gray-500 bg-gray-500/10",
+  started: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]",
+  completed: "text-[var(--color-success)] bg-[var(--color-success)]/5",
+  failed: "text-[var(--color-danger)] bg-[var(--color-danger)]/5",
+  tool_call: "text-[var(--color-warning)] bg-[var(--color-warning)]/5",
+  delegation: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]",
+  info: "text-[var(--color-text-muted)] bg-[var(--color-surface-muted)]",
 };
 
 /* ── Time formatting ─────────────────────────────────── */
@@ -99,62 +169,397 @@ function timeAgo(ts: number): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-/* ── Agent Status Badge ──────────────────────────────── */
-function AgentStatusCard({
+/* ── Agent Chat Panel (slide-over) ───────────────────── */
+function AgentChatPanel({
   agent,
-  onRun,
+  onClose,
 }: {
   agent: AgentStatus;
-  onRun: (agentName: string) => void;
+  onClose: () => void;
+}) {
+  const { getToken } = useAuth();
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const sessionIdRef = useRef(`${agent.agent_name}-chat-${Date.now()}`);
+  const gradient = agentColors[agent.agent_name] || agentColors.system;
+  const suggestions = agentSuggestions[agent.agent_name] || [];
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSend = async (text?: string) => {
+    const userMessage = (text || input).trim();
+    if (!userMessage || sending) return;
+    setSending(true);
+    setInput("");
+
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: userMessage,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMsg]);
+
+    const assistantId = `assistant-${Date.now()}`;
+    const pendingMsg: ChatMessage = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      timestamp: new Date(),
+      status: "sending",
+    };
+    setMessages((prev) => [...prev, pendingMsg]);
+
+    try {
+      const token = await getToken();
+      const res = await fetch(
+        `${DIRECT_API_URL}/api/agents/${agent.agent_name}/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({
+            message: userMessage,
+            session_id: sessionIdRef.current,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || `API error ${res.status}`);
+      }
+
+      const data = await res.json();
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content: data.reply || data.content || "Done.",
+                status:
+                  data.status === "clarification_needed"
+                    ? "clarification"
+                    : "completed",
+                toolsUsed: data.tool_names || [],
+                tokensUsed: data.tokens_used,
+                durationSeconds: data.duration_seconds,
+              }
+            : m
+        )
+      );
+    } catch (err) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content:
+                  err instanceof Error
+                    ? err.message
+                    : "Something went wrong.",
+                status: "error",
+              }
+            : m
+        )
+      );
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    handleSend();
+  };
+
+  const clearChat = () => {
+    setMessages([]);
+    sessionIdRef.current = `${agent.agent_name}-chat-${Date.now()}`;
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      {/* Panel */}
+      <div className="relative ml-auto w-full max-w-2xl bg-white border-l border-[var(--color-border)] flex flex-col h-full shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border)]">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
+          </button>
+          <div
+            className={clsx(
+              "w-8 h-8 rounded-md flex items-center justify-center",
+              gradient
+            )}
+          >
+            <Bot className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm">{agent.display_name}</p>
+            <p className="text-xs text-[var(--color-text-muted)]">
+              {agentDescriptions[agent.agent_name] || "AI Agent"}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span
+              className={clsx(
+                "w-1.5 h-1.5 rounded-full",
+                agent.status === "running" &&
+                  "bg-[var(--color-success)] animate-pulse",
+                agent.status === "idle" && "bg-[var(--color-text-muted)]",
+                agent.status === "error" && "bg-[var(--color-danger)]"
+              )}
+            />
+            <span className="text-xs text-[var(--color-text-muted)] capitalize">
+              {agent.status}
+            </span>
+          </div>
+          {messages.length > 0 && (
+            <button
+              onClick={clearChat}
+              className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
+              title="Clear chat"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
+          >
+            <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
+          </button>
+        </div>
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full">
+              <div
+                className={clsx(
+                  "w-14 h-14 rounded-lg flex items-center justify-center mb-4",
+                  gradient
+                )}
+              >
+                <Bot className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-lg font-semibold mb-1">
+                Chat with {agent.display_name}
+              </h2>
+              <p className="text-sm text-[var(--color-text-secondary)] max-w-sm text-center mb-6">
+                {agentDescriptions[agent.agent_name] ||
+                  "Ask this agent anything."}
+              </p>
+              {suggestions.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
+                  {suggestions.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => handleSend(s)}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border-subtle)] bg-white hover:bg-[var(--color-surface-subtle)] transition-colors text-left"
+                    >
+                      <MessageSquare className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
+                      <span className="text-sm">{s}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <>
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={clsx(
+                    "flex gap-2.5",
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  )}
+                >
+                  {msg.role === "assistant" && (
+                    <div
+                      className={clsx(
+                        "w-7 h-7 rounded-md flex items-center justify-center shrink-0 mt-0.5",
+                        gradient
+                      )}
+                    >
+                      <Bot className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                  <div
+                    className={clsx(
+                      "max-w-[80%] rounded-lg px-4 py-2.5 text-sm",
+                      msg.role === "user"
+                        ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] rounded-br-sm"
+                        : msg.status === "error"
+                        ? "bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 text-[var(--color-danger)] rounded-bl-sm"
+                        : msg.status === "clarification"
+                        ? "bg-[var(--color-warning)]/5 border border-[var(--color-warning)]/20 rounded-bl-sm"
+                        : msg.status === "sending"
+                        ? "bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-bl-sm"
+                        : "bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-bl-sm"
+                    )}
+                  >
+                    {msg.status === "sending" ? (
+                      <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Thinking...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="whitespace-pre-wrap">{msg.content}</div>
+                        {msg.toolsUsed && msg.toolsUsed.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            {msg.toolsUsed.map((tool) => (
+                              <span
+                                key={tool}
+                                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] font-mono"
+                              >
+                                <Wrench className="w-2.5 h-2.5" />
+                                {tool}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {msg.durationSeconds && msg.role === "assistant" && (
+                          <div className="mt-1.5 text-[10px] text-[var(--color-text-muted)]">
+                            {msg.durationSeconds.toFixed(1)}s
+                            {msg.tokensUsed
+                              ? ` \u00b7 ${msg.tokensUsed} tokens`
+                              : ""}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  {msg.role === "user" && (
+                    <div className="w-7 h-7 rounded-md bg-[var(--color-surface-muted)] flex items-center justify-center shrink-0 mt-0.5">
+                      <User className="w-4 h-4 text-[var(--color-text-secondary)]" />
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </>
+          )}
+        </div>
+
+        {/* Input */}
+        <div className="border-t border-[var(--color-border)] p-4">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder={`Ask ${agent.display_name} anything...`}
+              disabled={sending}
+              className="flex-1 px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] disabled:opacity-50 placeholder:text-[var(--color-text-muted)]"
+            />
+            <button
+              type="submit"
+              disabled={!input.trim() || sending}
+              className={clsx(
+                "px-4 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                input.trim() && !sending
+                  ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:bg-[var(--color-accent-hover)]"
+                  : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
+              )}
+            >
+              {sending ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Agent Status Card ───────────────────────────────── */
+function AgentStatusCard({
+  agent,
+  onClick,
+}: {
+  agent: AgentStatus;
+  onClick: () => void;
 }) {
   const gradient = agentColors[agent.agent_name] || agentColors.system;
   return (
-    <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-4 hover:shadow-md transition-shadow">
+    <button
+      onClick={onClick}
+      className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4 hover:bg-[var(--color-surface-subtle)] hover:border-[var(--color-border)] transition-all text-left w-full group"
+    >
       <div className="flex items-center gap-3 mb-3">
         <div
           className={clsx(
-            "w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center",
+            "w-8 h-8 rounded-md flex items-center justify-center",
             gradient
           )}
         >
-          <Bot className="w-5 h-5 text-white" />
+          <Bot className="w-4 h-4 text-white" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm truncate">{agent.display_name}</p>
+          <p className="font-medium text-sm truncate">{agent.display_name}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span
               className={clsx(
-                "w-2 h-2 rounded-full",
-                agent.status === "running" && "bg-emerald-500 animate-pulse",
-                agent.status === "idle" && "bg-gray-400",
-                agent.status === "error" && "bg-red-500"
+                "w-1.5 h-1.5 rounded-full",
+                agent.status === "running" &&
+                  "bg-[var(--color-success)] animate-pulse",
+                agent.status === "idle" && "bg-[var(--color-text-muted)]",
+                agent.status === "error" && "bg-[var(--color-danger)]"
               )}
             />
-            <span className="text-xs text-[var(--color-text-secondary)] capitalize">
+            <span className="text-xs text-[var(--color-text-muted)] capitalize">
               {agent.status}
             </span>
           </div>
         </div>
-        {/* Run button */}
-        <button
-          onClick={() => onRun(agent.agent_name)}
-          title={`Run ${agent.display_name}`}
-          className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors"
-        >
-          <Play className="w-4 h-4" />
-        </button>
+        <MessageSquare className="w-4 h-4 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
+      <p className="text-xs text-[var(--color-text-secondary)] mb-3 line-clamp-1">
+        {agentDescriptions[agent.agent_name] || "AI Agent"}
+      </p>
       <div className="grid grid-cols-3 gap-2 text-center">
         <div>
-          <p className="text-lg font-bold">{agent.tasks_today}</p>
+          <p className="text-base font-semibold tabular-nums">
+            {agent.tasks_today}
+          </p>
           <p className="text-[10px] text-[var(--color-text-muted)]">Today</p>
         </div>
         <div>
-          <p className="text-lg font-bold text-emerald-600">{agent.tasks_completed}</p>
+          <p className="text-base font-semibold tabular-nums text-[var(--color-success)]">
+            {agent.tasks_completed}
+          </p>
           <p className="text-[10px] text-[var(--color-text-muted)]">Done</p>
         </div>
         <div>
-          <p className="text-lg font-bold text-red-500">{agent.tasks_failed}</p>
+          <p className="text-base font-semibold tabular-nums text-[var(--color-danger)]">
+            {agent.tasks_failed}
+          </p>
           <p className="text-[10px] text-[var(--color-text-muted)]">Failed</p>
         </div>
       </div>
@@ -164,7 +569,7 @@ function AgentStatusCard({
           Last active {timeAgo(agent.last_active)}
         </p>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -184,24 +589,26 @@ function EventRow({
     <div
       className={clsx(
         "flex items-start gap-3 py-3 px-4 rounded-xl transition-all duration-500",
-        isNew && "bg-indigo-50/50 dark:bg-indigo-500/5"
+        isNew && "bg-[var(--color-surface-muted)]"
       )}
     >
-      {/* Agent avatar */}
       <div
         className={clsx(
-          "w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0 mt-0.5",
+          "w-7 h-7 rounded-md flex items-center justify-center shrink-0 mt-0.5",
           gradient
         )}
       >
-        <Bot className="w-4 h-4 text-white" />
+        <Bot className="w-3.5 h-3.5 text-white" />
       </div>
-
-      {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium truncate">{event.title}</p>
-          <span className={clsx("inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium", colorClass)}>
+          <span
+            className={clsx(
+              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium",
+              colorClass
+            )}
+          >
             <Icon className="w-3 h-3" />
             {event.status}
           </span>
@@ -218,8 +625,6 @@ function EventRow({
           </span>
         )}
       </div>
-
-      {/* Timestamp */}
       <span className="text-[10px] text-[var(--color-text-muted)] whitespace-nowrap shrink-0 mt-1">
         {timeAgo(event.timestamp)}
       </span>
@@ -230,7 +635,6 @@ function EventRow({
 /* ── Main Page ───────────────────────────────────────── */
 export default function AgentsPage() {
   const api = useApi();
-  const { getToken } = useAuth();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [stats, setStats] = useState<ActivityStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -239,11 +643,8 @@ export default function AgentsPage() {
   const [newEventIds, setNewEventIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Run agent modal state
-  const [runModal, setRunModal] = useState<{ agentName: string; displayName: string } | null>(null);
-  const [runPrompt, setRunPrompt] = useState("");
-  const [runLoading, setRunLoading] = useState(false);
-  const [runResult, setRunResult] = useState<string | null>(null);
+  // Agent chat panel state
+  const [chatAgent, setChatAgent] = useState<AgentStatus | null>(null);
 
   /* ── SSE: Real-time event stream ── */
   const { connected } = useEventSource<ActivityEvent>(
@@ -255,11 +656,15 @@ export default function AgentsPage() {
           const exists = prev.some((e) => e.id === event.id);
           if (exists) return prev;
           setNewEventIds((ids) => new Set([...ids, event.id]));
-          setTimeout(() => setNewEventIds((ids) => {
-            const next = new Set(ids);
-            next.delete(event.id);
-            return next;
-          }), 3000);
+          setTimeout(
+            () =>
+              setNewEventIds((ids) => {
+                const next = new Set(ids);
+                next.delete(event.id);
+                return next;
+              }),
+            3000
+          );
           return [event, ...prev].slice(0, 200);
         });
       },
@@ -299,44 +704,6 @@ export default function AgentsPage() {
     return () => clearInterval(interval);
   }, [api]);
 
-  /* ── Run Agent ── */
-  const handleOpenRunModal = (agentName: string) => {
-    const agent = stats?.agents.find((a) => a.agent_name === agentName);
-    setRunModal({ agentName, displayName: agent?.display_name || agentName });
-    setRunPrompt("");
-    setRunResult(null);
-  };
-
-  const handleRunAgent = async () => {
-    if (!runModal || !runPrompt.trim()) return;
-    setRunLoading(true);
-    setRunResult(null);
-
-    try {
-      const token = await getToken();
-      const res = await fetch(`${DIRECT_API_URL}/api/agents/${runModal.agentName}/run`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ message: runPrompt.trim() }),
-      });
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || `API error ${res.status}`);
-      }
-
-      const data = await res.json();
-      setRunResult(data.content || JSON.stringify(data));
-    } catch (err) {
-      setRunResult(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
-    } finally {
-      setRunLoading(false);
-    }
-  };
-
   /* ── Filtered events ── */
   const filteredEvents = filterAgent
     ? events.filter((e) => e.agent_name === filterAgent)
@@ -347,25 +714,24 @@ export default function AgentsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Agent Activity</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Agents</h1>
           <p className="text-[var(--color-text-secondary)] mt-1">
-            Real-time agent status and event feed
+            Click any agent to start a conversation
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Connection status */}
           <span
             className={clsx(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium",
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border",
               connected
-                ? "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-500/10"
+                ? "text-[var(--color-success)] border-[var(--color-success)]/20 bg-[var(--color-success)]/5"
                 : paused
-                ? "text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-500/10"
-                : "text-amber-600 bg-amber-50 dark:text-amber-400 dark:bg-amber-500/10"
+                ? "text-[var(--color-text-muted)] border-[var(--color-border)] bg-[var(--color-surface-muted)]"
+                : "text-[var(--color-warning)] border-[var(--color-warning)]/20 bg-[var(--color-warning)]/5"
             )}
           >
             {connected ? (
@@ -373,10 +739,9 @@ export default function AgentsPage() {
             ) : (
               <WifiOff className="w-3.5 h-3.5" />
             )}
-            {connected ? "Live (SSE)" : paused ? "Paused" : "Connecting..."}
+            {connected ? "Live" : paused ? "Paused" : "Connecting..."}
           </span>
 
-          {/* Pause/resume */}
           <button
             onClick={() => setPaused(!paused)}
             className="p-2 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
@@ -389,7 +754,6 @@ export default function AgentsPage() {
             )}
           </button>
 
-          {/* Refresh */}
           <button
             onClick={fetchData}
             className="p-2 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
@@ -403,50 +767,60 @@ export default function AgentsPage() {
       {/* Stats bar */}
       {stats && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-              <Activity className="w-5 h-5" />
+          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4 flex items-center gap-3">
+            <div className="p-2 rounded-md bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
+              <Activity className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.total_events_today}</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">Events today</p>
+              <p className="text-xl font-semibold tabular-nums">
+                {stats.total_events_today}
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Events today
+              </p>
             </div>
           </div>
-          <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Zap className="w-5 h-5" />
+          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4 flex items-center gap-3">
+            <div className="p-2 rounded-md bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
+              <Zap className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-2xl font-bold">
+              <p className="text-xl font-semibold tabular-nums">
                 {stats.agents.filter((a) => a.status === "running").length}
               </p>
-              <p className="text-xs text-[var(--color-text-secondary)]">Active agents</p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Active agents
+              </p>
             </div>
           </div>
-          <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-4 flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="w-5 h-5" />
+          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4 flex items-center gap-3">
+            <div className="p-2 rounded-md bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
+              <AlertTriangle className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stats.pending_approvals}</p>
-              <p className="text-xs text-[var(--color-text-secondary)]">Pending approvals</p>
+              <p className="text-xl font-semibold tabular-nums">
+                {stats.pending_approvals}
+              </p>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Pending approvals
+              </p>
             </div>
           </div>
         </div>
       )}
 
-      {/* Agent Status Cards */}
+      {/* Agent Cards */}
       {stats && stats.agents.length > 0 && (
         <div>
           <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-3">
-            Agent Status
+            Your Agents
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {stats.agents.map((agent) => (
               <AgentStatusCard
                 key={agent.agent_name}
                 agent={agent}
-                onRun={handleOpenRunModal}
+                onClick={() => setChatAgent(agent)}
               />
             ))}
           </div>
@@ -454,11 +828,10 @@ export default function AgentsPage() {
       )}
 
       {/* Event Feed */}
-      <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] overflow-hidden">
-        {/* Feed header */}
+      <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] overflow-hidden">
         <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--color-border)]">
           <h2 className="font-semibold text-sm flex items-center gap-2">
-            <Activity className="w-4 h-4 text-indigo-500" />
+            <Activity className="w-4 h-4 text-[var(--color-text-secondary)]" />
             Event Feed
             {filteredEvents.length > 0 && (
               <span className="text-xs text-[var(--color-text-muted)] font-normal">
@@ -466,13 +839,11 @@ export default function AgentsPage() {
               </span>
             )}
           </h2>
-
-          {/* Agent filter */}
           <div className="relative">
             <select
               value={filterAgent}
               onChange={(e) => setFilterAgent(e.target.value)}
-              className="appearance-none text-xs pl-7 pr-6 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] cursor-pointer hover:border-indigo-300 dark:hover:border-indigo-500/30 transition-colors"
+              className="appearance-none text-xs pl-7 pr-6 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-text)] cursor-pointer hover:border-[var(--color-text-muted)] transition-colors"
             >
               <option value="">All agents</option>
               {agentNames.map((name) => (
@@ -485,15 +856,13 @@ export default function AgentsPage() {
             <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
           </div>
         </div>
-
-        {/* Event list */}
         <div
           ref={scrollRef}
           className="divide-y divide-[var(--color-border)] max-h-[50vh] sm:max-h-[600px] overflow-y-auto"
         >
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+              <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
               <span className="ml-2 text-sm text-[var(--color-text-secondary)]">
                 Loading activity...
               </span>
@@ -504,7 +873,7 @@ export default function AgentsPage() {
               <h3 className="text-lg font-semibold mb-1">No activity yet</h3>
               <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
                 Agent events will appear here in real-time as your agents work.
-                Try running an agent from the chat or orchestrator.
+                Click an agent above to start a conversation.
               </p>
             </div>
           ) : (
@@ -519,86 +888,12 @@ export default function AgentsPage() {
         </div>
       </div>
 
-      {/* Run Agent Modal */}
-      {runModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-xl w-full max-w-lg mx-4 overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
-              <div className="flex items-center gap-3">
-                <div
-                  className={clsx(
-                    "w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center",
-                    agentColors[runModal.agentName] || agentColors.system
-                  )}
-                >
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">Run {runModal.displayName}</p>
-                  <p className="text-xs text-[var(--color-text-secondary)]">
-                    Send a direct message to this agent
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setRunModal(null)}
-                className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
-              >
-                <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              <textarea
-                value={runPrompt}
-                onChange={(e) => setRunPrompt(e.target.value)}
-                placeholder={`What should ${runModal.displayName} do?`}
-                rows={3}
-                className="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] px-4 py-3 text-sm outline-none resize-none placeholder:text-[var(--color-text-muted)] focus:border-indigo-300 dark:focus:border-indigo-500/30 transition-colors"
-                disabled={runLoading}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleRunAgent();
-                  }
-                }}
-              />
-
-              {runResult && (
-                <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-4 text-sm max-h-48 overflow-y-auto">
-                  <p className="text-xs font-medium text-[var(--color-text-secondary)] mb-2">Response</p>
-                  <div className="whitespace-pre-wrap">{runResult}</div>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2">
-                <button
-                  onClick={() => setRunModal(null)}
-                  className="px-4 py-2 text-sm rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-muted)] transition-colors"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleRunAgent}
-                  disabled={!runPrompt.trim() || runLoading}
-                  className={clsx(
-                    "flex items-center gap-2 px-4 py-2 text-sm rounded-lg font-medium transition-all",
-                    runPrompt.trim() && !runLoading
-                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                      : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
-                  )}
-                >
-                  {runLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-4 h-4" />
-                  )}
-                  {runLoading ? "Running..." : "Run"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Agent Chat Panel */}
+      {chatAgent && (
+        <AgentChatPanel
+          agent={chatAgent}
+          onClose={() => setChatAgent(null)}
+        />
       )}
     </div>
   );

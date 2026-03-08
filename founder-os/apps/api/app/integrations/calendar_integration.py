@@ -492,6 +492,11 @@ async def list_upcoming_events(
 
     if not time_min:
         time_min = datetime.now(timezone.utc).isoformat()
+    else:
+        # Google Calendar API requires RFC3339 with timezone suffix.
+        # If the caller passed a bare datetime (no tz), append 'Z' (UTC).
+        if "Z" not in time_min and "+" not in time_min and "-" not in time_min[10:]:
+            time_min = time_min + "Z"
 
     params = {
         "maxResults": str(max_results),

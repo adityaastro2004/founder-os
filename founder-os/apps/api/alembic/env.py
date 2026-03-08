@@ -20,6 +20,7 @@ if config.config_file_name is not None:
 from app.database import Base  # noqa: E402
 from app.config import get_settings  # noqa: E402
 import app.models  # noqa: F401, E402  — registers all models on Base
+import app.planner_models_db  # noqa: F401, E402  — registers planner/memory models
 
 settings = get_settings()
 

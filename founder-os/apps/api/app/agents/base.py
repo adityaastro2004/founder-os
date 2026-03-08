@@ -335,10 +335,21 @@ class BaseAgent:
         extra_context: str | None = None,
     ) -> str:
         """Compose system prompt from base + memory + router + user overrides."""
+        from datetime import datetime, timezone as tz
         parts: list[str] = []
 
         # Base system prompt
         parts.append(self.config.system_prompt or self.default_system_prompt)
+
+        # Current date/time — always injected so agents know "today"
+        now = datetime.now(tz.utc)
+        parts.append(
+            f"\n<current_datetime>\n"
+            f"Current date: {now.strftime('%A, %B %d, %Y')}\n"
+            f"Current time: {now.strftime('%H:%M %Z')}\n"
+            f"ISO: {now.isoformat()}\n"
+            f"</current_datetime>"
+        )
 
         # Per-user custom instructions
         if self.config.custom_instructions:

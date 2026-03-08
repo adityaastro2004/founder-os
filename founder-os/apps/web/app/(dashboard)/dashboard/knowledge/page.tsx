@@ -166,7 +166,7 @@ export default function KnowledgePage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -177,7 +177,7 @@ export default function KnowledgePage() {
         </div>
         <button
           onClick={() => setShowIngest(!showIngest)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] transition-all"
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
         >
           {showIngest ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
           {showIngest ? "Cancel" : "Add Knowledge"}
@@ -195,7 +195,7 @@ export default function KnowledgePage() {
           ].map((s) => (
             <div
               key={s.label}
-              className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-3"
+              className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3"
             >
               <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] mb-1">
                 <s.icon className="w-3.5 h-3.5" />
@@ -209,14 +209,14 @@ export default function KnowledgePage() {
 
       {/* Ingest Panel */}
       {showIngest && (
-        <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-5">
+        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
           <div className="flex gap-2 mb-4">
             <button
               onClick={() => setIngestMode("text")}
               className={clsx(
                 "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors",
                 ingestMode === "text"
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400"
+                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
                   : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
               )}
             >
@@ -228,7 +228,7 @@ export default function KnowledgePage() {
               className={clsx(
                 "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors",
                 ingestMode === "url"
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400"
+                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
                   : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
               )}
             >
@@ -243,14 +243,14 @@ export default function KnowledgePage() {
                 value={ingestTitle}
                 onChange={(e) => setIngestTitle(e.target.value)}
                 placeholder="Title (optional)"
-                className="px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-indigo-400 placeholder:text-[var(--color-text-muted)]"
+                className="px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
               />
               <input
                 type="text"
                 value={ingestCategory}
                 onChange={(e) => setIngestCategory(e.target.value)}
                 placeholder="Category (optional)"
-                className="px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-indigo-400 placeholder:text-[var(--color-text-muted)]"
+                className="px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
               />
             </div>
             {ingestMode === "text" ? (
@@ -259,7 +259,7 @@ export default function KnowledgePage() {
                 onChange={(e) => setIngestContent(e.target.value)}
                 placeholder="Paste your text content here..."
                 rows={5}
-                className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-indigo-400 resize-none placeholder:text-[var(--color-text-muted)]"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] resize-none placeholder:text-[var(--color-text-muted)]"
               />
             ) : (
               <input
@@ -267,14 +267,14 @@ export default function KnowledgePage() {
                 value={ingestContent}
                 onChange={(e) => setIngestContent(e.target.value)}
                 placeholder="https://example.com/article"
-                className="w-full px-3 py-2 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-indigo-400 placeholder:text-[var(--color-text-muted)]"
+                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
               />
             )}
             <div className="flex items-center gap-3">
               <button
                 type="submit"
                 disabled={!ingestContent.trim() || ingesting}
-                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
               >
                 {ingesting ? (
                   <span className="flex items-center gap-2">
@@ -302,13 +302,13 @@ export default function KnowledgePage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search your knowledge base..."
-            className="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] outline-none focus:border-indigo-400 placeholder:text-[var(--color-text-muted)]"
+            className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
           />
         </div>
         <button
           type="submit"
           disabled={!searchQuery.trim() || searching}
-          className="px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+          className="px-4 py-2.5 text-sm font-medium text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
         >
           {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
         </button>
@@ -316,7 +316,7 @@ export default function KnowledgePage() {
 
       {/* Search Results */}
       {searchResults && (
-        <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-5">
+        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-lg font-semibold">Search Results ({searchResults.length})</h2>
             <button
@@ -335,11 +335,11 @@ export default function KnowledgePage() {
               {searchResults.map((r) => (
                 <div
                   key={r.id}
-                  className="p-3 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border)]"
+                  className="p-3 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)]"
                 >
                   <div className="flex items-start justify-between mb-1">
                     <p className="text-sm font-medium">{r.title || "Untitled"}</p>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400 font-medium">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] font-medium">
                       {(r.score * 100).toFixed(0)}% match
                     </span>
                   </div>
@@ -354,13 +354,13 @@ export default function KnowledgePage() {
       )}
 
       {/* Items List */}
-      <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-5">
+      <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
         <h2 className="text-lg font-semibold mb-4">
           Knowledge Items {!loading && `(${items.length})`}
         </h2>
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+            <Loader2 className="w-5 h-5 animate-spin text-[var(--color-text-muted)]" />
           </div>
         ) : items.length === 0 ? (
           <div className="py-12 text-center">
@@ -375,10 +375,10 @@ export default function KnowledgePage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="p-3 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-subtle)] transition-colors"
+                className="p-3 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-subtle)] transition-colors"
               >
                 <div className="flex items-center gap-3">
-                  <FileText className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <FileText className="w-4 h-4 text-[var(--color-text-secondary)] shrink-0" />
                   <button
                     onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
                     className="flex-1 text-left min-w-0"
@@ -403,7 +403,7 @@ export default function KnowledgePage() {
                       href={item.source_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[var(--color-text-muted)] hover:text-indigo-500"
+                      className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
                     >
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
@@ -411,7 +411,7 @@ export default function KnowledgePage() {
                   <button
                     onClick={() => handleDelete(item.id)}
                     disabled={deleting === item.id}
-                    className="text-[var(--color-text-muted)] hover:text-red-500 transition-colors"
+                    className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors"
                   >
                     {deleting === item.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -430,7 +430,7 @@ export default function KnowledgePage() {
                         {item.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
+                            className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]"
                           >
                             {tag}
                           </span>

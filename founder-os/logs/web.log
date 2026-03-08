@@ -6,7 +6,7 @@
 • Packages in scope: web
 • Running dev in 1 packages
 • Remote caching disabled
-web:dev: cache bypass, force executing 27cce7b00950dfa8
+web:dev: cache bypass, force executing 1dd44595416b2646
 web:dev: 
 web:dev: > web@0.1.0 dev
 web:dev: > next dev --port 3000
@@ -17,16 +17,27 @@ web:dev: - Network:       http://192.168.1.8:3000
 web:dev: - Environments: .env.local
 web:dev: 
 web:dev: ✓ Starting...
-web:dev: ✓ Ready in 833ms
-web:dev:  GET /dashboard/chat 200 in 1411ms (compile: 186ms, proxy.ts: 1079ms, render: 147ms)
-web:dev:  POST /dashboard/chat 200 in 43ms (compile: 7ms, proxy.ts: 13ms, render: 22ms)
-web:dev: (node:60984) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
+web:dev: ✓ Ready in 705ms
+web:dev:  GET /dashboard/agents 200 in 1853ms (compile: 286ms, proxy.ts: 1443ms, render: 124ms)
+web:dev:  POST /dashboard/agents 200 in 104ms (compile: 23ms, proxy.ts: 42ms, render: 39ms)
+web:dev: (node:54429) [DEP0060] DeprecationWarning: The `util._extend` API is deprecated. Please use Object.assign() instead.
 web:dev: (Use `node --trace-deprecation ...` to show where the warning was created)
-web:dev:  GET /dashboard/memory 200 in 53ms (compile: 30ms, proxy.ts: 13ms, render: 10ms)
-web:dev:  GET /dashboard/chat 200 in 16ms (compile: 1955µs, proxy.ts: 6ms, render: 9ms)
-web:dev:  GET /dashboard/chat 200 in 1200ms (compile: 35ms, proxy.ts: 1126ms, render: 39ms)
-web:dev:  GET /dashboard/chat 200 in 26ms (compile: 6ms, proxy.ts: 9ms, render: 12ms)
-web:dev:  GET /dashboard/knowledge 200 in 668ms (compile: 159ms, proxy.ts: 500ms, render: 9ms)
-web:dev:  GET /dashboard/chat 200 in 23ms (compile: 4ms, proxy.ts: 9ms, render: 11ms)
+web:dev:  GET /dashboard/tasks 200 in 141ms (compile: 110ms, proxy.ts: 13ms, render: 18ms)
+web:dev:  GET /dashboard/memory 200 in 54ms (compile: 34ms, proxy.ts: 9ms, render: 10ms)
+web:dev:  GET /dashboard/knowledge 200 in 55ms (compile: 35ms, proxy.ts: 11ms, render: 10ms)
+web:dev:  GET /dashboard/automations 200 in 86ms (compile: 70ms, proxy.ts: 5ms, render: 10ms)
+web:dev:  GET /dashboard/chat 200 in 51ms (compile: 28ms, proxy.ts: 11ms, render: 11ms)
+web:dev:  GET /dashboard/agents 200 in 25ms (compile: 5ms, proxy.ts: 11ms, render: 8ms)
+web:dev:  GET /dashboard 200 in 40ms (compile: 22ms, proxy.ts: 8ms, render: 9ms)
+web:dev:  GET /dashboard/chat 200 in 18ms (compile: 4ms, proxy.ts: 4ms, render: 10ms)
+web:dev:  GET /dashboard 200 in 20ms (compile: 4ms, proxy.ts: 9ms, render: 7ms)
+web:dev:  GET /dashboard/chat 200 in 11ms (compile: 1391µs, proxy.ts: 3ms, render: 6ms)
+web:dev:  GET /dashboard/agents 200 in 26ms (compile: 5ms, proxy.ts: 11ms, render: 10ms)
+web:dev:  GET /dashboard/memory 200 in 25ms (compile: 5ms, proxy.ts: 12ms, render: 8ms)
+web:dev:  GET /dashboard/knowledge 200 in 25ms (compile: 4ms, proxy.ts: 11ms, render: 11ms)
+web:dev:  GET /dashboard/memory 200 in 24ms (compile: 2ms, proxy.ts: 12ms, render: 10ms)
+web:dev:  GET /dashboard/knowledge 200 in 25ms (compile: 1883µs, proxy.ts: 16ms, render: 7ms)
+web:dev:  GET /dashboard/memory 200 in 21ms (compile: 2ms, proxy.ts: 11ms, render: 7ms)
+web:dev:  GET /dashboard/knowledge 200 in 30ms (compile: 3ms, proxy.ts: 13ms, render: 15ms)
 web:dev: [?25h
  ERROR  run failed: command  exited (1)

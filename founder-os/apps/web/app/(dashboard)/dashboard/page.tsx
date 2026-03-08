@@ -8,14 +8,10 @@ import {
   CalendarDays,
   Brain,
   ListTodo,
-  Zap,
-  TrendingUp,
 
   CheckCircle2,
   ArrowRight,
-  Sparkles,
   Activity,
-  AlertTriangle,
   Loader2,
   XCircle,
   Wrench,
@@ -79,37 +75,23 @@ interface ActivityEvent {
 function StatCard({
   label,
   value,
-  change,
-  icon: Icon,
-  color,
+  sub,
   loading,
 }: {
   label: string;
   value: string;
-  change: string;
-  icon: React.ElementType;
-  color: string;
+  sub: string;
   loading?: boolean;
 }) {
   return (
-    <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-5 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-[var(--color-text-secondary)]">{label}</p>
-          {loading ? (
-            <div className="h-8 w-12 mt-1 rounded bg-[var(--color-surface-muted)] animate-pulse" />
-          ) : (
-            <p className="text-2xl font-bold mt-1 tracking-tight">{value}</p>
-          )}
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1 flex items-center gap-1">
-            <TrendingUp className="w-3 h-3" />
-            {change}
-          </p>
-        </div>
-        <div className={`p-2.5 rounded-xl ${color}`}>
-          <Icon className="w-5 h-5" />
-        </div>
-      </div>
+    <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4">
+      <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">{label}</p>
+      {loading ? (
+        <div className="h-7 w-10 mt-1.5 rounded bg-[var(--color-surface-muted)] animate-pulse" />
+      ) : (
+        <p className="text-2xl font-semibold mt-1 tracking-tight">{value}</p>
+      )}
+      <p className="text-xs text-[var(--color-text-secondary)] mt-1">{sub}</p>
     </div>
   );
 }
@@ -124,15 +106,6 @@ const statusIconMap: Record<string, React.ElementType> = {
   info: Activity,
 };
 
-const statusColorMap: Record<string, string> = {
-  started: "bg-blue-100 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400",
-  completed: "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400",
-  failed: "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400",
-  tool_call: "bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400",
-  delegation: "bg-purple-100 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400",
-  info: "bg-gray-100 text-gray-600 dark:bg-gray-500/10 dark:text-gray-400",
-};
-
 function timeAgo(ts: number): string {
   const diff = Math.floor(Date.now() / 1000 - ts);
   if (diff < 5) return "just now";
@@ -144,21 +117,20 @@ function timeAgo(ts: number): string {
 
 function ActivityItem({ event }: { event: ActivityEvent }) {
   const Icon = statusIconMap[event.status] || Activity;
-  const color = statusColorMap[event.status] || statusColorMap.info;
   return (
     <div className="flex items-start gap-3 py-3">
-      <div className={`p-2 rounded-lg shrink-0 ${color}`}>
-        <Icon className="w-4 h-4" />
+      <div className="p-1.5 rounded-md bg-[var(--color-surface-muted)] shrink-0">
+        <Icon className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{event.title}</p>
+        <p className="text-sm truncate">{event.title}</p>
         {event.description && (
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 line-clamp-1">
+          <p className="text-xs text-[var(--color-text-muted)] mt-0.5 line-clamp-1">
             {event.description}
           </p>
         )}
       </div>
-      <span className="text-xs text-[var(--color-text-muted)] whitespace-nowrap">
+      <span className="text-[11px] text-[var(--color-text-muted)] whitespace-nowrap">
         {timeAgo(event.timestamp)}
       </span>
     </div>
@@ -171,58 +143,50 @@ function QuickAction({
   description,
   href,
   icon: Icon,
-  color,
 }: {
   title: string;
   description: string;
   href: string;
   icon: React.ElementType;
-  color: string;
 }) {
   return (
     <Link
       href={href}
-      className="group flex items-center gap-4 p-4 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] hover:border-indigo-300 dark:hover:border-indigo-500/30 hover:shadow-md transition-all"
+      className="group flex items-center gap-3 p-3.5 rounded-lg border border-[var(--color-border-subtle)] bg-white hover:bg-[var(--color-surface-subtle)] transition-colors"
     >
-      <div className={`p-2.5 rounded-xl ${color}`}>
-        <Icon className="w-5 h-5" />
+      <div className="p-2 rounded-md bg-[var(--color-surface-muted)] group-hover:bg-[var(--color-surface)]">
+        <Icon className="w-4 h-4 text-[var(--color-text-secondary)]" />
       </div>
-      <div className="flex-1">
-        <p className="font-medium text-sm">{title}</p>
-        <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium">{title}</p>
+        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
           {description}
         </p>
       </div>
-      <ArrowRight className="w-4 h-4 text-[var(--color-text-muted)] group-hover:text-indigo-500 group-hover:translate-x-0.5 transition-all" />
+      <ArrowRight className="w-3.5 h-3.5 text-[var(--color-text-muted)] group-hover:translate-x-0.5 transition-transform" />
     </Link>
   );
 }
 
-/* ── Active Agent Row ─────────────────────────────── */
+/* ── Agent Row ─────────────────────────────────────── */
 function AgentRow({ agent }: { agent: AgentStatus }) {
-  const statusStyles = {
-    running:
-      "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400",
-    idle: "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400",
-    error:
-      "bg-red-100 text-red-600 dark:bg-red-500/10 dark:text-red-400",
-  };
-
   return (
-    <div className="flex items-center gap-3 py-3">
-      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0">
-        <Bot className="w-4 h-4 text-white" />
+    <div className="flex items-center gap-3 py-2.5">
+      <div className="w-7 h-7 rounded-md bg-[var(--color-surface-muted)] flex items-center justify-center shrink-0">
+        <Bot className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{agent.display_name}</p>
-        <p className="text-xs text-[var(--color-text-secondary)] truncate">
-          {agent.tasks_today} tasks today · {agent.tasks_completed} done
+        <p className="text-sm truncate">{agent.display_name}</p>
+        <p className="text-[11px] text-[var(--color-text-muted)]">
+          {agent.tasks_today} tasks · {agent.tasks_completed} done
         </p>
       </div>
       <span
         className={clsx(
-          "px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded-full",
-          statusStyles[agent.status] || statusStyles.idle
+          "px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded-full border",
+          agent.status === "running" && "text-[var(--color-success)] border-[var(--color-success)]/20 bg-[var(--color-success)]/5",
+          agent.status === "idle" && "text-[var(--color-text-muted)] border-[var(--color-border)]",
+          agent.status === "error" && "text-[var(--color-danger)] border-[var(--color-danger)]/20 bg-[var(--color-danger)]/5"
         )}
       >
         {agent.status}
@@ -241,7 +205,6 @@ export default function DashboardPage() {
   const [recentEvents, setRecentEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
-  /* ── SSE: real-time activity events ── */
   useEventSource<ActivityEvent>("/api/activity/stream", {
     onEvent: (event) => {
       if (event.event_type === "connected" || !event.title) return;
@@ -249,7 +212,6 @@ export default function DashboardPage() {
     },
   });
 
-  /* ── Initial data load ── */
   const fetchData = useCallback(async () => {
     try {
       const [activity, review, memory, knowledge, recent] = await Promise.all([
@@ -271,17 +233,12 @@ export default function DashboardPage() {
     }
   }, [api]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  /* ── Periodic refresh (30s) ── */
+  useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => {
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
   }, [fetchData]);
 
-  /* ── Computed stats ── */
   const activeAgents = activityStats?.agents.filter((a) => a.status === "running").length ?? 0;
   const totalAgents = activityStats?.agents.length ?? 0;
   const tasksCompleted = reviewStats?.approved_today ?? 0;
@@ -290,120 +247,101 @@ export default function DashboardPage() {
   const knowledgeCount = knowledgeStats?.total_items ?? 0;
 
   return (
-    <div className="space-y-8">
-      {/* Welcome */}
+    <div className="space-y-8 max-w-6xl">
+      {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
-          Welcome back 👋
-        </h1>
-        <p className="text-[var(--color-text-secondary)] mt-1">
-          Here&apos;s what&apos;s happening with your AI operating system today.
+        <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
+          Overview of your AI operating system
         </p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Active Agents"
+          label="Agents"
           value={`${activeAgents}/${totalAgents}`}
-          change={`${activityStats?.total_events_today ?? 0} events today`}
-          icon={Bot}
-          color="bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
+          sub={`${activityStats?.total_events_today ?? 0} events today`}
           loading={loading}
         />
         <StatCard
-          label="Tasks Completed"
+          label="Completed"
           value={String(tasksCompleted)}
-          change={`${pendingReview} pending review`}
-          icon={CheckCircle2}
-          color="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
+          sub={`${pendingReview} pending review`}
           loading={loading}
         />
         <StatCard
-          label="Pending Approvals"
+          label="Approvals"
           value={String(activityStats?.pending_approvals ?? 0)}
-          change={`${reviewStats?.rejected_today ?? 0} rejected today`}
-          icon={AlertTriangle}
-          color="bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"
+          sub={`${reviewStats?.rejected_today ?? 0} rejected`}
           loading={loading}
         />
         <StatCard
-          label="Memory Entries"
+          label="Memory"
           value={String(memoryCount)}
-          change={`${knowledgeCount} knowledge items`}
-          icon={Brain}
-          color="bg-purple-100 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400"
+          sub={`${knowledgeCount} knowledge items`}
           loading={loading}
         />
       </div>
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column (2/3) */}
+        {/* Left column */}
         <div className="lg:col-span-2 space-y-6">
           {/* Quick Actions */}
           <div>
-            <h2 className="text-lg font-semibold mb-3 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-indigo-500" />
+            <h2 className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-2.5">
               Quick Actions
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <QuickAction
                 title="Chat with Agents"
-                description="Ask anything — auto-delegates to specialists"
+                description="Auto-delegates to specialists"
                 href="/dashboard/chat"
                 icon={Bot}
-                color="bg-indigo-100 text-indigo-600 dark:bg-indigo-500/10 dark:text-indigo-400"
               />
               <QuickAction
                 title="Review Tasks"
-                description={pendingReview > 0 ? `${pendingReview} tasks need review` : "Approve agent outputs"}
+                description={pendingReview > 0 ? `${pendingReview} need review` : "Approve outputs"}
                 href="/dashboard/tasks"
                 icon={ListTodo}
-                color="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
               />
               <QuickAction
                 title="Weekly Planner"
-                description="AI-powered schedule optimization"
+                description="AI schedule optimization"
                 href="/dashboard/planner"
                 icon={CalendarDays}
-                color="bg-amber-100 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400"
               />
               <QuickAction
                 title="Knowledge Base"
-                description={knowledgeCount > 0 ? `${knowledgeCount} items indexed` : "Upload docs for agents"}
+                description={knowledgeCount > 0 ? `${knowledgeCount} items indexed` : "Upload docs"}
                 href="/dashboard/knowledge"
-                icon={Zap}
-                color="bg-purple-100 text-purple-600 dark:bg-purple-500/10 dark:text-purple-400"
+                icon={Brain}
               />
             </div>
           </div>
 
-          {/* Recent Activity — live via SSE */}
-          <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-5">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="text-lg font-semibold">Recent Activity</h2>
+          {/* Recent Activity */}
+          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-medium">Recent Activity</h2>
               <Link
                 href="/dashboard/agents"
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
               >
                 View all
               </Link>
             </div>
-            <p className="text-xs text-[var(--color-text-secondary)] mb-4">
-              Live updates from your agents
-            </p>
             <div className="divide-y divide-[var(--color-border)]">
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
-                  <span className="ml-2 text-sm text-[var(--color-text-secondary)]">Loading activity...</span>
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
                 </div>
               ) : recentEvents.length === 0 ? (
                 <div className="py-8 text-center">
-                  <Activity className="w-8 h-8 text-[var(--color-text-muted)] mx-auto mb-2" />
+                  <Activity className="w-6 h-6 text-[var(--color-text-muted)] mx-auto mb-2" />
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    No activity yet. Run an agent from the Chat page to get started.
+                    No activity yet. Start from Chat.
                   </p>
                 </div>
               ) : (
@@ -415,15 +353,15 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Right column (1/3) */}
+        {/* Right column */}
         <div className="space-y-6">
           {/* Active Agents */}
-          <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-5">
+          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Active Agents</h2>
+              <h2 className="text-sm font-medium">Agents</h2>
               <Link
                 href="/dashboard/agents"
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
               >
                 View all
               </Link>
@@ -431,7 +369,7 @@ export default function DashboardPage() {
             <div className="divide-y divide-[var(--color-border)]">
               {loading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-5 h-5 animate-spin text-indigo-500" />
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
                 </div>
               ) : activityStats?.agents && activityStats.agents.length > 0 ? (
                 activityStats.agents.slice(0, 5).map((agent) => (
@@ -439,9 +377,9 @@ export default function DashboardPage() {
                 ))
               ) : (
                 <div className="py-8 text-center">
-                  <Bot className="w-8 h-8 text-[var(--color-text-muted)] mx-auto mb-2" />
+                  <Bot className="w-6 h-6 text-[var(--color-text-muted)] mx-auto mb-2" />
                   <p className="text-sm text-[var(--color-text-secondary)]">
-                    No agents registered yet.
+                    No agents registered.
                   </p>
                 </div>
               )}
@@ -449,44 +387,29 @@ export default function DashboardPage() {
           </div>
 
           {/* Review Queue */}
-          <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-5">
+          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Review Queue</h2>
+              <h2 className="text-sm font-medium">Review Queue</h2>
               <Link
                 href="/dashboard/tasks"
-                className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
               >
                 View all
               </Link>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-2">
               {[
-                {
-                  label: "Pending Review",
-                  value: reviewStats?.pending_review ?? 0,
-                  icon: Eye,
-                  color: "text-amber-500",
-                },
-                {
-                  label: "Approved Today",
-                  value: reviewStats?.approved_today ?? 0,
-                  icon: CheckCircle2,
-                  color: "text-emerald-500",
-                },
-                {
-                  label: "Rejected Today",
-                  value: reviewStats?.rejected_today ?? 0,
-                  icon: XCircle,
-                  color: "text-red-500",
-                },
+                { label: "Pending", value: reviewStats?.pending_review ?? 0, icon: Eye },
+                { label: "Approved", value: reviewStats?.approved_today ?? 0, icon: CheckCircle2 },
+                { label: "Rejected", value: reviewStats?.rejected_today ?? 0, icon: XCircle },
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-surface-subtle)] border border-[var(--color-border)]"
+                  className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)]"
                 >
-                  <item.icon className={clsx("w-4 h-4", item.color)} />
+                  <item.icon className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
                   <span className="text-sm flex-1">{item.label}</span>
-                  <span className="text-sm font-bold">{loading ? "—" : item.value}</span>
+                  <span className="text-sm font-medium tabular-nums">{loading ? "—" : item.value}</span>
                 </div>
               ))}
             </div>

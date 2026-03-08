@@ -1,40 +1,46 @@
 @import "tailwindcss";
 
-/* ── Design Tokens ─────────────────────────────────── */
+/* ── Design Tokens — Light & Clean ─────────────────── */
 :root {
-  --color-brand: #6366f1;
-  --color-brand-light: #818cf8;
-  --color-brand-dark: #4f46e5;
+  color-scheme: light;
   --color-surface: #ffffff;
-  --color-surface-subtle: #f8fafc;
-  --color-surface-muted: #f1f5f9;
-  --color-border: #e2e8f0;
-  --color-text: #0f172a;
-  --color-text-secondary: #64748b;
-  --color-text-muted: #94a3b8;
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --sidebar-width: 260px;
+  --color-surface-subtle: #f9fafb;
+  --color-surface-muted: #f3f4f6;
+  --color-border: #e5e7eb;
+  --color-border-subtle: #f3f4f6;
+  --color-text: #111827;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-accent: #111827;
+  --color-accent-hover: #1f2937;
+  --color-accent-foreground: #ffffff;
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-danger: #dc2626;
+  --sidebar-width: 240px;
+  --radius: 10px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --color-surface: #0f172a;
-    --color-surface-subtle: #1e293b;
-    --color-surface-muted: #334155;
-    --color-border: #334155;
-    --color-text: #f1f5f9;
-    --color-text-secondary: #94a3b8;
-    --color-text-muted: #64748b;
-  }
+/* ── Dark mode (opt-in via class only) ─────────────── */
+.dark {
+  --color-surface: #0a0a0a;
+  --color-surface-subtle: #111111;
+  --color-surface-muted: #1a1a1a;
+  --color-border: #262626;
+  --color-border-subtle: #1a1a1a;
+  --color-text: #fafafa;
+  --color-text-secondary: #a3a3a3;
+  --color-text-muted: #525252;
+  --color-accent: #fafafa;
+  --color-accent-hover: #d4d4d4;
+  --color-accent-foreground: #0a0a0a;
 }
 
 /* ── Base ──────────────────────────────────────────── */
 html, body {
   max-width: 100vw;
   overflow-x: hidden;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
 body {
@@ -44,12 +50,29 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+  border-color: var(--color-border);
+}
+
 /* ── Scrollbar ─────────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 99px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
 
+/* ── Focus ring ────────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid var(--color-border);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Selection ─────────────────────────────────────── */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
+
 /* ── Clerk component overrides ─────────────────────── */
-.cl-card { border-radius: 16px !important; }
-.cl-internal-b3fm6y { background: var(--color-brand) !important; }
+.cl-card { border-radius: var(--radius) !important; }
+.cl-internal-b3fm6y { background: var(--color-accent) !important; }

@@ -238,12 +238,12 @@ class MCPGoogleCalendarProvider(ToolProvider):
         ToolSchema(
             name="gcal_smart_delete",
             description=(
-                "Smart bulk-delete of AI-generated calendar events. "
-                "Fetches events in the given time range, identifies ones "
-                "created by Founder OS (agent-generated events with [PLANNER], "
-                "[OPS], etc. tags or 'Created by Founder OS' in description), "
-                "and deletes them. Supports filtering by agent tag, keyword, or "
-                "deleting ALL AI events. Use dry_run=true to preview first."
+                "Smart bulk-delete of calendar events. "
+                "By default (ai_only=true) only deletes AI-generated events "
+                "(with [PLANNER], [OPS], etc. tags or 'Founder OS' markers). "
+                "Set ai_only=false to delete ANY events matching the keyword "
+                "and time range. Supports filtering by agent tag, keyword, or "
+                "deleting all matched events. Use dry_run=true to preview first."
             ),
             parameters={
                 "type": "object",
@@ -277,6 +277,15 @@ class MCPGoogleCalendarProvider(ToolProvider):
                             "Only events whose summary contains this keyword "
                             "(case-insensitive) will be deleted."
                         ),
+                    },
+                    "ai_only": {
+                        "type": "boolean",
+                        "description": (
+                            "If true (default), only delete AI-generated / Founder OS events. "
+                            "If false, delete ANY events matching the keyword and time range "
+                            "(useful for deleting user-created events by title keyword)."
+                        ),
+                        "default": True,
                     },
                     "dry_run": {
                         "type": "boolean",
@@ -508,11 +517,12 @@ class MCPGoogleCalendarProvider(ToolProvider):
         time_max: str | None = None,
         agent_filter: str | None = None,
         keyword: str | None = None,
+        ai_only: bool = True,
         dry_run: bool = False,
         max_results: int = 100,
         **_kw: Any,
     ) -> dict[str, Any]:
-        """Bulk-delete AI-generated calendar events."""
+        """Bulk-delete calendar events (AI-generated or any matching keyword)."""
         from app.integrations.calendar_integration import (
             list_upcoming_events,
             delete_event,
@@ -528,23 +538,27 @@ class MCPGoogleCalendarProvider(ToolProvider):
             time_min=time_min,
         )
 
-        # 2. Filter to AI-generated only
-        ai_events = [e for e in all_events if self._is_ai_event(e)]
+        # 2. Filter: AI-generated only, or ALL events if ai_only=False
+        if ai_only:
+            matched_events = [e for e in all_events if self._is_ai_event(e)]
+        else:
+            matched_events = list(all_events)
 
         # 3. Apply agent filter (e.g. only PLANNER events)
         if agent_filter:
             tag = agent_filter.strip().upper()
-            ai_events = [
-                e for e in ai_events
+            matched_events = [
+                e for e in matched_events
                 if self._get_agent_tag(e.get("summary", "")) == tag
             ]
 
         # 4. Apply keyword filter
         if keyword:
             kw_lower = keyword.lower()
-            ai_events = [
-                e for e in ai_events
+            matched_events = [
+                e for e in matched_events
                 if kw_lower in e.get("summary", "").lower()
+                or kw_lower in (e.get("description", "") or "").lower()
             ]
 
         # 5. Apply time_max filter (list_upcoming_events doesn't take time_max)
@@ -553,7 +567,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
             try:
                 t_max = datetime.fromisoformat(time_max.replace("Z", "+00:00"))
                 filtered = []
-                for e in ai_events:
+                for e in matched_events:
                     start_str = e.get("start", "")
                     if start_str:
                         try:
@@ -564,7 +578,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
                             filtered.append(e)  # keep if can't parse
                     else:
                         filtered.append(e)
-                ai_events = filtered
+                matched_events = filtered
             except (ValueError, TypeError):
                 pass  # ignore bad time_max, delete all matched
 
@@ -573,22 +587,24 @@ class MCPGoogleCalendarProvider(ToolProvider):
             return {
                 "dry_run": True,
                 "total_scanned": len(all_events),
-                "ai_events_found": len(ai_events),
+                "events_found": len(matched_events),
+                "ai_only_filter": ai_only,
                 "events_to_delete": [
                     {
                         "event_id": e.get("event_id"),
                         "summary": e.get("summary"),
                         "start": e.get("start"),
+                        "ai_generated": e.get("ai_generated", False),
                         "agent_tag": self._get_agent_tag(e.get("summary", "")),
                     }
-                    for e in ai_events
+                    for e in matched_events
                 ],
             }
 
         # 7. Delete events
         deleted = []
         failed = []
-        for event in ai_events:
+        for event in matched_events:
             eid = event.get("event_id") or ""
             try:
                 await delete_event(
@@ -612,7 +628,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
         return {
             "dry_run": False,
             "total_scanned": len(all_events),
-            "ai_events_matched": len(ai_events),
+            "events_matched": len(matched_events),
             "deleted_count": len(deleted),
             "failed_count": len(failed),
             "deleted": deleted,

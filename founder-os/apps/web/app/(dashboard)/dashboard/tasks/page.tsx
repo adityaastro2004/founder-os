@@ -92,32 +92,32 @@ interface ReviewStats {
 
 /* ── Agent colors ────────────────────────────────────── */
 const agentColors: Record<string, string> = {
-  orchestrator: "from-violet-500 to-purple-600",
-  planner: "from-blue-500 to-indigo-600",
-  content: "from-pink-500 to-rose-600",
-  research: "from-emerald-500 to-teal-600",
-  ops: "from-amber-500 to-orange-600",
-  product: "from-cyan-500 to-blue-600",
-  support: "from-lime-500 to-green-600",
-  unknown: "from-gray-500 to-slate-600",
+  orchestrator: "bg-neutral-900 dark:bg-neutral-100",
+  planner: "bg-neutral-800 dark:bg-neutral-200",
+  content: "bg-neutral-700 dark:bg-neutral-300",
+  research: "bg-neutral-600 dark:bg-neutral-400",
+  ops: "bg-neutral-500",
+  product: "bg-neutral-400 dark:bg-neutral-500",
+  support: "bg-neutral-300 dark:bg-neutral-600",
+  unknown: "bg-neutral-200 dark:bg-neutral-700",
 };
 
 /* ── Status styling ──────────────────────────────────── */
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending: { label: "Pending", color: "text-gray-500 bg-gray-500/10", icon: Clock },
-  pending_review: { label: "Needs Review", color: "text-amber-600 bg-amber-500/10", icon: Eye },
-  completed: { label: "Completed", color: "text-blue-500 bg-blue-500/10", icon: CheckCircle2 },
-  approved: { label: "Approved", color: "text-emerald-500 bg-emerald-500/10", icon: CheckCircle2 },
-  rejected: { label: "Rejected", color: "text-red-500 bg-red-500/10", icon: XCircle },
-  failed: { label: "Failed", color: "text-red-500 bg-red-500/10", icon: AlertTriangle },
-  running: { label: "Running", color: "text-indigo-500 bg-indigo-500/10", icon: Loader2 },
+  pending: { label: "Pending", color: "text-[var(--color-text-muted)] bg-[var(--color-surface-muted)]", icon: Clock },
+  pending_review: { label: "Needs Review", color: "text-[var(--color-warning)] bg-[var(--color-warning)]/5", icon: Eye },
+  completed: { label: "Completed", color: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]", icon: CheckCircle2 },
+  approved: { label: "Approved", color: "text-[var(--color-success)] bg-[var(--color-success)]/5", icon: CheckCircle2 },
+  rejected: { label: "Rejected", color: "text-[var(--color-danger)] bg-[var(--color-danger)]/5", icon: XCircle },
+  failed: { label: "Failed", color: "text-[var(--color-danger)] bg-[var(--color-danger)]/5", icon: AlertTriangle },
+  running: { label: "Running", color: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]", icon: Loader2 },
 };
 
 const priorityLabels: Record<number, { label: string; color: string }> = {
-  1: { label: "Low", color: "text-gray-500" },
-  2: { label: "Medium", color: "text-amber-500" },
-  3: { label: "High", color: "text-orange-500" },
-  4: { label: "Critical", color: "text-red-500" },
+  1: { label: "Low", color: "text-[var(--color-text-muted)]" },
+  2: { label: "Medium", color: "text-[var(--color-text-secondary)]" },
+  3: { label: "High", color: "text-[var(--color-warning)]" },
+  4: { label: "Critical", color: "text-[var(--color-danger)]" },
 };
 
 /* ── Time formatting ─────────────────────────────────── */
@@ -164,13 +164,13 @@ function StarRating({
           onClick={() => onChange?.(s)}
           className={clsx(
             "transition-colors",
-            readonly ? "cursor-default" : "cursor-pointer hover:text-amber-400"
+            readonly ? "cursor-default" : "cursor-pointer hover:text-[var(--color-text-secondary)]"
           )}
         >
           <Star
             className={clsx(
               "w-4 h-4",
-              s <= value ? "text-amber-400 fill-amber-400" : "text-gray-300 dark:text-gray-600"
+              s <= value ? "text-[var(--color-warning)] fill-[var(--color-warning)]" : "text-neutral-300 dark:text-neutral-600"
             )}
           />
         </button>
@@ -198,23 +198,23 @@ function TaskRow({
       className={clsx(
         "w-full text-left px-4 py-3 flex items-start gap-3 transition-colors border-l-[3px]",
         selected
-          ? "bg-indigo-50/50 dark:bg-indigo-500/5 border-l-indigo-500"
+          ? "bg-[var(--color-surface-muted)] border-l-[var(--color-text)]"
           : "hover:bg-[var(--color-surface-muted)] border-l-transparent"
       )}
     >
       <div
         className={clsx(
-          "w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center shrink-0 mt-0.5",
+          "w-8 h-8 rounded-md flex items-center justify-center shrink-0 mt-0.5",
           gradient
         )}
       >
-        <Bot className="w-4 h-4 text-white" />
+        <Bot className="w-4 h-4 text-[var(--color-surface)] dark:text-[var(--color-text)]" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-0.5">
           <p className="text-sm font-medium truncate">{task.title}</p>
           {task.requires_approval && task.status !== "approved" && (
-            <span className="shrink-0 w-2 h-2 rounded-full bg-amber-400" title="Needs approval" />
+            <span className="shrink-0 w-2 h-2 rounded-full bg-[var(--color-warning)]" title="Needs approval" />
           )}
         </div>
         <div className="flex items-center gap-2 mb-1">
@@ -378,7 +378,7 @@ function TaskDetailPanel({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
       </div>
     );
   }
@@ -386,9 +386,9 @@ function TaskDetailPanel({
   if (!task) {
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <AlertTriangle className="w-10 h-10 text-red-400 mb-3" />
+        <AlertTriangle className="w-10 h-10 text-[var(--color-danger)] mb-3" />
         <p className="font-semibold">Task not found</p>
-        <button onClick={onBack} className="mt-3 text-sm text-indigo-500 hover:underline">
+        <button onClick={onBack} className="mt-3 text-sm text-[var(--color-text-secondary)] hover:underline">
           Back to list
         </button>
       </div>
@@ -414,11 +414,11 @@ function TaskDetailPanel({
         </button>
         <div
           className={clsx(
-            "w-8 h-8 rounded-lg bg-gradient-to-br flex items-center justify-center",
+            "w-8 h-8 rounded-md flex items-center justify-center",
             gradient
           )}
         >
-          <Bot className="w-4 h-4 text-white" />
+          <Bot className="w-4 h-4 text-[var(--color-surface)] dark:text-[var(--color-text)]" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-sm truncate">{task.title}</p>
@@ -454,7 +454,7 @@ function TaskDetailPanel({
           ].map((m) => (
             <div
               key={m.label}
-              className="bg-[var(--color-surface-muted)] rounded-xl px-3 py-2"
+              className="bg-[var(--color-surface-muted)] rounded-lg px-3 py-2"
             >
               <p className="text-[10px] text-[var(--color-text-muted)] mb-0.5">{m.label}</p>
               <p className="text-sm font-semibold">{m.value}</p>
@@ -464,11 +464,11 @@ function TaskDetailPanel({
 
         {/* Error */}
         {task.error_message && (
-          <div className="bg-red-50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 rounded-xl px-4 py-3">
-            <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-1 flex items-center gap-1">
+          <div className="bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 rounded-lg px-4 py-3">
+            <p className="text-xs font-semibold text-[var(--color-danger)] mb-1 flex items-center gap-1">
               <AlertTriangle className="w-3.5 h-3.5" /> Error
             </p>
-            <p className="text-xs text-red-700 dark:text-red-300 font-mono">{task.error_message}</p>
+            <p className="text-xs text-[var(--color-danger)] font-mono">{task.error_message}</p>
           </div>
         )}
 
@@ -515,19 +515,19 @@ function TaskDetailPanel({
             <textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="w-full h-64 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm font-mono resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full h-64 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm font-mono resize-none focus:outline-none focus:ring-1 focus:ring-[var(--color-text-muted)]"
             />
             <input
               value={editNotes}
               onChange={(e) => setEditNotes(e.target.value)}
               placeholder="Notes about your edits (optional)"
-              className="mt-2 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="mt-2 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-text-muted)]"
             />
             <div className="flex gap-2 mt-3">
               <button
                 onClick={handleEdit}
                 disabled={actionLoading === "edit"}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
               >
                 {actionLoading === "edit" ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -538,7 +538,7 @@ function TaskDetailPanel({
               </button>
               <button
                 onClick={() => setEditMode(false)}
-                className="px-4 py-2 text-sm font-medium rounded-xl hover:bg-[var(--color-surface-muted)] transition-colors"
+                className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
               >
                 Cancel
               </button>
@@ -548,8 +548,8 @@ function TaskDetailPanel({
 
         {/* Reject mode */}
         {rejectMode && (
-          <div className="bg-red-50/50 dark:bg-red-500/5 border border-red-200 dark:border-red-500/20 rounded-xl p-4">
-            <p className="text-xs font-semibold text-red-600 dark:text-red-400 mb-2 flex items-center gap-1.5">
+          <div className="bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 rounded-lg p-4">
+            <p className="text-xs font-semibold text-[var(--color-danger)] mb-2 flex items-center gap-1.5">
               <XCircle className="w-3.5 h-3.5" />
               Reject Task
             </p>
@@ -557,7 +557,7 @@ function TaskDetailPanel({
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
               placeholder="Reason for rejection..."
-              className="w-full h-24 rounded-lg border border-red-200 dark:border-red-500/30 bg-[var(--color-surface)] p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-500/50"
+              className="w-full h-24 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--color-text-muted)]"
             />
             <div className="flex items-center gap-3 mt-2">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
@@ -565,7 +565,7 @@ function TaskDetailPanel({
                   type="checkbox"
                   checked={retryOnReject}
                   onChange={(e) => setRetryOnReject(e.target.checked)}
-                  className="w-4 h-4 rounded border-[var(--color-border)] text-indigo-500"
+                  className="w-4 h-4 rounded border-[var(--color-border)]"
                 />
                 <RotateCcw className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
                 Retry with agent
@@ -575,7 +575,7 @@ function TaskDetailPanel({
               <button
                 onClick={handleReject}
                 disabled={!rejectReason.trim() || actionLoading === "reject"}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-danger)] rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
               >
                 {actionLoading === "reject" ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -586,7 +586,7 @@ function TaskDetailPanel({
               </button>
               <button
                 onClick={() => setRejectMode(false)}
-                className="px-4 py-2 text-sm font-medium rounded-xl hover:bg-[var(--color-surface-muted)] transition-colors"
+                className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
               >
                 Cancel
               </button>
@@ -596,8 +596,8 @@ function TaskDetailPanel({
 
         {/* Feedback mode */}
         {feedbackMode && (
-          <div className="bg-indigo-50/50 dark:bg-indigo-500/5 border border-indigo-200 dark:border-indigo-500/20 rounded-xl p-4">
-            <p className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 mb-2 flex items-center gap-1.5">
+          <div className="bg-[var(--color-surface-muted)] border border-[var(--color-border)] rounded-lg p-4">
+            <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2 flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5" />
               Leave Feedback
             </p>
@@ -609,13 +609,13 @@ function TaskDetailPanel({
               value={feedbackComments}
               onChange={(e) => setFeedbackComments(e.target.value)}
               placeholder="Comments (optional)..."
-              className="w-full h-20 rounded-lg border border-indigo-200 dark:border-indigo-500/30 bg-[var(--color-surface)] p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full h-20 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--color-text-muted)]"
             />
             <div className="flex gap-2 mt-3">
               <button
                 onClick={handleFeedback}
                 disabled={feedbackRating === 0 || actionLoading === "feedback"}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
               >
                 {actionLoading === "feedback" ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -626,7 +626,7 @@ function TaskDetailPanel({
               </button>
               <button
                 onClick={() => setFeedbackMode(false)}
-                className="px-4 py-2 text-sm font-medium rounded-xl hover:bg-[var(--color-surface-muted)] transition-colors"
+                className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
               >
                 Cancel
               </button>
@@ -671,8 +671,8 @@ function TaskDetailPanel({
 
       {/* Action bar */}
       {actionError && (
-        <div className="mx-5 mb-2 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
-          <p className="text-xs text-red-700 dark:text-red-400 flex items-center gap-1.5">
+        <div className="mx-5 mb-2 p-3 rounded-lg bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20">
+          <p className="text-xs text-[var(--color-danger)] flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
             {actionError}
           </p>
@@ -683,7 +683,7 @@ function TaskDetailPanel({
           <button
             onClick={handleApprove}
             disabled={!!actionLoading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-emerald-500 rounded-xl hover:bg-emerald-600 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-success)] rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
           >
             {actionLoading === "approve" ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -699,7 +699,7 @@ function TaskDetailPanel({
               setFeedbackMode(false);
             }}
             disabled={!!actionLoading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl border border-red-200 dark:border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/5 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border border-[var(--color-danger)]/30 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/5 transition-colors disabled:opacity-50"
           >
             <ThumbsDown className="w-4 h-4" />
             Reject
@@ -789,7 +789,7 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -811,27 +811,27 @@ export default function TasksPage() {
       {stats && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
-            { label: "Pending", value: stats.pending_review, icon: Eye, iconColor: "text-amber-500 bg-amber-500/10" },
-            { label: "Approved", value: stats.approved_today, icon: ThumbsUp, iconColor: "text-emerald-500 bg-emerald-500/10" },
-            { label: "Rejected", value: stats.rejected_today, icon: ThumbsDown, iconColor: "text-red-500 bg-red-500/10" },
-            { label: "Edited", value: stats.edited_today, icon: Pencil, iconColor: "text-blue-500 bg-blue-500/10" },
-            { label: "Total", value: stats.total_tasks, icon: ListTodo, iconColor: "text-indigo-500 bg-indigo-500/10" },
+            { label: "Pending", value: stats.pending_review, icon: Eye, iconColor: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]" },
+            { label: "Approved", value: stats.approved_today, icon: ThumbsUp, iconColor: "text-[var(--color-success)] bg-[var(--color-success)]/5" },
+            { label: "Rejected", value: stats.rejected_today, icon: ThumbsDown, iconColor: "text-[var(--color-danger)] bg-[var(--color-danger)]/5" },
+            { label: "Edited", value: stats.edited_today, icon: Pencil, iconColor: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]" },
+            { label: "Total", value: stats.total_tasks, icon: ListTodo, iconColor: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]" },
             {
               label: "Avg Rating",
               value: stats.avg_rating ? stats.avg_rating.toFixed(1) : "—",
               icon: Star,
-              iconColor: "text-amber-500 bg-amber-500/10",
+              iconColor: "text-[var(--color-warning)] bg-[var(--color-warning)]/5",
             },
           ].map((s) => (
             <div
               key={s.label}
-              className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] p-3 flex items-center gap-2.5"
+              className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3 flex items-center gap-2.5"
             >
-              <div className={clsx("p-2 rounded-xl", s.iconColor)}>
+              <div className={clsx("p-2 rounded-md", s.iconColor)}>
                 <s.icon className="w-4 h-4" />
               </div>
               <div>
-                <p className="text-lg font-bold leading-tight">{s.value}</p>
+                <p className="text-lg font-semibold leading-tight tabular-nums">{s.value}</p>
                 <p className="text-[10px] text-[var(--color-text-muted)]">{s.label}</p>
               </div>
             </div>
@@ -840,7 +840,7 @@ export default function TasksPage() {
       )}
 
       {/* Main content — list + detail split */}
-      <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] overflow-hidden min-h-[400px] sm:min-h-[600px] flex">
+      <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] overflow-hidden min-h-[400px] sm:min-h-[600px] flex">
         {/* Task list panel */}
         <div
           className={clsx(
@@ -872,7 +872,7 @@ export default function TasksPage() {
               className={clsx(
                 "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
                 needsReview
-                  ? "border-amber-300 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                  ? "border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 text-[var(--color-warning)]"
                   : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
               )}
             >
@@ -885,7 +885,7 @@ export default function TasksPage() {
           <div className="flex-1 overflow-y-auto divide-y divide-[var(--color-border)]">
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
               </div>
             ) : tasks.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-center px-6">

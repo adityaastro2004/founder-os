@@ -144,10 +144,10 @@ function OptionCard({
       type="button"
       onClick={onClick}
       className={clsx(
-        "flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all duration-150",
+        "flex items-center gap-3 p-4 rounded-lg border-2 text-left transition-all duration-150",
         selected
-          ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-500/10 shadow-sm"
-          : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-indigo-300 dark:hover:border-indigo-500/40"
+          ? "border-[var(--color-text)] bg-[var(--color-surface-subtle)] shadow-sm"
+          : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-text-muted)]"
       )}
     >
       {emoji && <span className="text-2xl shrink-0">{emoji}</span>}
@@ -160,8 +160,8 @@ function OptionCard({
         )}
       </div>
       {selected && (
-        <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
-          <Check className="w-3 h-3 text-white" />
+        <div className="w-5 h-5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shrink-0">
+          <Check className="w-3 h-3 text-[var(--color-accent-foreground)]" />
         </div>
       )}
     </button>
@@ -189,7 +189,7 @@ function InputField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full px-4 py-2.5 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+        className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
       />
     </div>
   );
@@ -262,9 +262,9 @@ export default function OnboardingPage() {
               className={clsx(
                 "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
                 i === step
-                  ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-400"
+                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-semibold"
                   : i < step
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400 cursor-pointer"
+                    ? "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] cursor-pointer"
                     : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
               )}
             >
@@ -280,7 +280,7 @@ export default function OnboardingPage() {
                 className={clsx(
                   "w-8 h-0.5 rounded-full",
                   i < step
-                    ? "bg-emerald-300 dark:bg-emerald-500/40"
+                    ? "bg-[var(--color-text-muted)]"
                     : "bg-[var(--color-border)]"
                 )}
               />
@@ -290,7 +290,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Card */}
-      <div className="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-xl shadow-black/5 p-6 md:p-8">
+      <div className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] shadow-xl shadow-black/5 p-6 md:p-8">
         {/* ── Step 0: Business Info ────────────────────── */}
         {step === 0 && (
           <div className="space-y-6">
@@ -336,8 +336,8 @@ export default function OnboardingPage() {
                     className={clsx(
                       "px-3 py-2 rounded-lg border text-sm font-medium transition-all",
                       form.industry === ind.toLowerCase()
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400"
-                        : "border-[var(--color-border)] hover:border-indigo-300"
+                        ? "border-[var(--color-text)] bg-[var(--color-surface-subtle)] text-[var(--color-text)] font-medium"
+                        : "border-[var(--color-border)] hover:border-[var(--color-text-muted)]"
                     )}
                   >
                     {ind}
@@ -355,7 +355,7 @@ export default function OnboardingPage() {
                 onChange={(e) => update("target_audience", e.target.value)}
                 placeholder="e.g., SaaS founders with $1K-$50K MRR looking to automate growth..."
                 rows={3}
-                className="w-full px-4 py-2.5 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all resize-none"
+                className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all resize-none"
               />
             </div>
           </div>
@@ -418,7 +418,7 @@ export default function OnboardingPage() {
                   onChange={(e) =>
                     update("team_size", Math.max(1, parseInt(e.target.value) || 1))
                   }
-                  className="w-full px-4 py-2.5 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
                 />
               </div>
               <div>
@@ -438,7 +438,7 @@ export default function OnboardingPage() {
                     )
                   }
                   placeholder="e.g., CTO, Designer"
-                  className="w-full px-4 py-2.5 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
                 />
               </div>
             </div>
@@ -456,7 +456,7 @@ export default function OnboardingPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-[var(--color-surface-subtle)] rounded-xl border border-[var(--color-border)] p-4">
+              <div className="bg-[var(--color-surface-subtle)] rounded-lg border border-[var(--color-border)] p-4">
                 <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
                   Monthly Recurring Revenue
                 </label>
@@ -476,7 +476,7 @@ export default function OnboardingPage() {
                 <p className="text-xs text-[var(--color-text-muted)] mt-1">MRR</p>
               </div>
 
-              <div className="bg-[var(--color-surface-subtle)] rounded-xl border border-[var(--color-border)] p-4">
+              <div className="bg-[var(--color-surface-subtle)] rounded-lg border border-[var(--color-border)] p-4">
                 <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
                   Active Users / Customers
                 </label>
@@ -495,7 +495,7 @@ export default function OnboardingPage() {
                 </p>
               </div>
 
-              <div className="bg-[var(--color-surface-subtle)] rounded-xl border border-[var(--color-border)] p-4">
+              <div className="bg-[var(--color-surface-subtle)] rounded-lg border border-[var(--color-border)] p-4">
                 <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
                   Monthly Website Traffic
                 </label>
@@ -515,8 +515,8 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="bg-amber-50 dark:bg-amber-500/5 border border-amber-200 dark:border-amber-500/20 rounded-xl p-4">
-              <p className="text-sm text-amber-800 dark:text-amber-300">
+            <div className="bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-lg p-4">
+              <p className="text-sm text-[var(--color-text-secondary)]">
                 💡 Don&apos;t worry if you don&apos;t have these yet. Your AI agents will learn
                 and adapt as your business grows.
               </p>
@@ -562,10 +562,10 @@ export default function OnboardingPage() {
                     type="button"
                     onClick={() => update("writing_voice", v.value)}
                     className={clsx(
-                      "px-4 py-3 rounded-xl border-2 text-sm font-medium text-left transition-all",
+                      "px-4 py-3 rounded-lg border-2 text-sm font-medium text-left transition-all",
                       form.writing_voice === v.value
-                        ? "border-indigo-500 bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400"
-                        : "border-[var(--color-border)] hover:border-indigo-300"
+                        ? "border-[var(--color-text)] bg-[var(--color-surface-subtle)] text-[var(--color-text)] font-medium"
+                        : "border-[var(--color-border)] hover:border-[var(--color-text-muted)]"
                     )}
                   >
                     {v.label}
@@ -592,7 +592,7 @@ export default function OnboardingPage() {
                         start: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                    className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
                   />
                 </div>
                 <div>
@@ -608,7 +608,7 @@ export default function OnboardingPage() {
                         end: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 text-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-all"
+                    className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
                   />
                 </div>
               </div>
@@ -618,8 +618,8 @@ export default function OnboardingPage() {
 
         {/* ── Error ────────────────────────────────────── */}
         {error && (
-          <div className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20">
-            <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+          <div className="mt-4 p-3 rounded-lg bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20">
+            <p className="text-sm text-[var(--color-danger)]">{error}</p>
           </div>
         )}
 
@@ -628,7 +628,7 @@ export default function OnboardingPage() {
           {step > 0 ? (
             <button
               onClick={() => setStep(step - 1)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text)] rounded-xl hover:bg-[var(--color-surface-muted)] transition-all"
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text)] rounded-lg hover:bg-[var(--color-surface-muted)] transition-all"
             >
               <ChevronLeft className="w-4 h-4" />
               Back
@@ -642,9 +642,9 @@ export default function OnboardingPage() {
               onClick={() => canNext() && setStep(step + 1)}
               disabled={!canNext()}
               className={clsx(
-                "flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-xl transition-all",
+                "flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-lg transition-all",
                 canNext()
-                  ? "bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02]"
+                  ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:bg-[var(--color-accent-hover)]"
                   : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)] cursor-not-allowed"
               )}
             >
@@ -655,7 +655,7 @@ export default function OnboardingPage() {
             <button
               onClick={handleSubmit}
               disabled={submitting}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 rounded-xl shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>

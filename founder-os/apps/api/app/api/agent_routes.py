@@ -181,6 +181,90 @@ async def run_agent(
     )
 
 
+@router.post("/{agent_name}/chat")
+async def chat_with_agent(
+    agent_name: str,
+    body: AgentRunRequest,
+    user: ClerkUser = Depends(require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Chat with a specific agent.
+
+    Works like /run but also stores the interaction in SharedMemory
+    so the orchestrator (and other agents) can see conversation history.
+    Returns a ``reply`` field for convenience alongside the full metadata.
+    """
+    settings = get_settings()
+    redis = get_redis()
+    registry = AgentRegistry(db=db, redis=redis, settings=settings)
+
+    try:
+        user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")
+        planner_uid = _resolve_planner_user_id(user.user_id)
+        session_id = body.session_id or f"{agent_name}-chat-{user.user_id}"
+
+        agent = await registry.get(
+            agent_name,
+            user_id=user_uuid,
+            session_id=session_id,
+            planner_user_id=planner_uid,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+    start = time.time()
+    result = await agent.run(body.message, extra_context=body.extra_context)
+    duration = round(time.time() - start, 2)
+
+    tool_names = list(
+        {tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")}
+    )
+
+    # ── Store in SharedMemory so orchestrator can see it ──
+    from app.agents.memory import SharedMemory
+
+    shared = SharedMemory(redis=redis, user_id=user_uuid, session_id=session_id)
+    await shared.set(f"last_{agent_name}_output", result.content)
+    await shared.set(f"last_{agent_name}_interaction", {
+        "user_message": body.message,
+        "agent_reply": result.content,
+        "tool_names": tool_names,
+        "timestamp": time.time(),
+    })
+
+    # Also store in a global shared scope so orchestrator picks it up
+    global_shared = SharedMemory(redis=redis, user_id=user_uuid, session_id="orchestrator-global")
+    await global_shared.set(f"last_{agent_name}_output", result.content)
+    await global_shared.set(f"last_{agent_name}_interaction", {
+        "user_message": body.message,
+        "agent_reply": result.content,
+        "tool_names": tool_names,
+        "timestamp": time.time(),
+    })
+
+    status = "completed"
+    if result.stop_reason == "clarification":
+        status = "clarification_needed"
+
+    return {
+        "status": status,
+        "reply": result.content,
+        "content": result.content,
+        "agent": agent_name,
+        "model": result.model,
+        "tokens_used": result.tokens_used,
+        "tool_calls_made": len(result.tool_calls_made),
+        "tool_names": tool_names,
+        "duration_seconds": duration,
+        "stop_reason": result.stop_reason,
+        "cost_usd": round(result.cost_usd, 6),
+        "llm_provider": settings.LLM_PROVIDER,
+        "session_id": session_id,
+        "pending_approvals": result.pending_approvals,
+    }
+
+
 @router.post("/orchestrate", response_model=OrchestrationResponse)
 async def orchestrate(
     body: AgentRunRequest,

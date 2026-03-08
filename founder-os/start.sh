@@ -25,6 +25,7 @@ cleanup() {
   echo ""
   log "Shutting down..."
   # Kill background processes
+  [[ -n "$CELERY_PID" ]] && kill "$CELERY_PID" 2>/dev/null && ok "Celery worker stopped"
   [[ -n "$API_PID" ]] && kill "$API_PID" 2>/dev/null && ok "API server stopped"
   [[ -n "$WEB_PID" ]] && kill "$WEB_PID" 2>/dev/null && ok "Web dev server stopped"
   docker compose down 2>/dev/null && ok "Docker services stopped"
@@ -34,6 +35,8 @@ cleanup() {
 # ── Stop mode ──
 if [[ "$1" == "--stop" ]]; then
   log "Stopping all services..."
+  # Kill any running Celery worker
+  pkill -f 'celery.*worker' 2>/dev/null && ok "Celery worker stopped" || warn "No Celery worker found"
   # Kill any running uvicorn on port 8000
   lsof -ti :8000 | xargs kill -9 2>/dev/null && ok "API server stopped" || warn "No API server found on :8000"
   # Kill any running next dev on port 3000
@@ -105,7 +108,29 @@ until docker compose exec -T redis redis-cli ping 2>/dev/null | grep -q PONG; do
 done
 ok "Redis is ready"
 
-# ── 3. Run database migrations ──
+# ── 3. Check Ollama for embeddings ──
+if command -v ollama &>/dev/null; then
+  ok "Ollama found"
+  # Ensure the embedding model is available
+  if ! ollama list 2>/dev/null | grep -q 'nomic-embed-text'; then
+    log "Pulling nomic-embed-text model (first time only)..."
+    ollama pull nomic-embed-text
+    ok "nomic-embed-text model ready"
+  else
+    ok "nomic-embed-text model available"
+  fi
+  # Make sure Ollama is serving
+  if ! curl -sf http://localhost:11434/api/tags &>/dev/null; then
+    warn "Ollama is installed but not serving — run 'ollama serve' in another terminal for embeddings"
+  else
+    ok "Ollama is serving on :11434"
+  fi
+else
+  warn "Ollama not installed — embeddings/RAG will be unavailable"
+  warn "Install: https://ollama.com  then run: ollama pull nomic-embed-text"
+fi
+
+# ── 4. Run database migrations ──
 log "Running database migrations..."
 cd apps/api
 source .venv/bin/activate
@@ -117,14 +142,14 @@ else
 fi
 cd "$ROOT_DIR"
 
-# ── 4. Install frontend dependencies (if needed) ──
+# ── 5. Install frontend dependencies (if needed) ──
 if [[ ! -d "node_modules" ]]; then
   log "Installing Node.js dependencies..."
   npm install
   ok "Dependencies installed"
 fi
 
-# ── 5. Start FastAPI backend (background) ──
+# ── 6. Start FastAPI backend (background) ──
 # Kill any stale process on port 8000
 lsof -ti :8000 | xargs kill -9 2>/dev/null && warn "Killed stale process on :8000"
 sleep 1
@@ -148,7 +173,23 @@ else
   exit 1
 fi
 
-# ── 6. Start Next.js frontend (background) ──
+# ── 7. Start Celery worker (background) ──
+log "Starting Celery worker..."
+cd apps/api
+source .venv/bin/activate
+celery -A app.celery_app worker --loglevel=info -Q default,agents,orchestrator > "$LOG_DIR/celery.log" 2>&1 &
+CELERY_PID=$!
+cd "$ROOT_DIR"
+
+sleep 2
+if kill -0 "$CELERY_PID" 2>/dev/null; then
+  ok "Celery worker running (PID $CELERY_PID)"
+else
+  warn "Celery worker failed to start — background tasks won't run. Check logs/celery.log"
+  CELERY_PID=""
+fi
+
+# ── 8. Start Next.js frontend (background) ──
 # Kill any stale process on port 3000
 lsof -ti :3000 | xargs kill -9 2>/dev/null && warn "Killed stale process on :3000"
 sleep 1
@@ -172,10 +213,11 @@ echo -e "${GREEN} API:  ${NC}http://localhost:8000  ${GREEN}║${NC}"
 echo -e "${GREEN} Docs: ${NC}http://localhost:8000/docs ${GREEN}║${NC}"
 
 echo -e "${CYAN} Logs:${NC}"
-echo -e "  API → logs/api.log"
-echo -e "  Web → logs/web.log"
+echo -e "  API    → logs/api.log"
+echo -e "  Web    → logs/web.log"
+echo -e "  Celery → logs/celery.log"
 echo ""
-echo -e "Tail logs:  ${YELLOW}tail -f logs/api.log logs/web.log${NC}"
+echo -e "Tail logs:  ${YELLOW}tail -f logs/api.log logs/web.log logs/celery.log${NC}"
 echo -e "Press ${YELLOW}Ctrl+C${NC} to stop all services."
 echo ""
 

@@ -1,94 +1,247 @@
 INFO:     Will watch for changes in these directories: ['/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api']
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [60848] using WatchFiles
-INFO:     Started server process [60864]
+INFO:     Started reloader process [54224] using WatchFiles
+INFO:     Started server process [54228]
 INFO:     Waiting for application startup.
-16:00:58  INFO      apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
-16:00:58  INFO      apscheduler.scheduler — Added job "Weekly Planner (Monday 8 AM)" to job store "default"
-16:00:58  INFO      apscheduler.scheduler — Scheduler started
-16:00:58  INFO      app.scheduler — ⏰ Background scheduler started — 1 job(s) registered
-16:00:58  INFO      app.scheduler —    • Weekly Planner (Monday 8 AM) (next run: 2026-03-09 08:00:00+05:30)
+23:29:18  INFO      apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
+23:29:18  INFO      apscheduler.scheduler — Added job "Weekly Planner (Monday 8 AM)" to job store "default"
+23:29:18  INFO      apscheduler.scheduler — Scheduler started
+23:29:18  INFO      app.scheduler — ⏰ Background scheduler started — 1 job(s) registered
+23:29:18  INFO      app.scheduler —    • Weekly Planner (Monday 8 AM) (next run: 2026-03-09 08:00:00+05:30)
 INFO:     Application startup complete.
-16:01:10  INFO      httpx — HTTP Request: GET https://proud-quagga-53.clerk.accounts.dev/.well-known/jwks.json "HTTP/1.1 200 OK"
+23:29:42  INFO      httpx — HTTP Request: GET https://proud-quagga-53.clerk.accounts.dev/.well-known/jwks.json "HTTP/1.1 200 OK"
 INFO:     ::1:0 - "GET /api/onboarding/status HTTP/1.1" 200 OK
-INFO:     127.0.0.1:63509 - "OPTIONS /api/agents/orchestrate/stream HTTP/1.1" 200 OK
-16:01:12  INFO      app.agents.llm — OpenAI fallback configured (model=gpt-4o-mini)
-16:01:12  INFO      app.agents.router — Registered agent card: orchestrator
-16:01:12  INFO      app.agents.router — Registered agent card: planner
-16:01:12  INFO      app.agents.router — Registered agent card: content
-16:01:12  INFO      app.agents.router — Registered agent card: research
-16:01:12  INFO      app.agents.router — Registered agent card: ops
-16:01:12  INFO      app.agents.router — Registered agent card: product
-16:01:12  INFO      app.agents.router — Registered agent card: support
-INFO:     127.0.0.1:63509 - "POST /api/agents/orchestrate/stream HTTP/1.1" 503 Service Unavailable
-16:01:12  INFO      app.agents.llm — OpenAI fallback configured (model=gpt-4o-mini)
-16:01:12  INFO      app.agents.router — Registered agent card: orchestrator
-16:01:12  INFO      app.agents.router — Registered agent card: planner
-16:01:12  INFO      app.agents.router — Registered agent card: content
-16:01:12  INFO      app.agents.router — Registered agent card: research
-16:01:12  INFO      app.agents.router — Registered agent card: ops
-16:01:12  INFO      app.agents.router — Registered agent card: product
-16:01:12  INFO      app.agents.router — Registered agent card: support
-INFO:     ::1:0 - "POST /api/agents/orchestrate HTTP/1.1" 503 Service Unavailable
+INFO:     127.0.0.1:50140 - "OPTIONS /api/activity/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50140 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50159 - "OPTIONS /api/agents/planner/chat HTTP/1.1" 200 OK
+23:29:49  INFO      app.agents.llm — OpenAI fallback configured (model=gpt-4o-mini)
+23:29:49  INFO      app.agents.router — Registered agent card: orchestrator
+23:29:49  INFO      app.agents.router — Registered agent card: planner
+23:29:49  INFO      app.agents.router — Registered agent card: content
+23:29:49  INFO      app.agents.router — Registered agent card: research
+23:29:49  INFO      app.agents.router — Registered agent card: ops
+23:29:49  INFO      app.agents.router — Registered agent card: product
+23:29:49  INFO      app.agents.router — Registered agent card: support
+23:29:49  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
+23:29:49  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'planner'
+23:29:49  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+23:29:49  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+23:29:49  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+23:29:50  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:29:50  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:29:53  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:29:53  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
+23:30:00  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:30:00  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
+23:30:00  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:30:00  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:30:04  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:30:04  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
+23:30:11  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:30:11  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
+23:30:11  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (gpt-4o-mini)
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:30:12  INFO      httpx — HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:30:12  INFO      app.agents.execution — Agent 'planner' tool 'gcal_smart_delete' → auto-approved (always_allow)
+23:30:12  INFO      app.agents.tool_protocol — Calling tool 'gcal_smart_delete' via provider 'mcp:google-calendar'
+23:30:13  INFO      httpx — HTTP Request: POST https://oauth2.googleapis.com/token "HTTP/1.1 200 OK"
+23:30:13  INFO      app.integrations.calendar_integration — Stored GCal tokens for default-user in PostgreSQL
+23:30:14  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=100&orderBy=startTime&singleEvents=true&timeMin=2026-03-07T00%3A00%3A00Z "HTTP/1.1 200 OK"
+23:30:15  INFO      httpx — HTTP Request: DELETE https://www.googleapis.com/calendar/v3/calendars/primary/events/nf70j9b3mv6e41iet3vrad2mm0 "HTTP/1.1 204 No Content"
+23:30:15  INFO      app.agents.execution — Agent 'planner' tool call: gcal_smart_delete → ok (2613ms)
+23:30:16  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:30:16  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
+23:30:19  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:30:19  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:30:26  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:30:26  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
+23:30:26  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:30:26  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
+23:30:30  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:30:30  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:30:36  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:30:36  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
+23:30:36  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (gpt-4o-mini)
+23:30:38  INFO      httpx — HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:50159 - "POST /api/agents/planner/chat HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:36:20  INFO      app.agents.llm — OpenAI fallback configured (model=gpt-4o-mini)
+23:36:20  INFO      app.agents.router — Registered agent card: orchestrator
+23:36:20  INFO      app.agents.router — Registered agent card: planner
+23:36:20  INFO      app.agents.router — Registered agent card: content
+23:36:20  INFO      app.agents.router — Registered agent card: research
+23:36:20  INFO      app.agents.router — Registered agent card: ops
+23:36:20  INFO      app.agents.router — Registered agent card: product
+23:36:20  INFO      app.agents.router — Registered agent card: support
+23:36:20  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
+23:36:20  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'planner'
+23:36:20  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+23:36:20  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+23:36:20  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+23:36:20  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:36:20  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:36:24  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:36:24  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
+23:36:31  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:36:31  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
+23:36:32  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:36:32  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:36:35  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:36:35  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:36:42  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:36:42  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
+23:36:42  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (gpt-4o-mini)
+23:36:44  INFO      httpx — HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+23:36:44  INFO      app.agents.execution — Agent 'planner' tool 'gcal_smart_delete' → auto-approved (always_allow)
+23:36:44  INFO      app.agents.tool_protocol — Calling tool 'gcal_smart_delete' via provider 'mcp:google-calendar'
+23:36:45  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=100&orderBy=startTime&singleEvents=true&timeMin=2026-03-08T00%3A00%3A00Z "HTTP/1.1 200 OK"
+23:36:45  INFO      app.agents.execution — Agent 'planner' tool call: gcal_smart_delete → ok (600ms)
+23:36:45  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:36:45  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
+23:36:49  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:36:49  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:36:55  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+23:36:55  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
+23:36:56  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:36:56  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
+23:36:59  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:36:59  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+23:37:06  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+23:37:06  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
+23:37:06  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (gpt-4o-mini)
+23:37:08  INFO      httpx — HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     127.0.0.1:50757 - "POST /api/agents/planner/chat HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/chapters HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/memory/recall HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/memory/recall HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/chapters HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/items HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/items HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50950 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51051 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
 INFO:     ::1:0 - "GET /api/memory/chapters HTTP/1.1" 200 OK
 INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
 INFO:     ::1:0 - "POST /api/memory/recall HTTP/1.1" 200 OK
 INFO:     ::1:0 - "GET /api/memory/chapters HTTP/1.1" 200 OK
 INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
 INFO:     ::1:0 - "POST /api/memory/recall HTTP/1.1" 200 OK
-16:01:18  INFO      app.agents.llm — OpenAI fallback configured (model=gpt-4o-mini)
-16:01:18  INFO      app.agents.router — Registered agent card: orchestrator
-16:01:18  INFO      app.agents.router — Registered agent card: planner
-16:01:18  INFO      app.agents.router — Registered agent card: content
-16:01:18  INFO      app.agents.router — Registered agent card: research
-16:01:18  INFO      app.agents.router — Registered agent card: ops
-16:01:18  INFO      app.agents.router — Registered agent card: product
-16:01:18  INFO      app.agents.router — Registered agent card: support
-INFO:     127.0.0.1:63543 - "POST /api/agents/orchestrate/stream HTTP/1.1" 503 Service Unavailable
-16:01:18  INFO      app.agents.llm — OpenAI fallback configured (model=gpt-4o-mini)
-16:01:18  INFO      app.agents.router — Registered agent card: orchestrator
-16:01:18  INFO      app.agents.router — Registered agent card: planner
-16:01:18  INFO      app.agents.router — Registered agent card: content
-16:01:18  INFO      app.agents.router — Registered agent card: research
-16:01:18  INFO      app.agents.router — Registered agent card: ops
-16:01:18  INFO      app.agents.router — Registered agent card: product
-16:01:18  INFO      app.agents.router — Registered agent card: support
-INFO:     ::1:0 - "POST /api/agents/orchestrate HTTP/1.1" 503 Service Unavailable
+INFO:     ::1:0 - "GET /api/knowledge/items HTTP/1.1" 200 OK
 INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/items HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/chapters HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/memory/recall HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/memory/recall HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/chapters HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/items HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/items HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/chapters HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/memory/recall HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/chapters HTTP/1.1" 200 OK
+INFO:     ::1:0 - "POST /api/memory/recall HTTP/1.1" 200 OK
 INFO:     ::1:0 - "GET /api/knowledge/items HTTP/1.1" 200 OK
 INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
 INFO:     ::1:0 - "GET /api/knowledge/items HTTP/1.1" 200 OK
-INFO:     127.0.0.1:64512 - "OPTIONS /api/agents/orchestrate/stream HTTP/1.1" 200 OK
-16:14:56  INFO      app.agents.llm — OpenAI fallback configured (model=gpt-4o-mini)
-16:14:56  INFO      app.agents.router — Registered agent card: orchestrator
-16:14:56  INFO      app.agents.router — Registered agent card: planner
-16:14:56  INFO      app.agents.router — Registered agent card: content
-16:14:56  INFO      app.agents.router — Registered agent card: research
-16:14:56  INFO      app.agents.router — Registered agent card: ops
-16:14:56  INFO      app.agents.router — Registered agent card: product
-16:14:56  INFO      app.agents.router — Registered agent card: support
-16:14:56  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
-16:14:56  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'orchestrator'
-16:14:56  INFO      app.agents.tool_protocol — Tool 'delegate_task' overridden with runtime closure
-16:14:56  INFO      app.agents.tool_protocol — Tool 'recall_last_orchestration' overridden with runtime closure
-16:14:56  INFO      app.agents.tool_protocol — Tool 'list_available_agents' overridden with runtime closure
-16:14:56  INFO      app.agents.tool_protocol — Tool 'check_delegation_health' overridden with runtime closure
-16:14:56  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
-16:14:56  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
-INFO:     127.0.0.1:64512 - "POST /api/agents/orchestrate/stream HTTP/1.1" 200 OK
-16:14:56  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
-16:14:56  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
-16:14:57  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-16:14:57  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-16:15:01  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-16:15:01  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-16:15:07  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-16:15:07  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-16:15:08  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-16:15:08  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-16:15:11  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-16:15:11  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-16:15:17  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-16:15:17  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-16:15:17  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (gpt-4o-mini)
-16:15:21  INFO      httpx — HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 200 OK"
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+23:38:58  INFO      app.scheduler — ⏰ Background scheduler stopped
+23:38:58  INFO      apscheduler.scheduler — Scheduler has been shut down
+INFO:     Application shutdown complete.
+INFO:     Finished server process [54228]
+INFO:     Stopping reloader process [54224]

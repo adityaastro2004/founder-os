@@ -1,0 +1,30 @@
+ 
+ -------------- celery@Adityas-MacBook-Air-5.local v5.6.2 (recovery)
+--- ***** ----- 
+-- ******* ---- macOS-26.3-arm64-arm-64bit-Mach-O 2026-03-07 23:29:20
+- *** --- * --- 
+- ** ---------- [config]
+- ** ---------- .> app:         founder_os:0x109ea2270
+- ** ---------- .> transport:   redis://localhost:6379/0
+- ** ---------- .> results:     redis://localhost:6379/0
+- *** --- * --- .> concurrency: 4 (prefork)
+-- ******* ---- .> task events: OFF (enable -E to monitor tasks in this worker)
+--- ***** ----- 
+ -------------- [queues]
+                .> agents           exchange=agents(direct) key=agents
+                .> default          exchange=default(direct) key=default
+                .> orchestrator     exchange=orchestrator(direct) key=orchestrator
+
+[tasks]
+
+
+[2026-03-07 23:29:20,304: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-03-07 23:29:20,313: INFO/MainProcess] mingle: searching for neighbors
+[2026-03-07 23:29:21,327: INFO/MainProcess] mingle: all alone
+[2026-03-07 23:29:21,379: INFO/MainProcess] celery@Adityas-MacBook-Air-5.local ready.
+
+worker: Hitting Ctrl+C again will initiate cold shutdown, terminating all running tasks!
+
+worker: Warm shutdown (MainProcess)
+
+worker: Warm shutdown (MainProcess)

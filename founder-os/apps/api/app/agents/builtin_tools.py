@@ -97,19 +97,19 @@ async def detect_content_type(user_message: str) -> str:
     platform = None
     params: dict = {}
 
-    # Blog detection
-    if any(w in msg for w in ("blog", "article", "post about", "write about", "long-form", "longform")):
-        content_type = "blog"
-    # Social media detection
-    elif any(w in msg for w in ("tweet", "twitter", "thread", "x post")):
+    # Social media detection (check FIRST — "LinkedIn post" should not match "post about" → blog)
+    if any(w in msg for w in ("tweet", "twitter", "thread", "x post")):
         content_type = "social"
         platform = "twitter"
     elif any(w in msg for w in ("linkedin", "li post")):
         content_type = "social"
         platform = "linkedin"
-    elif any(w in msg for w in ("social", "social media", "social post")):
+    elif any(w in msg for w in ("social media", "social post")):
         content_type = "social"
         platform = "both"
+    # Blog detection
+    elif any(w in msg for w in ("blog", "article", "post about", "write about", "long-form", "longform")):
+        content_type = "blog"
     # Email detection
     elif any(w in msg for w in ("email", "newsletter", "welcome sequence", "drip", "outreach", "cold email")):
         content_type = "email"
