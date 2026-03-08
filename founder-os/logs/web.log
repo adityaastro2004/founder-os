@@ -1884,3 +1884,13 @@ web:dev: Error: socket hang up
 web:dev:     at ignore-listed frames {
 web:dev:   code: 'ECONNRESET'
 web:dev: }
+web:dev: Failed to proxy http://localhost:8000/api/activity/stats Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: Error: socket hang up
+web:dev:     at ignore-listed frames {
+web:dev:   code: 'ECONNRESET'
+web:dev: }
+web:dev: [?25h
+ ERROR  run failed: command  exited (1)

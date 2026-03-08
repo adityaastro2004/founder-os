@@ -22,3 +22,9 @@
 [2026-03-08 23:57:09,069: INFO/MainProcess] mingle: searching for neighbors
 [2026-03-08 23:57:10,091: INFO/MainProcess] mingle: all alone
 [2026-03-08 23:57:10,145: INFO/MainProcess] celery@Adityas-MacBook-Air-5.local ready.
+
+worker: Hitting Ctrl+C again will initiate cold shutdown, terminating all running tasks!
+
+worker: Warm shutdown (MainProcess)
+
+worker: Warm shutdown (MainProcess)
