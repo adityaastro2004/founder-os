@@ -31,7 +31,7 @@ async def main():
             session_id="debug-session",
             planner_user_id=planner_uid,
         )
-
+ 
         # Check what tools are available
         tool_schemas = await agent.tools.list_tools()
         tool_names = [t.name for t in tool_schemas]

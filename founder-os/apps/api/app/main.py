@@ -15,6 +15,8 @@ from app.api.memory_routes import router as memory_router
 from app.api.onboarding_routes import router as onboarding_router
 from app.api.activity_routes import router as activity_router
 from app.api.task_review_routes import router as review_router
+from app.api.history_routes import router as history_router
+from app.api.profile_routes import router as profile_router
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.redis import init_redis, close_redis
@@ -67,6 +69,8 @@ app.include_router(memory_router)
 app.include_router(onboarding_router)
 app.include_router(activity_router)
 app.include_router(review_router)
+app.include_router(history_router)
+app.include_router(profile_router)
 
 # Dev-only test routes (no auth required)
 if settings.APP_ENV == "development":

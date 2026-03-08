@@ -131,6 +131,7 @@ class BaseAgent:
         self.event_bus = event_bus
         self.approval_gate = approval_gate
         self.user_id = user_id
+        self.clerk_user_id: str = ""  # Set by registry; canonical ID for profile intelligence
         self._embedder = embedder
 
         # Build execution engine
@@ -334,7 +335,7 @@ class BaseAgent:
         query_embedding: list[float] | None = None,
         extra_context: str | None = None,
     ) -> str:
-        """Compose system prompt from base + memory + router + user overrides."""
+        """Compose system prompt from base + memory + router + user overrides + user profile."""
         from datetime import datetime, timezone as tz
         parts: list[str] = []
 
@@ -358,6 +359,11 @@ class BaseAgent:
                 f"{self.config.custom_instructions}\n"
                 f"</user_custom_instructions>"
             )
+
+        # User profile intelligence — personalises tone, avoids dislikes, etc.
+        profile_ctx = await self._load_user_profile_context()
+        if profile_ctx:
+            parts.append(f"\n{profile_ctx}")
 
         # A2A: inject available agents for delegation awareness
         if self.router:
@@ -384,6 +390,25 @@ class BaseAgent:
             parts.append(f"\n<additional_context>\n{extra_context}\n</additional_context>")
 
         return "\n\n".join(parts)
+
+    async def _load_user_profile_context(self) -> str:
+        """Load the user's intelligence profile and format it for the system prompt."""
+        # Use clerk_user_id (Clerk ID) which matches how insights are stored,
+        # falling back to user_id (UUID) if clerk_user_id wasn't set.
+        profile_user_id = self.clerk_user_id or self.user_id
+        if not profile_user_id:
+            return ""
+        try:
+            from app.agents.profile_intelligence import ProfileIntelligence
+            from app.database import async_session
+
+            async with async_session() as db:
+                # Lightweight helper — only reads, no LLM call
+                pi = ProfileIntelligence(db, llm_generate=None)  # type: ignore[arg-type]
+                return await pi.get_profile_context(profile_user_id)
+        except Exception as exc:
+            logger.debug("Could not load user profile context: %s", exc)
+            return ""
 
     # ------------------------------------------------------------------
     # Message formatting (provider-agnostic)

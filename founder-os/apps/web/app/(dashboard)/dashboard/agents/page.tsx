@@ -29,6 +29,8 @@ import {
   Trash2,
   User,
   MessageSquare,
+  History,
+  ChevronRight,
 } from "lucide-react";
 import { clsx } from "clsx";
 
@@ -72,6 +74,25 @@ interface ChatMessage {
   tokensUsed?: number;
   durationSeconds?: number;
   status?: "sending" | "completed" | "error" | "clarification";
+}
+
+interface HistoryRun {
+  id: number;
+  agent_name: string;
+  user_message: string;
+  agent_response: string;
+  model: string;
+  tokens_used: number;
+  cost_usd: number;
+  duration_seconds: number;
+  stop_reason: string;
+  tool_names: string[];
+  tool_calls_count: number;
+  agents_used: string[];
+  delegations_made: number;
+  delegation_details: Record<string, unknown>[];
+  status: string;
+  created_at: string;
 }
 
 /* ── Agent colors ────────────────────────────────────── */
@@ -183,9 +204,53 @@ function AgentChatPanel({
   const [sending, setSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sessionIdRef = useRef(`${agent.agent_name}-chat-${Date.now()}`);
+  const sessionIdRef = useRef(() => {
+    if (typeof window === "undefined") return `${agent.agent_name}-chat-${Date.now()}`;
+    const key = `agent-chat-session-${agent.agent_name}`;
+    const stored = localStorage.getItem(key);
+    if (stored) return stored;
+    const id = `${agent.agent_name}-chat-${Date.now()}`;
+    localStorage.setItem(key, id);
+    return id;
+  });
+  const sessionId = typeof sessionIdRef.current === "function" ? sessionIdRef.current() : sessionIdRef.current;
+  // Ensure ref stores the resolved string for future reads
+  if (typeof sessionIdRef.current === "function") sessionIdRef.current = sessionId as unknown as () => string;
   const gradient = agentColors[agent.agent_name] || agentColors.system;
   const suggestions = agentSuggestions[agent.agent_name] || [];
+
+  // Load persisted agent chat messages on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(
+          `${DIRECT_API_URL}/api/history/chat/${encodeURIComponent(sessionId)}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !Array.isArray(data.messages) || data.messages.length === 0) return;
+        const restored: ChatMessage[] = data.messages.map((m: Record<string, unknown>) => ({
+          id: (m.id as string) || `restored-${Date.now()}-${Math.random()}`,
+          role: m.role as "user" | "assistant",
+          content: m.content as string,
+          timestamp: new Date(m.created_at as string),
+          toolsUsed: (m.tool_names as string[]) || undefined,
+          tokensUsed: (m.tokens_used as number) || undefined,
+          durationSeconds: (m.duration_seconds as number) || undefined,
+          status: "completed" as const,
+        }));
+        setMessages(restored);
+      } catch {
+        // Silently ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [agent.agent_name, getToken, sessionId]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -231,7 +296,7 @@ function AgentChatPanel({
           },
           body: JSON.stringify({
             message: userMessage,
-            session_id: sessionIdRef.current,
+            session_id: sessionId,
           }),
         }
       );
@@ -286,7 +351,11 @@ function AgentChatPanel({
 
   const clearChat = () => {
     setMessages([]);
-    sessionIdRef.current = `${agent.agent_name}-chat-${Date.now()}`;
+    const newId = `${agent.agent_name}-chat-${Date.now()}`;
+    sessionIdRef.current = newId as unknown as () => string;
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`agent-chat-session-${agent.agent_name}`, newId);
+    }
   };
 
   return (
@@ -498,78 +567,241 @@ function AgentChatPanel({
   );
 }
 
+/* ── Agent History Panel (slide-over) ────────────────── */
+function AgentHistoryPanel({
+  agent,
+  onClose,
+}: {
+  agent: AgentStatus;
+  onClose: () => void;
+}) {
+  const { getToken } = useAuth();
+  const [runs, setRuns] = useState<HistoryRun[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const gradient = agentColors[agent.agent_name] || agentColors.system;
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(
+          `${DIRECT_API_URL}/api/history/runs?agent_name=${encodeURIComponent(agent.agent_name)}&limit=50`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && Array.isArray(data.runs)) setRuns(data.runs);
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [agent.agent_name, getToken]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex">
+      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative ml-auto w-full max-w-2xl bg-white border-l border-[var(--color-border)] flex flex-col h-full shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border)]">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors">
+            <ArrowLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
+          </button>
+          <div className={clsx("w-8 h-8 rounded-md flex items-center justify-center", gradient)}>
+            <History className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm">{agent.display_name} — History</p>
+            <p className="text-xs text-[var(--color-text-muted)]">Past runs with full input & output</p>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors">
+            <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
+          </button>
+        </div>
+
+        {/* Runs list */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
+            </div>
+          ) : runs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <History className="w-12 h-12 text-[var(--color-text-muted)] mb-4" />
+              <h3 className="text-lg font-semibold mb-1">No history yet</h3>
+              <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
+                Run tasks with this agent and they&apos;ll appear here.
+              </p>
+            </div>
+          ) : (
+            runs.map((run) => {
+              const isExpanded = expandedId === run.id;
+              return (
+                <div key={run.id} className="bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => setExpandedId(isExpanded ? null : run.id)}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--color-surface-muted)] transition-colors"
+                  >
+                    <ChevronRight className={clsx("w-4 h-4 text-[var(--color-text-muted)] transition-transform shrink-0", isExpanded && "rotate-90")} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{run.user_message}</p>
+                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[var(--color-text-muted)]">
+                        <span>{new Date(run.created_at).toLocaleString()}</span>
+                        <span>·</span>
+                        <span>{run.duration_seconds.toFixed(1)}s</span>
+                        <span>·</span>
+                        <span>{run.tokens_used} tokens</span>
+                        {run.tool_names.length > 0 && (
+                          <>
+                            <span>·</span>
+                            <span className="flex items-center gap-0.5"><Wrench className="w-2.5 h-2.5" />{run.tool_calls_count}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <span className={clsx(
+                      "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                      run.status === "completed" ? "bg-[var(--color-success)]/10 text-[var(--color-success)]" : "bg-[var(--color-danger)]/10 text-[var(--color-danger)]"
+                    )}>
+                      {run.status}
+                    </span>
+                  </button>
+                  {isExpanded && (
+                    <div className="border-t border-[var(--color-border)] px-4 py-3 space-y-3">
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase text-[var(--color-text-muted)] mb-1">You said</p>
+                        <div className="text-sm bg-white rounded-lg border border-[var(--color-border)] px-3 py-2 whitespace-pre-wrap">
+                          {run.user_message}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-semibold uppercase text-[var(--color-text-muted)] mb-1">Agent response</p>
+                        <div className="text-sm bg-white rounded-lg border border-[var(--color-border)] px-3 py-2 whitespace-pre-wrap max-h-80 overflow-y-auto">
+                          {run.agent_response}
+                        </div>
+                      </div>
+                      {run.tool_names.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {run.tool_names.map((t) => (
+                            <span key={t} className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] font-mono">
+                              <Wrench className="w-2.5 h-2.5" />{t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {run.agents_used && run.agents_used.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {run.agents_used.map((a) => (
+                            <span key={a} className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
+                              <GitBranch className="w-2.5 h-2.5" />{a}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-3 text-[10px] text-[var(--color-text-muted)]">
+                        <span>Model: {run.model}</span>
+                        {run.cost_usd > 0 && <span>Cost: ${run.cost_usd.toFixed(4)}</span>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Agent Status Card ───────────────────────────────── */
 function AgentStatusCard({
   agent,
   onClick,
+  onHistory,
 }: {
   agent: AgentStatus;
   onClick: () => void;
+  onHistory: () => void;
 }) {
   const gradient = agentColors[agent.agent_name] || agentColors.system;
   return (
-    <button
-      onClick={onClick}
+    <div
       className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4 hover:bg-[var(--color-surface-subtle)] hover:border-[var(--color-border)] transition-all text-left w-full group"
     >
-      <div className="flex items-center gap-3 mb-3">
-        <div
-          className={clsx(
-            "w-8 h-8 rounded-md flex items-center justify-center",
-            gradient
-          )}
-        >
-          <Bot className="w-4 h-4 text-white" />
+      <button onClick={onClick} className="w-full text-left">
+        <div className="flex items-center gap-3 mb-3">
+          <div
+            className={clsx(
+              "w-8 h-8 rounded-md flex items-center justify-center",
+              gradient
+            )}
+          >
+            <Bot className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-medium text-sm truncate">{agent.display_name}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <span
+                className={clsx(
+                  "w-1.5 h-1.5 rounded-full",
+                  agent.status === "running" &&
+                    "bg-[var(--color-success)] animate-pulse",
+                  agent.status === "idle" && "bg-[var(--color-text-muted)]",
+                  agent.status === "error" && "bg-[var(--color-danger)]"
+                )}
+              />
+              <span className="text-xs text-[var(--color-text-muted)] capitalize">
+                {agent.status}
+              </span>
+            </div>
+          </div>
+          <MessageSquare className="w-4 h-4 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm truncate">{agent.display_name}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span
-              className={clsx(
-                "w-1.5 h-1.5 rounded-full",
-                agent.status === "running" &&
-                  "bg-[var(--color-success)] animate-pulse",
-                agent.status === "idle" && "bg-[var(--color-text-muted)]",
-                agent.status === "error" && "bg-[var(--color-danger)]"
-              )}
-            />
-            <span className="text-xs text-[var(--color-text-muted)] capitalize">
-              {agent.status}
-            </span>
+        <p className="text-xs text-[var(--color-text-secondary)] mb-3 line-clamp-1">
+          {agentDescriptions[agent.agent_name] || "AI Agent"}
+        </p>
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p className="text-base font-semibold tabular-nums">
+              {agent.tasks_today}
+            </p>
+            <p className="text-[10px] text-[var(--color-text-muted)]">Today</p>
+          </div>
+          <div>
+            <p className="text-base font-semibold tabular-nums text-[var(--color-success)]">
+              {agent.tasks_completed}
+            </p>
+            <p className="text-[10px] text-[var(--color-text-muted)]">Done</p>
+          </div>
+          <div>
+            <p className="text-base font-semibold tabular-nums text-[var(--color-danger)]">
+              {agent.tasks_failed}
+            </p>
+            <p className="text-[10px] text-[var(--color-text-muted)]">Failed</p>
           </div>
         </div>
-        <MessageSquare className="w-4 h-4 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+      </button>
+      <div className="flex items-center justify-between mt-2">
+        {agent.last_active ? (
+          <p className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            Last active {timeAgo(agent.last_active)}
+          </p>
+        ) : <span />}
+        <button
+          onClick={(e) => { e.stopPropagation(); onHistory(); }}
+          className="inline-flex items-center gap-1 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors px-2 py-1 rounded hover:bg-[var(--color-surface-muted)]"
+        >
+          <History className="w-3 h-3" />
+          History
+        </button>
       </div>
-      <p className="text-xs text-[var(--color-text-secondary)] mb-3 line-clamp-1">
-        {agentDescriptions[agent.agent_name] || "AI Agent"}
-      </p>
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div>
-          <p className="text-base font-semibold tabular-nums">
-            {agent.tasks_today}
-          </p>
-          <p className="text-[10px] text-[var(--color-text-muted)]">Today</p>
-        </div>
-        <div>
-          <p className="text-base font-semibold tabular-nums text-[var(--color-success)]">
-            {agent.tasks_completed}
-          </p>
-          <p className="text-[10px] text-[var(--color-text-muted)]">Done</p>
-        </div>
-        <div>
-          <p className="text-base font-semibold tabular-nums text-[var(--color-danger)]">
-            {agent.tasks_failed}
-          </p>
-          <p className="text-[10px] text-[var(--color-text-muted)]">Failed</p>
-        </div>
-      </div>
-      {agent.last_active && (
-        <p className="text-[10px] text-[var(--color-text-muted)] mt-2 flex items-center gap-1">
-          <Clock className="w-3 h-3" />
-          Last active {timeAgo(agent.last_active)}
-        </p>
-      )}
-    </button>
+    </div>
   );
 }
 
@@ -645,6 +877,7 @@ export default function AgentsPage() {
 
   // Agent chat panel state
   const [chatAgent, setChatAgent] = useState<AgentStatus | null>(null);
+  const [historyAgent, setHistoryAgent] = useState<AgentStatus | null>(null);
 
   /* ── SSE: Real-time event stream ── */
   const { connected } = useEventSource<ActivityEvent>(
@@ -821,6 +1054,7 @@ export default function AgentsPage() {
                 key={agent.agent_name}
                 agent={agent}
                 onClick={() => setChatAgent(agent)}
+                onHistory={() => setHistoryAgent(agent)}
               />
             ))}
           </div>
@@ -893,6 +1127,14 @@ export default function AgentsPage() {
         <AgentChatPanel
           agent={chatAgent}
           onClose={() => setChatAgent(null)}
+        />
+      )}
+
+      {/* Agent History Panel */}
+      {historyAgent && (
+        <AgentHistoryPanel
+          agent={historyAgent}
+          onClose={() => setHistoryAgent(null)}
         />
       )}
     </div>

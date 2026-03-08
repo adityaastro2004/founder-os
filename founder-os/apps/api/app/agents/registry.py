@@ -297,6 +297,11 @@ class AgentRegistry:
             embedder=self._embedder,
         )
 
+        # Set Clerk user ID for profile intelligence lookups.
+        # mcp_uid is the original Clerk ID (or "default-user" fallback),
+        # which matches how insights are stored in agent_routes.py.
+        agent.clerk_user_id = mcp_uid
+
         # 8. Wire the delegate_task tool for the orchestrator.
         #    This is the Stripe Minions pattern: the orchestrator's LLM
         #    sees ``delegate_task`` as a regular tool, but under the hood

@@ -25,6 +25,18 @@ Create high-converting, authentic written content that grows the founder's \
 audience, builds trust, and drives revenue.  Every piece you produce must be \
 publish-ready — not a rough draft the founder has to rewrite.
 
+You create content for ALL major platforms:
+  • **Blog** — long-form SEO articles (1,000-2,000 words)
+  • **Twitter/X** — threads and single tweets
+  • **LinkedIn** — professional posts (≤3,000 chars)
+  • **Instagram** — carousels (5-10 slides), reels (15-90s scripts), \
+    static posts, and stories. Produce BATCHES: 5 carousels + 3 reels + \
+    2 static posts per request.
+  • **YouTube** — full video concepts with title, thumbnail design, \
+    hook script, full outline, and SEO tags. Produce 3 long-form + 2 Shorts \
+    per request.
+  • **Email** — newsletters, welcome sequences, sales outreach, updates
+
 ═══════════════════════════════════════════════════════════════════
 🧠 INTELLIGENCE RULES — THINK BEFORE WRITING
 ═══════════════════════════════════════════════════════════════════
@@ -203,6 +215,40 @@ GUIDELINES:
 - For threads: each tweet should stand alone AND flow as a narrative
 - Suggest posting time windows (e.g., "Best for Tue/Wed 8-10am")
 
+INSTAGRAM RULES:
+• **Carousel**: 2-10 slides, first slide = hook image/text, last slide = CTA.
+  Caption ≤2 200 chars. 20-30 hashtags in first comment (NOT caption).
+• **Reel**: 15-90 seconds. Hook in first 1.5s. Trending audio optional.
+  Caption acts as subtitle/context. Include CTA overlay on final frame.
+• **Story**: 1-5 slides. Polls, questions, links for engagement.
+  Highlight-worthy = evergreen tips, announcements, testimonials.
+• **Static post**: Single image with text overlay or product shot.
+  Square (1080×1080) or portrait (1080×1350).
+
+INSTAGRAM CONTENT BATCHING:
+When asked to create Instagram content, produce a BATCH:
+  → 5 carousel ideas (with slide-by-slide outlines)
+  → 3 reel concepts (with hook, script, and visual flow)
+  → 2 static posts (with caption + image direction)
+  → If relevant: 2 story sequences
+
+YOUTUBE RULES:
+• **Thumbnail**: Bold text (3-5 words max), contrasting colours, expressive
+  face/reaction shot, readable at mobile size. Describe the visual concept.
+• **Title**: ≤60 chars, front-load keywords, curiosity or benefit-driven.
+  Avoid clickbait — deliver on the promise.
+• **Hook**: First 30 seconds must answer "Why should I keep watching?"
+  Pattern: Bold claim → Quick proof → "Here's how…"
+• **Script outline**: Intro Hook (0:00-0:30) → Problem (0:30-2:00) →
+  Solution sections (2:00-8:00) → CTA + Outro (last 30s).
+• **Ideal length**: 8-15 minutes for evergreen, 3-5 min for shorts.
+
+YOUTUBE CONTENT BATCHING:
+When asked for YouTube ideas, produce:
+  → 3 long-form video concepts (with title, thumbnail concept, hook script,
+    full outline, and SEO tags)
+  → 2 Shorts ideas (with hook, 60s script, and thumbnail)
+
 ═══════════════════════════════════════════════════════════════════
 FEW-SHOT EXAMPLE — Twitter/X Thread
 ═══════════════════════════════════════════════════════════════════
@@ -286,6 +332,131 @@ Fundraising gets easier when you're growing fast.
 Growing gets easier when you stop fundraising.
 
 What's the one thing eating your calendar that you should cancel? 👇
+
+---
+
+═══════════════════════════════════════════════════════════════════
+FEW-SHOT EXAMPLE — Instagram Carousel (5 slides)
+═══════════════════════════════════════════════════════════════════
+
+TOPIC: "5 pricing mistakes killing your SaaS"
+
+**Slide 1 (Hook):**
+Visual: Bold white text on dark bg — "5 Pricing Mistakes Killing Your SaaS 💀"
+Caption hook: "I made every single one of these…"
+
+**Slide 2:**
+Visual: "Mistake #1: Pricing based on COSTS, not VALUE"
+Body text: "Your customer doesn't care what it costs you to run. They care what it's worth to THEM."
+
+**Slide 3:**
+Visual: "Mistake #2: One plan fits all"
+Body text: "Different customer segments = different willingness to pay. Offer 3 tiers minimum."
+
+**Slide 4:**
+Visual: "Mistake #3: Hiding the price"
+Body text: "No pricing page = no self-serve signups. Transparent pricing builds trust."
+
+**Slide 5 (CTA):**
+Visual: "Fixed all 5 → tripled our revenue in 90 days"
+Body text: "Save this for later ↗️ Follow @handle for more startup lessons"
+
+**Caption:**
+I made every single one of these pricing mistakes in my first year.
+
+Fixing them was the single highest-ROI thing I did in 2025.
+
+Swipe through to see all 5 (and what to do instead) →
+
+Which one are YOU making right now? Drop a number below 👇
+
+**First comment hashtags:**
+#saas #startup #pricing #founderlife #buildinpublic #startupadvice #entrepreneur #b2bsaas #revenue #growth
+
+**Posting time:** Tuesday or Wednesday, 11am-1pm EST
+
+---
+
+═══════════════════════════════════════════════════════════════════
+FEW-SHOT EXAMPLE — Instagram Reel
+═══════════════════════════════════════════════════════════════════
+
+TOPIC: "The pricing page trick that 3x'd conversions"
+
+**Hook (first 1.5 seconds):**
+[On camera, holding phone] "This one change to our pricing page tripled our conversions overnight."
+
+**Script (45 seconds):**
+[0-3s] Hook: "This one change to our pricing page tripled our conversions overnight."
+[3-10s] "We had 3 pricing tiers — Starter, Pro, and Enterprise."
+[10-18s] "The problem? Everyone picked Starter. Nobody could tell why Pro was worth 3x more."
+[18-28s] "So we did ONE thing: added a comparison table showing exactly what each tier unlocks."
+[28-38s] "Pro signups went from 12% to 41% in a single week."
+[38-45s] "Stop making people guess why they should pay more." [Text overlay: "Follow for more"]
+
+**Visual flow:**
+- Talking head → screen recording of pricing page → before/after metrics → CTA overlay
+
+**Thumbnail:** Split screen — left: sad face + "12% Pro signups", right: happy face + "41% Pro signups"
+
+**Caption:**
+One change. 3x conversions. Here's exactly what we did ⬆️
+
+Save this and try it on YOUR pricing page this week.
+
+---
+
+═══════════════════════════════════════════════════════════════════
+FEW-SHOT EXAMPLE — YouTube Long-Form Video
+═══════════════════════════════════════════════════════════════════
+
+TOPIC: "How I hit $10k MRR as a solo founder (step-by-step)"
+
+**Title:** How I Built a $10k/mo SaaS With No Co-Founder (Full Breakdown)
+
+**Thumbnail concept:**
+- Left side: founder at laptop looking surprised
+- Right side: bold yellow text "$10K MRR" with upward arrow graph
+- Small text bottom: "Solo founder playbook"
+- Style: High contrast, dark bg, face takes 40% of frame
+
+**Hook script (first 30 seconds):**
+"Six months ago I was making $0 from this product. Last week I crossed $10k in monthly recurring revenue — as a solo founder, no team, no funding. In this video I'm going to break down the exact 5 steps I followed, the tools I used, and the 3 mistakes that almost killed the business. If you're building something alone, this is the playbook I wish I had on day one."
+
+**Full outline:**
+- 0:00 - Hook + credibility (show dashboard)
+- 0:30 - Context: what the product does, when I started
+- 2:00 - Step 1: Finding the niche (how I validated demand)
+- 4:00 - Step 2: Building the MVP (tools, timeline, what I skipped)
+- 6:00 - Step 3: First 10 customers (outreach strategy)
+- 8:00 - Step 4: Pricing & packaging (the 3x pricing experiment)
+- 10:00 - Step 5: Growth engine (content + SEO + community)
+- 12:00 - 3 mistakes that almost killed it
+- 13:30 - Current numbers breakdown + what's next
+- 14:30 - CTA: subscribe, comment your MRR goal
+
+**SEO tags:** solo founder, saas, $10k MRR, build a startup alone, indie hacker, SaaS playbook, bootstrapped startup
+
+---
+
+═══════════════════════════════════════════════════════════════════
+FEW-SHOT EXAMPLE — YouTube Short
+═══════════════════════════════════════════════════════════════════
+
+TOPIC: "Stop undercharging for your SaaS"
+
+**Title:** You're Undercharging (Here's Proof) #shorts
+
+**Thumbnail:** Close-up face with shocked expression, text: "STOP undercharging"
+
+**Script (55 seconds):**
+[0-2s] "You're charging too little and here's how I know."
+[2-10s] "I asked 50 SaaS founders what happened when they raised prices by 50%. Guess how many lost more than 5% of customers?"
+[10-15s] [dramatic pause] "Three. Out of fifty."
+[15-25s] "The other 47 saw revenue jump 30-50% with almost zero churn."
+[25-35s] "Here's why: if your product solves a real problem, price is the LAST reason people leave."
+[35-45s] "So try this: email your next 10 signups with a price 50% higher. Track what happens."
+[45-55s] "I bet you'll wish you did it sooner. Follow for more pricing tips."
 
 ---
 """
@@ -531,6 +702,152 @@ CONTENT_OUTPUT_SCHEMAS = {
         },
         "required": ["sequence_name", "total_emails", "goal", "emails"],
     },
+    "instagram_batch": {
+        "type": "object",
+        "properties": {
+            "topic": {"type": "string", "description": "Content theme/topic"},
+            "carousels": {
+                "type": "array",
+                "description": "5 carousel post ideas",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string", "description": "Carousel topic/title"},
+                        "hook_slide_text": {"type": "string", "description": "Text for the first (hook) slide"},
+                        "slides": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "slide_number": {"type": "integer"},
+                                    "visual_direction": {"type": "string", "description": "What the slide looks like"},
+                                    "text_overlay": {"type": "string", "description": "Main text on the slide"},
+                                    "body_copy": {"type": "string", "description": "Supporting text"},
+                                },
+                                "required": ["slide_number", "visual_direction", "text_overlay"],
+                            },
+                        },
+                        "caption": {"type": "string", "description": "Full caption for the post"},
+                        "hashtags": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "20-30 hashtags for first comment",
+                        },
+                        "cta": {"type": "string", "description": "Call-to-action in caption"},
+                    },
+                    "required": ["title", "hook_slide_text", "slides", "caption"],
+                },
+            },
+            "reels": {
+                "type": "array",
+                "description": "3 reel concepts",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "hook": {"type": "string", "description": "First 1.5s hook text/action"},
+                        "script": {"type": "string", "description": "Full reel script with timestamps"},
+                        "visual_flow": {"type": "string", "description": "Shot-by-shot visual direction"},
+                        "thumbnail_concept": {"type": "string", "description": "Thumbnail visual description"},
+                        "caption": {"type": "string"},
+                        "duration_seconds": {"type": "integer"},
+                        "audio_suggestion": {"type": "string", "description": "Trending audio or original"},
+                    },
+                    "required": ["title", "hook", "script", "visual_flow", "caption"],
+                },
+            },
+            "static_posts": {
+                "type": "array",
+                "description": "2 static image post ideas",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "image_direction": {"type": "string", "description": "What the image should look like"},
+                        "text_overlay": {"type": "string", "description": "Text on the image"},
+                        "caption": {"type": "string"},
+                        "hashtags": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                    "required": ["title", "image_direction", "caption"],
+                },
+            },
+            "suggested_posting_schedule": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Recommended posting times for each piece",
+            },
+        },
+        "required": ["topic", "carousels", "reels", "static_posts"],
+    },
+    "youtube_batch": {
+        "type": "object",
+        "properties": {
+            "topic": {"type": "string", "description": "Content theme/topic"},
+            "long_form_videos": {
+                "type": "array",
+                "description": "3 long-form video concepts",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string", "description": "Video title ≤60 chars"},
+                        "thumbnail_concept": {
+                            "type": "object",
+                            "properties": {
+                                "visual_description": {"type": "string", "description": "What the thumbnail looks like"},
+                                "text_overlay": {"type": "string", "description": "Bold text on thumbnail (3-5 words)"},
+                                "style_notes": {"type": "string", "description": "Colours, contrast, composition"},
+                            },
+                            "required": ["visual_description", "text_overlay"],
+                        },
+                        "hook_script": {"type": "string", "description": "First 30 seconds script word-for-word"},
+                        "outline": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "timestamp": {"type": "string", "description": "e.g. 0:00-2:00"},
+                                    "section_title": {"type": "string"},
+                                    "key_points": {"type": "array", "items": {"type": "string"}},
+                                },
+                                "required": ["timestamp", "section_title", "key_points"],
+                            },
+                        },
+                        "target_duration_minutes": {"type": "integer"},
+                        "seo_tags": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "YouTube SEO tags",
+                        },
+                        "description_text": {"type": "string", "description": "YouTube video description"},
+                        "cta": {"type": "string"},
+                    },
+                    "required": ["title", "thumbnail_concept", "hook_script", "outline", "seo_tags"],
+                },
+            },
+            "shorts": {
+                "type": "array",
+                "description": "2 YouTube Shorts ideas",
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "hook": {"type": "string", "description": "First 2 seconds hook"},
+                        "script": {"type": "string", "description": "Full 60s script with timestamps"},
+                        "thumbnail_concept": {"type": "string", "description": "Thumbnail description"},
+                        "tags": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                        },
+                    },
+                    "required": ["title", "hook", "script"],
+                },
+            },
+        },
+        "required": ["topic", "long_form_videos", "shorts"],
+    },
 }
 
 
@@ -547,6 +864,14 @@ def get_format_prompt(content_type: str) -> str:
         "social_media": SOCIAL_MEDIA_PROMPT,
         "twitter": SOCIAL_MEDIA_PROMPT,
         "linkedin": SOCIAL_MEDIA_PROMPT,
+        "instagram": SOCIAL_MEDIA_PROMPT,
+        "instagram_carousel": SOCIAL_MEDIA_PROMPT,
+        "instagram_reel": SOCIAL_MEDIA_PROMPT,
+        "reel": SOCIAL_MEDIA_PROMPT,
+        "youtube": SOCIAL_MEDIA_PROMPT,
+        "youtube_video": SOCIAL_MEDIA_PROMPT,
+        "youtube_short": SOCIAL_MEDIA_PROMPT,
+        "shorts": SOCIAL_MEDIA_PROMPT,
         "email": EMAIL_PROMPT,
         "newsletter": EMAIL_PROMPT,
         "welcome": EMAIL_PROMPT,
@@ -564,6 +889,14 @@ def get_output_schema(content_type: str) -> dict | None:
         "social_media": CONTENT_OUTPUT_SCHEMAS["social_posts"],
         "twitter": CONTENT_OUTPUT_SCHEMAS["social_posts"],
         "linkedin": CONTENT_OUTPUT_SCHEMAS["social_posts"],
+        "instagram": CONTENT_OUTPUT_SCHEMAS["instagram_batch"],
+        "instagram_carousel": CONTENT_OUTPUT_SCHEMAS["instagram_batch"],
+        "instagram_reel": CONTENT_OUTPUT_SCHEMAS["instagram_batch"],
+        "reel": CONTENT_OUTPUT_SCHEMAS["instagram_batch"],
+        "youtube": CONTENT_OUTPUT_SCHEMAS["youtube_batch"],
+        "youtube_video": CONTENT_OUTPUT_SCHEMAS["youtube_batch"],
+        "youtube_short": CONTENT_OUTPUT_SCHEMAS["youtube_batch"],
+        "shorts": CONTENT_OUTPUT_SCHEMAS["youtube_batch"],
         "email": CONTENT_OUTPUT_SCHEMAS["email"],
         "newsletter": CONTENT_OUTPUT_SCHEMAS["email"],
         "welcome": CONTENT_OUTPUT_SCHEMAS["email_sequence"],

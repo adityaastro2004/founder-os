@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import time
 import uuid
 from typing import Optional
@@ -24,6 +25,75 @@ from app.database import get_db
 from app.redis import get_redis
 from app.agents.registry import AgentRegistry
 from app.user_store import get_user as get_planner_user
+from app.models import AgentRun, ChatMessage as ChatMessageModel
+
+logger = logging.getLogger(__name__)
+
+
+# ── Background insight extraction ─────────────────────────
+
+async def _extract_insights_background(
+    user_id: str,
+    agent_name: str,
+    user_message: str,
+    agent_response: str,
+    session_id: str | None = None,
+    run_id: uuid.UUID | None = None,
+) -> None:
+    """
+    Fire-and-forget: extract user insights via lightweight rules (no LLM).
+    Every 25 interactions, synthesise the user profile (uses LLM once).
+    """
+    try:
+        from app.agents.profile_intelligence import ProfileIntelligence
+        from app.database import async_session
+
+        async with async_session() as db:
+            # Rule-based extraction — no LLM needed
+            pi = ProfileIntelligence(db, llm_generate=None)
+            insights = await pi.extract_insights(
+                user_id=user_id,
+                agent_name=agent_name,
+                user_message=user_message,
+                agent_response=agent_response,
+                session_id=session_id,
+                agent_run_id=run_id,
+            )
+
+            if insights:
+                logger.info(
+                    "Extracted %d insights for user %s from %s",
+                    len(insights), user_id[:8], agent_name,
+                )
+
+            # Auto-synthesise profile every 25 interactions (LLM call)
+            from app.models import UserProfileIntel
+            from sqlalchemy import select
+            profile = (await db.execute(
+                select(UserProfileIntel).where(UserProfileIntel.user_id == user_id)
+            )).scalar_one_or_none()
+            if profile and (profile.total_interactions or 0) % 25 == 0 and (profile.total_interactions or 0) > 0:
+                # Build LLM callable only when synthesis is needed
+                from app.agents.llm import LLMMessage, Role
+                settings = get_settings()
+                redis = get_redis()
+                registry = AgentRegistry(db=db, redis=redis, settings=settings)
+                llm = registry.llm_provider
+
+                async def _gen(system: str, prompt: str) -> str:
+                    msgs = [LLMMessage(role=Role.USER, content=prompt)]
+                    resp = await llm.generate(msgs, system=system, max_tokens=4096)
+                    return resp.content
+
+                pi_with_llm = ProfileIntelligence(db, _gen)
+                await pi_with_llm.synthesise_profile(user_id)
+                logger.info("Auto-synthesised profile for user %s", user_id[:8])
+
+    except Exception as exc:
+        logger.warning("Background insight extraction failed: %s", exc)
+
+    except Exception as exc:
+        logger.warning("Background insight extraction failed: %s", exc)
 
 def _resolve_planner_user_id(clerk_user_id: str) -> str:
     """Resolve the user_store key for a Clerk user.
@@ -166,13 +236,45 @@ async def run_agent(
         extra_context=body.extra_context,
     )
 
+    tool_names = list({tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")})
+
+    # Persist the run to DB
+    try:
+        run_record = AgentRun(
+            user_id=user.user_id,
+            agent_name=agent_name,
+            session_id=body.session_id,
+            user_message=body.message,
+            agent_response=result.content or "",
+            model=result.model,
+            tokens_used=result.tokens_used,
+            cost_usd=result.cost_usd,
+            duration_seconds=round(result.duration_seconds, 2),
+            stop_reason=result.stop_reason,
+            tool_names=tool_names,
+            tool_calls_count=len(result.tool_calls_made),
+        )
+        db.add(run_record)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+
+    # Fire-and-forget insight extraction
+    asyncio.create_task(_extract_insights_background(
+        user_id=user.user_id,
+        agent_name=agent_name,
+        user_message=body.message,
+        agent_response=result.content or "",
+        session_id=body.session_id,
+    ))
+
     return AgentRunResponse(
         content=result.content,
         agent=agent_name,
         model=result.model,
         tokens_used=result.tokens_used,
         tool_calls_made=len(result.tool_calls_made),
-        tool_names=list({tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")}),
+        tool_names=tool_names,
         duration_seconds=round(result.duration_seconds, 2),
         stop_reason=result.stop_reason,
         cost_usd=round(result.cost_usd, 6),
@@ -243,9 +345,64 @@ async def chat_with_agent(
         "timestamp": time.time(),
     })
 
+    # ── Persist run + chat messages to DB ──
+    try:
+        run_record = AgentRun(
+            user_id=user.user_id,
+            agent_name=agent_name,
+            session_id=session_id,
+            user_message=body.message,
+            agent_response=result.content or "",
+            model=result.model,
+            tokens_used=result.tokens_used,
+            cost_usd=result.cost_usd,
+            duration_seconds=duration,
+            stop_reason=result.stop_reason,
+            tool_names=tool_names,
+            tool_calls_count=len(result.tool_calls_made),
+        )
+        db.add(run_record)
+
+        # Save both user and assistant messages
+        user_chat_msg = ChatMessageModel(
+            user_id=user.user_id,
+            session_id=session_id,
+            agent_name=agent_name,
+            role="user",
+            content=body.message,
+        )
+        db.add(user_chat_msg)
+
+        assistant_chat_msg = ChatMessageModel(
+            user_id=user.user_id,
+            session_id=session_id,
+            agent_name=agent_name,
+            role="assistant",
+            content=result.content or "",
+            model=result.model,
+            tokens_used=result.tokens_used,
+            duration_seconds=duration,
+            tool_names=tool_names,
+            status="clarification_needed" if result.stop_reason == "clarification" else "completed",
+        )
+        db.add(assistant_chat_msg)
+
+        await db.commit()
+    except Exception:
+        await db.rollback()
+
     status = "completed"
     if result.stop_reason == "clarification":
         status = "clarification_needed"
+
+    # Fire-and-forget insight extraction
+    asyncio.create_task(_extract_insights_background(
+        user_id=user.user_id,
+        agent_name=agent_name,
+        user_message=body.message,
+        agent_response=result.content or "",
+        session_id=session_id,
+    ))
 
     return {
         "status": status,
@@ -315,13 +472,70 @@ async def orchestrate(
         }
         for d in (result.delegations or [])
     ]
+    tool_names_orch = list({tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")})
+
+    # Persist orchestrator run to DB
+    try:
+        run_record = AgentRun(
+            user_id=user.user_id,
+            agent_name="orchestrator",
+            session_id=body.session_id,
+            user_message=body.message,
+            agent_response=result.content or "",
+            model=result.model,
+            tokens_used=result.tokens_used,
+            cost_usd=result.cost_usd,
+            duration_seconds=round(result.duration_seconds, 2),
+            stop_reason=result.stop_reason,
+            tool_names=tool_names_orch,
+            tool_calls_count=len(result.tool_calls_made),
+            agents_used=agents_used,
+            delegations_made=len(result.delegations) if result.delegations else 0,
+            delegation_details=delegation_details,
+        )
+        db.add(run_record)
+        # Save chat messages for persistence
+        user_cm = ChatMessageModel(
+            user_id=user.user_id,
+            session_id=body.session_id or "",
+            agent_name="orchestrator",
+            role="user",
+            content=body.message,
+        )
+        assistant_cm = ChatMessageModel(
+            user_id=user.user_id,
+            session_id=body.session_id or "",
+            agent_name="orchestrator",
+            role="assistant",
+            content=result.content or "",
+            model=result.model,
+            tokens_used=result.tokens_used,
+            duration_seconds=round(result.duration_seconds, 2),
+            tool_names=tool_names_orch,
+            agents_used=agents_used,
+            delegations_made=len(result.delegations) if result.delegations else 0,
+        )
+        db.add(user_cm)
+        db.add(assistant_cm)
+        await db.commit()
+    except Exception:
+        await db.rollback()
+
+    # Fire-and-forget insight extraction
+    asyncio.create_task(_extract_insights_background(
+        user_id=user.user_id,
+        agent_name="orchestrator",
+        user_message=body.message,
+        agent_response=result.content or "",
+        session_id=body.session_id,
+    ))
 
     return OrchestrationResponse(
         content=result.content,
         model=result.model,
         tokens_used=result.tokens_used,
         tool_calls_made=len(result.tool_calls_made),
-        tool_names=list({tc.get("tool", "") for tc in result.tool_calls_made if tc.get("tool")}),
+        tool_names=tool_names_orch,
         delegations_made=len(result.delegations) if result.delegations else 0,
         agents_used=agents_used,
         delegation_details=delegation_details,
@@ -551,6 +765,67 @@ async def orchestrate_stream(
                         "pending_approvals": result.pending_approvals,
                         "timestamp": time.time(),
                     })
+
+                    # Persist streaming orchestrator run to DB
+                    try:
+                        _tool_names = list({
+                            tc.get("tool", "")
+                            for tc in result.tool_calls_made
+                            if tc.get("tool")
+                        })
+                        run_record = AgentRun(
+                            user_id=user.user_id,
+                            agent_name="orchestrator",
+                            session_id=body.session_id,
+                            user_message=body.message,
+                            agent_response=result.content or "",
+                            model=result.model,
+                            tokens_used=result.tokens_used,
+                            cost_usd=result.cost_usd,
+                            duration_seconds=round(result.duration_seconds, 2),
+                            stop_reason=result.stop_reason,
+                            tool_names=_tool_names,
+                            tool_calls_count=len(result.tool_calls_made),
+                            agents_used=agents_used,
+                            delegations_made=len(result.delegations) if result.delegations else 0,
+                            delegation_details=_deleg_details,
+                        )
+                        db.add(run_record)
+                        # Save chat messages for persistence
+                        user_cm = ChatMessageModel(
+                            user_id=user.user_id,
+                            session_id=body.session_id or "",
+                            agent_name="orchestrator",
+                            role="user",
+                            content=body.message,
+                        )
+                        assistant_cm = ChatMessageModel(
+                            user_id=user.user_id,
+                            session_id=body.session_id or "",
+                            agent_name="orchestrator",
+                            role="assistant",
+                            content=result.content or "",
+                            model=result.model,
+                            tokens_used=result.tokens_used,
+                            duration_seconds=round(result.duration_seconds, 2),
+                            tool_names=_tool_names,
+                            agents_used=agents_used,
+                            delegations_made=len(result.delegations) if result.delegations else 0,
+                        )
+                        db.add(user_cm)
+                        db.add(assistant_cm)
+                        await db.commit()
+                    except Exception:
+                        await db.rollback()
+
+                    # Fire-and-forget insight extraction
+                    asyncio.create_task(_extract_insights_background(
+                        user_id=user.user_id,
+                        agent_name="orchestrator",
+                        user_message=body.message,
+                        agent_response=result.content or "",
+                        session_id=body.session_id,
+                    ))
         finally:
             await pubsub.punsubscribe()
             await pubsub.close()

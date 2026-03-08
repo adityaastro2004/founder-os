@@ -764,3 +764,198 @@ class ApiKey(Base):
 
     def __repr__(self) -> str:
         return f"<ApiKey {self.key_prefix}...>"
+
+
+# ============================================================================
+# AGENT RUNS & CHAT PERSISTENCE
+# ============================================================================
+
+class AgentRun(Base):
+    """Persistent record of every agent interaction — input, output, metadata."""
+    __tablename__ = "agent_runs"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    agent_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    session_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
+
+    user_message: Mapped[str] = mapped_column(Text, nullable=False)
+    agent_response: Mapped[str] = mapped_column(Text, nullable=False)
+
+    model: Mapped[Optional[str]] = mapped_column(String(100))
+    tokens_used: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    cost_usd: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 6))
+    duration_seconds: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
+    stop_reason: Mapped[Optional[str]] = mapped_column(String(50))
+
+    tool_names: Mapped[Optional[list]] = mapped_column(JSONB)
+    tool_calls_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
+    # For orchestrator runs
+    agents_used: Mapped[Optional[list]] = mapped_column(JSONB)
+    delegations_made: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    delegation_details: Mapped[Optional[list]] = mapped_column(JSONB)
+
+    status: Mapped[str] = mapped_column(String(50), default="completed", server_default="'completed'")
+
+    created_at: Mapped[datetime] = _ts_now()
+
+    def __repr__(self) -> str:
+        return f"<AgentRun {self.agent_name} {self.created_at}>"
+
+
+class ChatMessage(Base):
+    """Persistent chat messages for agent and orchestrator chats."""
+    __tablename__ = "chat_messages"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    session_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    agent_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+
+    role: Mapped[str] = mapped_column(String(20), nullable=False)  # "user" | "assistant"
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # Metadata for assistant messages
+    model: Mapped[Optional[str]] = mapped_column(String(100))
+    tokens_used: Mapped[Optional[int]] = mapped_column(Integer)
+    duration_seconds: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
+    tool_names: Mapped[Optional[list]] = mapped_column(JSONB)
+    agents_used: Mapped[Optional[list]] = mapped_column(JSONB)
+    delegations_made: Mapped[Optional[int]] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(50), default="completed", server_default="'completed'")
+
+    created_at: Mapped[datetime] = _ts_now()
+
+    def __repr__(self) -> str:
+        return f"<ChatMessage {self.role} {self.agent_name} {self.created_at}>"
+
+
+# ============================================================================
+# USER INTELLIGENCE & BUSINESS INSIGHTS
+# ============================================================================
+
+class UserProfileIntel(Base):
+    """Deep intelligence profile built from all agent interactions."""
+    __tablename__ = "user_profiles_intel"
+    __table_args__ = (UniqueConstraint("user_id", name="uq_user_profiles_intel_user"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+
+    # Personality & communication
+    preferred_tone: Mapped[Optional[str]] = mapped_column(Text)
+    communication_style: Mapped[Optional[str]] = mapped_column(Text)
+    language_patterns: Mapped[Optional[dict]] = mapped_column(JSONB)
+
+    # Preferences
+    likes: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    dislikes: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    topics_of_interest: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+
+    # Pain points & goals
+    pain_points: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    expectations: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    goals: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+
+    # Workflow preferences
+    preferred_agents: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    preferred_workflows: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    work_patterns: Mapped[Optional[dict]] = mapped_column(JSONB)
+
+    # Quality signals
+    satisfaction_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2))
+    total_interactions: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    positive_signals: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    negative_signals: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+
+    # LLM-generated summaries
+    profile_summary: Mapped[Optional[str]] = mapped_column(Text)
+    conversation_guide: Mapped[Optional[str]] = mapped_column(Text)
+
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    last_analysis_at: Mapped[Optional[datetime]] = _ts_now_nullable()
+    created_at: Mapped[datetime] = _ts_now()
+    updated_at: Mapped[datetime] = _ts_now()
+
+    def __repr__(self) -> str:
+        return f"<UserProfileIntel user={self.user_id}>"
+
+
+class UserInsight(Base):
+    """Atomic insight extracted from a single interaction."""
+    __tablename__ = "user_insights"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+
+    agent_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    session_id: Mapped[Optional[str]] = mapped_column(String(255))
+    agent_run_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))
+    source_message: Mapped[Optional[str]] = mapped_column(Text)
+
+    insight_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    insight_value: Mapped[str] = mapped_column(Text, nullable=False)
+    confidence: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), default=Decimal("0.80"))
+    sentiment: Mapped[Optional[str]] = mapped_column(String(20))
+
+    is_processed: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    processed_at: Mapped[Optional[datetime]] = _ts_now_nullable()
+
+    created_at: Mapped[datetime] = _ts_now()
+
+    def __repr__(self) -> str:
+        return f"<UserInsight {self.insight_type}: {self.insight_value[:40]}>"
+
+
+class BusinessInsight(Base):
+    """Cross-user pattern detected from aggregated insights."""
+    __tablename__ = "business_insights"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+
+    insight_type: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    user_count: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    frequency: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    impact_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(3, 2), default=Decimal("0.50"))
+
+    recommended_actions: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    status: Mapped[str] = mapped_column(String(50), default="new", server_default="'new'")
+    actioned_at: Mapped[Optional[datetime]] = _ts_now_nullable()
+
+    created_at: Mapped[datetime] = _ts_now()
+    updated_at: Mapped[datetime] = _ts_now()
+
+    def __repr__(self) -> str:
+        return f"<BusinessInsight {self.title[:40]}>"
+
+
+class ContentIdea(Base):
+    """Content idea generated from user/business insights."""
+    __tablename__ = "content_ideas"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[Optional[str]] = mapped_column(String(255), index=True)
+
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    content_type: Mapped[Optional[str]] = mapped_column(String(100))
+    target_audience: Mapped[Optional[str]] = mapped_column(Text)
+    hooks: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    key_points: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+
+    source_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    source_insights: Mapped[Optional[list]] = mapped_column(JSONB, server_default="'[]'::jsonb")
+    business_insight_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))
+
+    priority: Mapped[int] = mapped_column(Integer, default=5, server_default="5")
+    status: Mapped[str] = mapped_column(String(50), default="idea", server_default="'idea'")
+
+    created_at: Mapped[datetime] = _ts_now()
+    updated_at: Mapped[datetime] = _ts_now()
+
+    def __repr__(self) -> str:
+        return f"<ContentIdea {self.title[:40]}>"

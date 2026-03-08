@@ -304,11 +304,14 @@ class ContentAgent(BaseAgent):
         "writing", "content_creation", "copywriting", "editing",
         "social_media", "blog_writing", "email_marketing",
         "content_strategy", "repurposing",
+        "instagram", "youtube", "video_scripts", "thumbnails",
     ]
     tags = [
         "write", "blog", "post", "tweet", "newsletter", "email",
         "copy", "draft", "article", "thread", "linkedin", "social",
         "content", "headline", "subject line", "sequence", "campaign",
+        "instagram", "reel", "carousel", "youtube", "video", "thumbnail",
+        "hook", "script", "shorts",
     ]
     default_tools = [
         "search_knowledge",

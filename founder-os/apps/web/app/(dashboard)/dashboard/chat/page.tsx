@@ -153,10 +153,60 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [streamingEvents, setStreamingEvents] = useState<StreamingEvent[]>([]);
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [sessionId] = useState(() => {
+    if (typeof window === "undefined") return crypto.randomUUID();
+    const key = "orchestrator-chat-session-id";
+    const stored = localStorage.getItem(key);
+    if (stored) return stored;
+    const id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+    return id;
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  // Load persisted chat messages on mount
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(
+          `${DIRECT_API_URL}/api/history/chat/${encodeURIComponent(sessionId)}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          }
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled || !Array.isArray(data.messages) || data.messages.length === 0) return;
+        const restored: ChatMessage[] = data.messages.map((m: Record<string, unknown>) => ({
+          id: (m.id as string) || crypto.randomUUID(),
+          role: m.role as "user" | "assistant",
+          content: m.content as string,
+          timestamp: new Date(m.created_at as string),
+          ...(m.role === "assistant" && m.tokens_used
+            ? {
+                meta: {
+                  model: (m.model as string) || "",
+                  tokens: (m.tokens_used as number) || 0,
+                  duration: (m.duration_seconds as number) || 0,
+                  agents_used: (m.agents_used as string[]) || [],
+                  delegations: (m.delegations_made as number) || 0,
+                  tool_calls: 0,
+                  tool_names: (m.tool_names as string[]) || [],
+                },
+              }
+            : {}),
+        }));
+        setMessages(restored);
+      } catch {
+        // Silently ignore — first load or API unavailable
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [sessionId, getToken]);
 
   // Abort any in-flight request on unmount
   useEffect(() => {
