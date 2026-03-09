@@ -309,6 +309,28 @@ class MCPGoogleCalendarProvider(ToolProvider):
     async def list_tools(self) -> list[ToolSchema]:
         return list(self._TOOL_SCHEMAS)
 
+    # ── Argument coercion (LLMs sometimes stringify types) ──────────
+
+    def _coerce_arguments(self, tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
+        """Coerce string booleans/ints to native types based on the tool schema."""
+        schema = next((s for s in self._TOOL_SCHEMAS if s.name == tool_name), None)
+        if not schema:
+            return args
+        props = schema.parameters.get("properties", {})
+        coerced = dict(args)
+        for key, val in coerced.items():
+            if key not in props or not isinstance(val, str):
+                continue
+            expected = props[key].get("type")
+            if expected == "boolean":
+                coerced[key] = val.lower() in ("true", "1", "yes")
+            elif expected == "integer":
+                try:
+                    coerced[key] = int(val)
+                except ValueError:
+                    pass
+        return coerced
+
     # ── Tool execution (MCP tools/call equivalent) ──────────────────
 
     async def call_tool(
@@ -329,6 +351,10 @@ class MCPGoogleCalendarProvider(ToolProvider):
                 is_error=True,
             )
 
+        # Coerce arguments to match schema types (LLMs sometimes send
+        # "true" instead of true, or "20" instead of 20)
+        arguments = self._coerce_arguments(name, arguments)
+
         try:
             result = await handler(self, **arguments)
             duration = (time.monotonic() - start) * 1000
@@ -340,7 +366,20 @@ class MCPGoogleCalendarProvider(ToolProvider):
                 metadata={"provider": self.provider_name, "tool": name},
             )
         except Exception as exc:
+            from app.integrations.calendar_integration import CalendarAuthExpired
             duration = (time.monotonic() - start) * 1000
+            if isinstance(exc, CalendarAuthExpired):
+                logger.warning("Calendar auth expired for user %s", self._user_id)
+                return ToolResult(
+                    tool_call_id=tool_call_id,
+                    content=json.dumps({
+                        "error": "calendar_auth_expired",
+                        "message": str(exc),
+                        "action_required": "reconnect_calendar",
+                    }),
+                    is_error=True,
+                    duration_ms=duration,
+                )
             logger.exception("MCP calendar tool '%s' failed", name)
             return ToolResult(
                 tool_call_id=tool_call_id,
@@ -361,7 +400,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
         self, max_results: int = 20, time_min: str | None = None, **_kw: Any,
     ) -> list[dict[str, Any]]:
         from app.integrations.calendar_integration import list_upcoming_events
-        return await list_upcoming_events(
+        events = await list_upcoming_events(
             user_id=self._user_id,
             client_id=self._client_id,
             client_secret=self._client_secret,
@@ -369,6 +408,17 @@ class MCPGoogleCalendarProvider(ToolProvider):
             max_results=max_results,
             time_min=time_min,
         )
+        # Return compact format to reduce LLM token usage
+        return [
+            {
+                "event_id": e.get("event_id"),
+                "summary": e.get("summary"),
+                "start": e.get("start"),
+                "end": e.get("end"),
+                "ai_generated": e.get("ai_generated", False),
+            }
+            for e in events
+        ]
 
     async def _create_event(
         self,

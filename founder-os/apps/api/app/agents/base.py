@@ -362,6 +362,11 @@ class BaseAgent:
                 f"</user_custom_instructions>"
             )
 
+        # Founder profile — business context, primary goal, industry
+        founder_ctx = await self._load_founder_profile_context()
+        if founder_ctx:
+            parts.append(f"\n{founder_ctx}")
+
         # User profile intelligence — personalises tone, avoids dislikes, etc.
         profile_ctx = await self._load_user_profile_context()
         if profile_ctx:
@@ -411,6 +416,60 @@ class BaseAgent:
                 return await pi.get_profile_context(profile_user_id)
         except Exception as exc:
             logger.debug("Could not load user profile context: %s", exc)
+            return ""
+
+    async def _load_founder_profile_context(self) -> str:
+        """Load the founder's business profile and format for the system prompt.
+        
+        This gives the LLM the core business context: what the company does,
+        its primary goal, industry, stage, and team — so every agent
+        understands the business it's serving.
+        """
+        clerk_id = self.clerk_user_id or self.user_id
+        if not clerk_id:
+            return ""
+        try:
+            from sqlalchemy import select
+            from app.database import async_session
+            from app.models import FounderProfile, User
+
+            async with async_session() as db:
+                result = await db.execute(
+                    select(FounderProfile).join(User).where(
+                        User.clerk_user_id == clerk_id
+                    )
+                )
+                profile = result.scalar_one_or_none()
+                if not profile:
+                    return ""
+
+                parts = ["<founder_business_context>"]
+                if profile.business_name:
+                    parts.append(f"Company: {profile.business_name}")
+                if profile.business_type:
+                    parts.append(f"Type: {profile.business_type}")
+                if profile.industry:
+                    parts.append(f"Industry: {profile.industry}")
+                if profile.business_stage:
+                    parts.append(f"Stage: {profile.business_stage}")
+                if profile.target_audience:
+                    parts.append(f"Target audience: {profile.target_audience}")
+                if profile.primary_goal:
+                    goal_label = profile.primary_goal.replace("_", " ").title()
+                    parts.append(f"\nPRIMARY GOAL: {goal_label}")
+                if profile.primary_goal_description:
+                    parts.append(
+                        f"Goal details: {profile.primary_goal_description}\n"
+                        f"Everything you do should align with and support this goal."
+                    )
+                if profile.team_size:
+                    parts.append(f"Team size: {profile.team_size}")
+                if profile.team_roles:
+                    parts.append(f"Team roles: {', '.join(profile.team_roles)}")
+                parts.append("</founder_business_context>")
+                return "\n".join(parts)
+        except Exception as exc:
+            logger.debug("Could not load founder profile context: %s", exc)
             return ""
 
     # ------------------------------------------------------------------

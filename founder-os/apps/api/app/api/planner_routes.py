@@ -212,8 +212,8 @@ async def connect_gcal(user_id: str = Query("default-user")):
     # Ensure user exists
     user = get_or_create_user(user_id)
 
-    # If user already has valid tokens, skip the OAuth dance entirely
-    if user.has_valid_gcal_tokens():
+    # If user already has valid tokens and is connected, skip the OAuth dance
+    if user.gcal_connected and user.has_valid_gcal_tokens():
         return {
             "status": "already_connected",
             "user_id": user_id,
@@ -224,15 +224,12 @@ async def connect_gcal(user_id: str = Query("default-user")):
             ),
         }
 
-    # Only force consent screen if we have no refresh token at all
-    has_refresh = bool(user.gcal_tokens.get("refresh_token"))
-
-    # Use user_id as state so we know who to link on callback
+    # Force consent screen to get a fresh refresh token
     auth_url = get_auth_url(
         client_id=settings.GOOGLE_CLIENT_ID,
         redirect_uri=settings.GOOGLE_REDIRECT_URI,
         state=user_id,
-        force_consent=not has_refresh,
+        force_consent=True,
     )
     return {
         "auth_url": auth_url,
@@ -1212,6 +1209,13 @@ async def planner_chat(body: ChatRequest):
             })
             mcp_tools_used = [t for t in tool_names if t.startswith("gcal_")]
 
+            # Detect if any tool returned a calendar_auth_expired error
+            reconnect_required = False
+            for step in result.steps:
+                if step.step_type == "tool_call" and "calendar_auth_expired" in step.result:
+                    reconnect_required = True
+                    break
+
             return {
                 "status": "completed",
                 "user_id": body.user_id,
@@ -1227,6 +1231,7 @@ async def planner_chat(body: ChatRequest):
                 "cost_usd": round(result.cost_usd, 6),
                 "session_id": session_id,
                 "pending_approvals": result.pending_approvals,
+                "reconnect_required": reconnect_required,
             }
 
     except ValueError as exc:

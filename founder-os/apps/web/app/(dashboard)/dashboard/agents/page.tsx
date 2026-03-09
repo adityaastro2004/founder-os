@@ -1111,9 +1111,9 @@ export default function AgentsPage() {
               </p>
             </div>
           ) : (
-            filteredEvents.map((event) => (
+            filteredEvents.map((event, idx) => (
               <EventRow
-                key={event.id}
+                key={event.id ? `${event.id}` : `evt-${idx}`}
                 event={event}
                 isNew={newEventIds.has(event.id)}
               />

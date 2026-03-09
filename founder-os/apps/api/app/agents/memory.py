@@ -23,6 +23,7 @@ Four-layer memory architecture:
 from __future__ import annotations
 
 import json
+import logging
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -31,6 +32,8 @@ from typing import Any, Optional
 import redis.asyncio as aioredis
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================

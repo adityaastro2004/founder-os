@@ -150,6 +150,24 @@ async def refresh_access_token(
         return response.json()
 
 
+class CalendarAuthExpired(Exception):
+    """Raised when Google Calendar tokens are expired/revoked and re-auth is needed."""
+
+
+def _clear_gcal_connection(user_id: str) -> None:
+    """Mark the user as disconnected from Google Calendar."""
+    try:
+        from app.user_store import get_user, save_user
+        user = get_user(user_id)
+        if user:
+            user.gcal_connected = False
+            user.gcal_tokens = {}
+            save_user(user)
+            logger.info("Cleared GCal connection for user %s (token revoked/expired)", user_id)
+    except Exception as exc:
+        logger.error("Failed to clear GCal connection for %s: %s", user_id, exc)
+
+
 async def _get_valid_token(
     user_id: str,
     client_id: str,
@@ -158,7 +176,9 @@ async def _get_valid_token(
     """Get a valid access token, refreshing if expired."""
     tokens = get_tokens(user_id)
     if not tokens:
-        raise ValueError("No tokens found — user must complete OAuth flow first")
+        raise CalendarAuthExpired(
+            "Google Calendar not connected. Please reconnect your calendar."
+        )
 
     # Check if token is expired (with 60s buffer)
     stored_at = tokens.get("stored_at", 0)
@@ -167,11 +187,27 @@ async def _get_valid_token(
         # Refresh
         refresh_token = tokens.get("refresh_token")
         if not refresh_token:
-            raise ValueError("Token expired and no refresh_token available")
+            _clear_gcal_connection(user_id)
+            raise CalendarAuthExpired(
+                "Google Calendar session expired. Please reconnect your calendar."
+            )
 
-        new_tokens = await refresh_access_token(
-            refresh_token, client_id, client_secret,
-        )
+        try:
+            new_tokens = await refresh_access_token(
+                refresh_token, client_id, client_secret,
+            )
+        except httpx.HTTPStatusError as exc:
+            # 400/401 from Google means refresh token is revoked/expired
+            logger.warning(
+                "Google token refresh failed for user %s: %s %s",
+                user_id, exc.response.status_code, exc.response.text,
+            )
+            _clear_gcal_connection(user_id)
+            raise CalendarAuthExpired(
+                "Google Calendar authorization expired. "
+                "Please reconnect your calendar to continue."
+            ) from exc
+
         new_tokens["refresh_token"] = refresh_token  # Google doesn't always return it
         store_tokens(user_id, new_tokens)
         return new_tokens["access_token"]

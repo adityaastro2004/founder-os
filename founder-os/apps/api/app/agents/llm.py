@@ -252,13 +252,13 @@ class OllamaProvider(LLMProvider):
         tool_calls: list[ToolCallRequest] = []
         for tc in msg.get("tool_calls", []) or []:
             fn = tc.get("function", {})
-            args = fn.get("arguments", {})
+            args = fn.get("arguments", {}) or {}
             if isinstance(args, str):
                 args = json.loads(args)
             tool_calls.append(ToolCallRequest(
                 id=tc.get("id", uuid.uuid4().hex[:12]),
                 name=fn.get("name", ""),
-                arguments=args,
+                arguments=args if isinstance(args, dict) else {},
             ))
 
         usage = TokenUsage(
@@ -398,7 +398,7 @@ class AnthropicProvider(LLMProvider):
                 tool_calls.append(ToolCallRequest(
                     id=block.id,
                     name=block.name,
-                    arguments=block.input,
+                    arguments=block.input or {},
                 ))
 
         usage = TokenUsage(
@@ -490,7 +490,21 @@ class OpenAICompatibleProvider(LLMProvider):
             payload["stop"] = stop_sequences
 
         resp = await self._client.post("/chat/completions", json=payload)
-        resp.raise_for_status()
+        if resp.status_code != 200:
+            error_body = resp.text[:1000]
+            logger.error(
+                "OpenAI-compat %d from %s: %s",
+                resp.status_code, self._client.base_url, error_body,
+            )
+            # Groq tool_use_failed: the model generated a tool call but
+            # Groq's validation rejected it (e.g. "true" instead of true).
+            # Recover by parsing the failed_generation field.
+            if resp.status_code == 400 and "tool_use_failed" in error_body and tools:
+                recovered = self._recover_failed_tool_call(error_body, model_name, tools)
+                if recovered:
+                    logger.info("Recovered tool call from Groq failed_generation")
+                    return recovered
+            resp.raise_for_status()
         data = resp.json()
         result = self._parse_response(data, model_name)
         if tools:
@@ -499,6 +513,63 @@ class OpenAICompatibleProvider(LLMProvider):
                 len(result.tool_calls), result.stop_reason, len(result.content),
             )
         return result
+
+    def _recover_failed_tool_call(
+        self, error_body: str, model: str, tools: list[ToolSchema],
+    ) -> LLMResponse | None:
+        """
+        Recover from Groq's tool_use_failed error.
+        Groq includes a `failed_generation` field with the raw tool call
+        like: <function=name>{"arg": "val"}</function>
+        Parse it, coerce types to match the schema, and return as LLMResponse.
+        """
+        import re
+        try:
+            err_data = json.loads(error_body)
+            raw = err_data.get("error", {}).get("failed_generation", "")
+            if not raw:
+                return None
+
+            # Parse <function=tool_name>{...}</function>
+            m = re.search(r'<function=(\w+)>\s*(\{.*?\})\s*</function>', raw, re.DOTALL)
+            if not m:
+                return None
+
+            tool_name = m.group(1)
+            try:
+                args = json.loads(m.group(2))
+            except json.JSONDecodeError:
+                return None
+
+            # Coerce types based on tool schema
+            schema = next((t for t in tools if t.name == tool_name), None)
+            if schema:
+                props = schema.parameters.get("properties", {})
+                for key, val in list(args.items()):
+                    if key in props and isinstance(val, str):
+                        expected = props[key].get("type")
+                        if expected == "boolean":
+                            args[key] = val.lower() in ("true", "1", "yes")
+                        elif expected == "integer":
+                            try:
+                                args[key] = int(val)
+                            except ValueError:
+                                pass
+
+            return LLMResponse(
+                content="",
+                tool_calls=[ToolCall(
+                    id=f"recovered_{tool_name}",
+                    name=tool_name,
+                    arguments=args,
+                )],
+                model=model,
+                stop_reason="tool_calls",
+                usage=Usage(input_tokens=0, output_tokens=0),
+            )
+        except Exception:
+            logger.debug("Failed to recover tool call from error body", exc_info=True)
+            return None
 
     async def health_check(self) -> bool:
         try:
@@ -560,7 +631,7 @@ class OpenAICompatibleProvider(LLMProvider):
         tool_calls: list[ToolCallRequest] = []
         for tc in msg.get("tool_calls", []) or []:
             fn = tc.get("function", {})
-            args = fn.get("arguments", "{}")
+            args = fn.get("arguments", "{}") or "{}"
             if isinstance(args, str):
                 try:
                     args = json.loads(args)
@@ -569,7 +640,7 @@ class OpenAICompatibleProvider(LLMProvider):
             tool_calls.append(ToolCallRequest(
                 id=tc.get("id", uuid.uuid4().hex[:12]),
                 name=fn.get("name", ""),
-                arguments=args,
+                arguments=args if isinstance(args, dict) else {},
             ))
 
         usage_data = data.get("usage", {})
@@ -749,7 +820,7 @@ class GeminiNativeProvider(LLMProvider):
                 tool_calls.append(ToolCallRequest(
                     id=uuid.uuid4().hex[:12],
                     name=fc.get("name", ""),
-                    arguments=fc.get("args", {}),
+                    arguments=fc.get("args") or {},
                 ))
 
         usage_data = data.get("usageMetadata", {})
@@ -788,6 +859,9 @@ class GeminiWithFallback(LLMProvider):
     to the native Gemini REST endpoint (separate rate-limit pool).
     If both Gemini endpoints fail (e.g. daily quota exhausted),
     automatically falls back to OpenAI as a third-tier provider.
+
+    Circuit breaker: after a 429, Gemini is skipped for _COOLDOWN_SECS
+    so subsequent calls in the same agentic loop go straight to Groq.
     """
 
     provider_name = "gemini"
@@ -805,6 +879,7 @@ class GeminiWithFallback(LLMProvider):
         self._primary = GeminiProvider(api_key, default_model, timeout)
         self._fallback = GeminiNativeProvider(api_key, default_model, timeout)
         self.default_model = default_model
+        self._gemini_cooldown_until: float = 0.0  # circuit breaker timestamp
 
         # Third-tier: OpenAI fallback when entire Gemini quota is exhausted
         self._openai: OpenAICompatibleProvider | None = None
@@ -819,8 +894,9 @@ class GeminiWithFallback(LLMProvider):
             logger.info("OpenAI fallback configured (model=%s)", openai_model)
 
     _RETRYABLE = ("429", "400", "401", "403", "404", "500", "503")
-    _MAX_RETRIES = 2
-    _BACKOFF_BASE = 3  # seconds
+    _MAX_RETRIES = 1          # 1 retry max — save tokens for fallback
+    _BACKOFF_BASE = 2         # seconds
+    _COOLDOWN_SECS = 60       # skip Gemini for 60s after 429
 
     def _is_retryable(self, exc: Exception) -> bool:
         err = str(exc)
@@ -852,6 +928,7 @@ class GeminiWithFallback(LLMProvider):
         raise last_exc  # type: ignore[misc]
 
     async def generate(self, messages, *, system="", model=None, temperature=0.7, max_tokens=4096, **kwargs):
+        import time as _time
         # Safety: ignore non-Gemini model names (e.g. from stale DB config)
         if model and not model.startswith("gemini"):
             logger.warning(
@@ -861,29 +938,38 @@ class GeminiWithFallback(LLMProvider):
             model = None
         gen_kwargs = dict(system=system, model=model, temperature=temperature, max_tokens=max_tokens, **kwargs)
 
-        # 1) Gemini OpenAI-compat endpoint (with retry)
-        try:
-            return await self._call_with_retry(
-                self._primary, "Gemini OpenAI-compat", messages, **gen_kwargs,
-            )
-        except Exception as exc:
-            if not self._is_retryable(exc):
-                raise
-            logger.info("Gemini OpenAI-compat exhausted (%s) — trying native REST", str(exc)[:80])
+        # Circuit breaker: skip Gemini if recently rate-limited
+        gemini_available = _time.monotonic() >= self._gemini_cooldown_until
 
-        # 2) Gemini native REST endpoint (with retry, separate rate-limit pool)
-        try:
-            return await self._call_with_retry(
-                self._fallback, "Gemini native", messages, **gen_kwargs,
-            )
-        except Exception as exc:
-            if not self._is_retryable(exc):
-                raise
-            logger.warning("Gemini native also exhausted (%s)", str(exc)[:80])
+        if gemini_available:
+            # 1) Gemini OpenAI-compat endpoint (with retry)
+            try:
+                return await self._call_with_retry(
+                    self._primary, "Gemini OpenAI-compat", messages, **gen_kwargs,
+                )
+            except Exception as exc:
+                if not self._is_retryable(exc):
+                    raise
+                logger.info("Gemini OpenAI-compat exhausted (%s) — trying native REST", str(exc)[:80])
+
+            # 2) Gemini native REST endpoint (with retry, separate rate-limit pool)
+            try:
+                return await self._call_with_retry(
+                    self._fallback, "Gemini native", messages, **gen_kwargs,
+                )
+            except Exception as exc:
+                if not self._is_retryable(exc):
+                    raise
+                logger.warning("Gemini native also exhausted (%s)", str(exc)[:80])
+                # Activate circuit breaker — skip Gemini for next _COOLDOWN_SECS
+                self._gemini_cooldown_until = _time.monotonic() + self._COOLDOWN_SECS
+                logger.info("Gemini circuit breaker ON for %ds", self._COOLDOWN_SECS)
+        else:
+            logger.info("Gemini circuit breaker active — skipping straight to fallback")
 
         # 3) OpenAI fallback (if configured)
         if self._openai:
-            logger.info("Both Gemini endpoints exhausted — falling back to OpenAI (%s)", self._openai_model)
+            logger.info("Falling back to OpenAI (%s)", self._openai_model)
             return await self._openai.generate(
                 messages, system=system, model=self._openai_model,
                 temperature=temperature, max_tokens=max_tokens, **kwargs,

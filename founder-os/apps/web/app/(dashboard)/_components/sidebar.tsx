@@ -12,6 +12,7 @@ import {
   Zap,
   MessageSquare,
   BookOpen,
+  Blocks,
   X,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ const navigation = [
   { name: "Memory", href: "/dashboard/memory", icon: Brain },
   { name: "Knowledge", href: "/dashboard/knowledge", icon: BookOpen },
   { name: "Automations", href: "/dashboard/automations", icon: Zap },
+  { name: "Apps", href: "/dashboard/apps", icon: Blocks },
 ];
 
 const bottomNav = [

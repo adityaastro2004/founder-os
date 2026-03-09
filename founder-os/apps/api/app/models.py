@@ -120,6 +120,7 @@ class FounderProfile(Base):
     target_audience: Mapped[Optional[str]] = mapped_column(Text)
 
     primary_goal: Mapped[Optional[str]] = mapped_column(String(100))
+    primary_goal_description: Mapped[Optional[str]] = mapped_column(Text)
     current_mrr: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
     current_users: Mapped[Optional[int]] = mapped_column(Integer)
     monthly_traffic: Mapped[Optional[int]] = mapped_column(Integer)

@@ -195,6 +195,12 @@ class ExecutionEngine:
                     agent=agent_name,
                     detail={"error": str(exc), "round": round_num},
                 ))
+                # Give the user a clear message when rate-limited
+                if "429" in str(exc) or "rate" in str(exc).lower():
+                    final_text = (
+                        "I'm temporarily rate-limited by the AI provider. "
+                        "Please wait a minute and try again."
+                    )
                 break
 
             llm_duration = (time.time() - llm_start) * 1000
@@ -346,6 +352,7 @@ class ExecutionEngine:
                     )
 
             # -- Emit tool.called event --
+            args = tc.arguments or {}
             if self._event_bus:
                 from app.agents.event_bus import Event
                 await self._event_bus.publish(Event(
@@ -353,13 +360,13 @@ class ExecutionEngine:
                     agent=agent_name,
                     data={
                         "tool_name": tc.name,
-                        "arguments": {k: str(v)[:200] for k, v in tc.arguments.items()},
+                        "arguments": {k: str(v)[:200] for k, v in args.items()},
                     },
                 ))
 
             # -- Execute the tool --
             result = await self.tools.call_tool(
-                tc.name, tc.arguments, tc.id,
+                tc.name, args, tc.id,
             )
             results.append(result)
 
@@ -383,7 +390,7 @@ class ExecutionEngine:
                 agent=agent_name,
                 detail={
                     "tool": tc.name,
-                    "arguments": tc.arguments,
+                    "arguments": args,
                     "is_error": result.is_error,
                 },
                 result=result.content[:500],

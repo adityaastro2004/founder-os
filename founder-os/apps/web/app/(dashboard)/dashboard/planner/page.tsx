@@ -217,6 +217,25 @@ export default function PlannerPage() {
 
       const data = await res.json();
 
+      // If Google Calendar auth expired, show reconnect prompt
+      if (data.reconnect_required) {
+        setChatMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? {
+                  ...m,
+                  content:
+                    "Your Google Calendar connection has expired. Reconnecting now...",
+                  status: "error" as const,
+                }
+              : m
+          )
+        );
+        handleConnect();
+        setSending(false);
+        return;
+      }
+
       // Update the assistant message with the response
       setChatMessages((prev) =>
         prev.map((m) =>
@@ -236,11 +255,16 @@ export default function PlannerPage() {
       fetchData(); // refresh status
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
-      if (msg.includes("Calendar not connected") || msg.includes("not connected")) {
+      if (
+        msg.includes("Calendar not connected") ||
+        msg.includes("not connected") ||
+        msg.includes("authorization expired") ||
+        msg.includes("reconnect")
+      ) {
         setChatMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: "Google Calendar not connected. Opening setup...", status: "error" }
+              ? { ...m, content: "Google Calendar connection expired. Reconnecting...", status: "error" }
               : m
           )
         );
@@ -303,11 +327,16 @@ export default function PlannerPage() {
       fetchData();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "";
-      if (msg.includes("Calendar not connected") || msg.includes("not connected")) {
+      if (
+        msg.includes("Calendar not connected") ||
+        msg.includes("not connected") ||
+        msg.includes("authorization expired") ||
+        msg.includes("reconnect")
+      ) {
         setChatMessages((prev) =>
           prev.map((m) =>
             m.id === assistantId
-              ? { ...m, content: "Google Calendar not connected. Opening setup...", status: "error" as const }
+              ? { ...m, content: "Google Calendar connection expired. Reconnecting...", status: "error" as const }
               : m
           )
         );
