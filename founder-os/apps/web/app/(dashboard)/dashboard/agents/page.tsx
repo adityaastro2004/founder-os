@@ -77,7 +77,7 @@ interface ChatMessage {
 }
 
 interface HistoryRun {
-  id: number;
+  id: string;
   agent_name: string;
   user_message: string;
   agent_response: string;
@@ -233,8 +233,8 @@ function AgentChatPanel({
         );
         if (!res.ok) return;
         const data = await res.json();
-        if (cancelled || !Array.isArray(data.messages) || data.messages.length === 0) return;
-        const restored: ChatMessage[] = data.messages.map((m: Record<string, unknown>) => ({
+        if (cancelled || !Array.isArray(data) || data.length === 0) return;
+        const restored: ChatMessage[] = data.map((m: Record<string, unknown>) => ({
           id: (m.id as string) || `restored-${Date.now()}-${Math.random()}`,
           role: m.role as "user" | "assistant",
           content: m.content as string,
@@ -578,7 +578,7 @@ function AgentHistoryPanel({
   const { getToken } = useAuth();
   const [runs, setRuns] = useState<HistoryRun[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const gradient = agentColors[agent.agent_name] || agentColors.system;
 
   useEffect(() => {
@@ -592,7 +592,7 @@ function AgentHistoryPanel({
         );
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled && Array.isArray(data.runs)) setRuns(data.runs);
+        if (!cancelled && Array.isArray(data)) setRuns(data);
       } catch {
         // ignore
       } finally {

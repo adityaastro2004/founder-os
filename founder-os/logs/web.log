@@ -30,3 +30,31 @@ web:dev:  GET /dashboard/chat 200 in 51ms (compile: 28ms, proxy.ts: 13ms, render
 web:dev:  GET /dashboard/agents 200 in 59ms (compile: 32ms, proxy.ts: 11ms, render: 17ms)
 web:dev:  GET /dashboard/tasks 200 in 51ms (compile: 31ms, proxy.ts: 9ms, render: 10ms)
 web:dev:  GET /dashboard/tasks 200 in 32ms (compile: 4ms, proxy.ts: 9ms, render: 19ms)
+web:dev: ✓ Compiled in 848ms
+web:dev: ✓ Compiled in 73ms
+web:dev: ✓ Compiled in 154ms
+web:dev: ✓ Compiled in 326ms
+web:dev:  GET /dashboard/tasks 200 in 1601ms (compile: 159ms, proxy.ts: 1212ms, render: 230ms)
+web:dev:  GET /dashboard/memory 200 in 641ms (compile: 458ms, proxy.ts: 19ms, render: 163ms)
+web:dev:  GET /dashboard/tasks 200 in 1505ms (compile: 213ms, proxy.ts: 1101ms, render: 191ms)
+web:dev:  POST /dashboard/tasks 200 in 62ms (compile: 1795µs, proxy.ts: 55ms, render: 6ms)
+web:dev:  GET /dashboard/agents 200 in 112ms (compile: 69ms, proxy.ts: 10ms, render: 33ms)
+web:dev:  GET /dashboard 200 in 86ms (compile: 62ms, proxy.ts: 8ms, render: 16ms)
+web:dev:  GET /dashboard/chat 200 in 108ms (compile: 67ms, proxy.ts: 16ms, render: 24ms)
+web:dev:  GET /dashboard/content-ideas 200 in 478ms (compile: 437ms, proxy.ts: 12ms, render: 29ms)
+web:dev:  GET /dashboard/automations 200 in 105ms (compile: 78ms, proxy.ts: 14ms, render: 13ms)
+web:dev:  GET /dashboard/apps 200 in 83ms (compile: 59ms, proxy.ts: 16ms, render: 9ms)
+web:dev:  GET /dashboard 200 in 30ms (compile: 4ms, proxy.ts: 14ms, render: 12ms)
+web:dev:  GET /dashboard/tasks 200 in 40ms (compile: 7ms, proxy.ts: 16ms, render: 17ms)
+web:dev:  GET /dashboard/agents 200 in 25ms (compile: 3ms, proxy.ts: 12ms, render: 10ms)
+web:dev:  GET /dashboard/chat 200 in 34ms (compile: 6ms, proxy.ts: 11ms, render: 16ms)
+web:dev:  GET /dashboard/agents 200 in 400ms (compile: 7ms, proxy.ts: 379ms, render: 14ms)
+web:dev:  GET /dashboard 200 in 18ms (compile: 3ms, proxy.ts: 5ms, render: 9ms)
+web:dev:  GET /dashboard/planner 200 in 120ms (compile: 99ms, proxy.ts: 11ms, render: 9ms)
+web:dev:  GET /dashboard/agents 200 in 38ms (compile: 5ms, proxy.ts: 10ms, render: 22ms)
+web:dev:  GET /dashboard/tasks 200 in 27ms (compile: 3ms, proxy.ts: 13ms, render: 10ms)
+web:dev:  GET /dashboard/chat 200 in 28ms (compile: 7ms, proxy.ts: 9ms, render: 12ms)
+web:dev:  GET /dashboard 200 in 39ms (compile: 6ms, proxy.ts: 13ms, render: 20ms)
+web:dev:  GET /dashboard/chat 200 in 24ms (compile: 4ms, proxy.ts: 13ms, render: 7ms)
+web:dev: [?25h
+ ERROR  run failed: command  exited (1)
