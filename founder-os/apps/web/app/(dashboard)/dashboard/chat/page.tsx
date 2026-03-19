@@ -180,8 +180,10 @@ export default function ChatPage() {
         );
         if (!res.ok) return;
         const data = await res.json();
-        if (cancelled || !Array.isArray(data.messages) || data.messages.length === 0) return;
-        const restored: ChatMessage[] = data.messages.map((m: Record<string, unknown>) => ({
+        // API returns a plain array of ChatMessageOut, not {messages: [...]}
+        const msgs = Array.isArray(data) ? data : data.messages;
+        if (cancelled || !Array.isArray(msgs) || msgs.length === 0) return;
+        const restored: ChatMessage[] = msgs.map((m: Record<string, unknown>) => ({
           id: (m.id as string) || crypto.randomUUID(),
           role: m.role as "user" | "assistant",
           content: m.content as string,

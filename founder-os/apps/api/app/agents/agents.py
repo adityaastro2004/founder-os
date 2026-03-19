@@ -271,7 +271,7 @@ GUIDELINES
             )
 
     async def after_run(self, user_input: str, result: AgentResult) -> None:
-        """Persist the plan to shared + working memory for other agents."""
+        """Persist the plan to shared + working memory and push to Google Calendar."""
         if not result.content:
             return
 
@@ -292,6 +292,124 @@ GUIDELINES
             "plan_generated_at",
             datetime.now(timezone.utc).isoformat(),
         )
+
+        # ── Push weekly plan to Google Calendar if it looks like a plan ──
+        await self._push_plan_to_gcal_if_applicable(result.content)
+
+    async def _push_plan_to_gcal_if_applicable(self, content: str) -> None:
+        """
+        If the agent generated a weekly plan, parse it into a WeeklyPlan
+        and push events to Google Calendar via the MCP tool.
+        """
+        import logging as _logging
+        _log = _logging.getLogger(__name__)
+
+        # Heuristic: only trigger for responses that look like a weekly plan
+        plan_indicators = ["daily breakdown", "monday", "tuesday", "top 3 priorities",
+                           "top priorities", "weekly plan", "📅"]
+        content_lower = content.lower()
+        matches = sum(1 for ind in plan_indicators if ind in content_lower)
+        if matches < 2:
+            return  # Not a weekly plan response
+
+        # Check if the planner_user_id was set (needed for calendar access)
+        planner_user_id = getattr(self, "_planner_user_id", None)
+        if not planner_user_id:
+            _log.debug("No planner_user_id set — skipping calendar push")
+            return
+
+        try:
+            from app.user_store import get_user
+            user = get_user(planner_user_id)
+            if not user or not user.gcal_connected or not user.has_valid_gcal_tokens():
+                _log.debug("User %s has no gcal connected — skipping push", planner_user_id)
+                return
+
+            # Parse the markdown plan into a WeeklyPlan model
+            from app.agents.planner_models import parse_plan_to_model
+            from app.agents.llm import create_llm_provider
+            from app.config import get_settings
+
+            settings = get_settings()
+            provider = create_llm_provider(
+                provider=settings.LLM_PROVIDER,
+                api_key=_get_planner_api_key(settings),
+                base_url=_get_planner_base_url(settings),
+                model=_get_planner_model(settings),
+                openai_api_key=settings.OPENAI_API_KEY,
+                openai_model=settings.OPENAI_MODEL or "gpt-4o-mini",
+                openai_base_url=settings.OPENAI_BASE_URL or "https://api.openai.com/v1",
+            )
+
+            try:
+                plan = await parse_plan_to_model(content, provider)
+            finally:
+                if hasattr(provider, "close"):
+                    await provider.close()
+
+            if not plan.daily_schedule:
+                _log.debug("Parsed plan has empty daily_schedule — skipping push")
+                return
+
+            # Push to Google Calendar via MCP
+            from app.agents.mcp_tools import MCPGoogleCalendarProvider
+            cal_provider = MCPGoogleCalendarProvider(
+                user_id=planner_user_id,
+                client_id=settings.GOOGLE_CLIENT_ID,
+                client_secret=settings.GOOGLE_CLIENT_SECRET,
+                timezone_str=user.timezone or "Asia/Kolkata",
+                calendar_id=user.calendar_id or "primary",
+            )
+            result = await cal_provider.call_tool(
+                "gcal_push_weekly_plan",
+                {"plan_json": plan.model_dump_json()},
+            )
+
+            import json
+            if not result.is_error:
+                data = json.loads(result.content)
+                created = data.get("events_created", 0)
+                _log.info(
+                    "Auto-pushed plan to Google Calendar for %s: %d events created",
+                    planner_user_id, created,
+                )
+
+                # Update user stats
+                from datetime import datetime, timezone as tz
+                user.last_plan_at = datetime.now(tz.utc).isoformat()
+                user.last_plan_events = created
+                user.plan_count += 1
+                from app.user_store import save_user
+                save_user(user)
+            else:
+                _log.warning("Calendar push failed for %s: %s", planner_user_id, result.content)
+
+        except Exception as exc:
+            _log.warning("Auto calendar push failed (non-fatal): %s", exc)
+
+
+def _get_planner_api_key(settings) -> str:
+    return {
+        "anthropic": settings.ANTHROPIC_API_KEY,
+        "openai_compatible": settings.OPENAI_API_KEY,
+        "gemini": settings.GEMINI_API_KEY,
+    }.get(settings.LLM_PROVIDER, "")
+
+
+def _get_planner_base_url(settings) -> str:
+    return {
+        "ollama": settings.OLLAMA_BASE_URL,
+        "openai_compatible": settings.OPENAI_BASE_URL,
+    }.get(settings.LLM_PROVIDER, "")
+
+
+def _get_planner_model(settings) -> str:
+    return {
+        "ollama": settings.OLLAMA_MODEL,
+        "anthropic": settings.ANTHROPIC_MODEL,
+        "openai_compatible": settings.OPENAI_MODEL,
+        "gemini": settings.GEMINI_MODEL,
+    }.get(settings.LLM_PROVIDER, "")
 
 
 # ============================================================================
