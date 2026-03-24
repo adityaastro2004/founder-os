@@ -217,18 +217,19 @@ class MCPGoogleCalendarProvider(ToolProvider):
             name="gcal_push_weekly_plan",
             description=(
                 "Push a full weekly plan to Google Calendar. "
-                "This takes a serialised WeeklyPlan (from the planner) and "
-                "creates calendar events for every task. Returns summary of "
-                "events created/failed."
+                "Creates calendar events for every task in the plan. "
+                "Returns summary of events created/failed."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "plan_json": {
-                        "type": "string",
                         "description": (
-                            "JSON string of the WeeklyPlan object. Must include "
-                            "'daily_schedule' with day→tasks mapping."
+                            "The weekly plan as a JSON string OR object. Must include "
+                            "'daily_schedule' mapping day names (monday, tuesday, etc.) "
+                            "to objects with a 'tasks' array. Each task needs: "
+                            "'title' (string), 'start_time' (HH:MM), 'end_time' (HH:MM), "
+                            "and optionally 'description', 'owner_agent', 'priority', 'est_hours'."
                         ),
                     },
                 },
@@ -514,13 +515,64 @@ class MCPGoogleCalendarProvider(ToolProvider):
             calendar_id=self._calendar_id,
         )
 
+    @staticmethod
+    def _normalize_plan_data(data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Normalize LLM-generated plan data into valid WeeklyPlan shape.
+
+        Handles common LLM quirks:
+        - daily_schedule values as bare task lists instead of DaySchedule dicts
+        - "task_title" / "task" field instead of "title"
+        - Date-string keys ("2026-03-24") instead of day names ("monday")
+        """
+        ds = data.get("daily_schedule", {})
+        if not isinstance(ds, dict):
+            return data
+
+        _day_names = {
+            0: "monday", 1: "tuesday", 2: "wednesday",
+            3: "thursday", 4: "friday", 5: "saturday", 6: "sunday",
+        }
+        for key, value in list(ds.items()):
+            if isinstance(value, list):
+                # Bare list of tasks → wrap into DaySchedule shape
+                day_name = key
+                try:
+                    from datetime import date as _date
+                    d = _date.fromisoformat(key)
+                    day_name = _day_names.get(d.weekday(), key)
+                except (ValueError, TypeError):
+                    pass
+                # Normalize task field names
+                tasks = []
+                for t in value:
+                    if isinstance(t, dict):
+                        if "task_title" in t and "title" not in t:
+                            t["title"] = t.pop("task_title")
+                        elif "task" in t and "title" not in t:
+                            t["title"] = t.pop("task")
+                    tasks.append(t)
+                ds[key] = {"day": day_name, "tasks": tasks}
+        return data
+
     async def _push_weekly_plan(
-        self, plan_json: str, **_kw: Any,
+        self, plan_json: str | dict = "", **_kw: Any,
     ) -> dict[str, Any]:
         from app.integrations.calendar_integration import push_plan_to_gcal
         from app.agents.planner_models import WeeklyPlan
 
-        data = json.loads(plan_json)
+        # Accept both a JSON string and a pre-parsed dict/object
+        # (LLMs sometimes pass the object directly instead of a string)
+        if isinstance(plan_json, dict):
+            data = plan_json
+        elif isinstance(plan_json, str) and plan_json.strip():
+            data = json.loads(plan_json)
+        else:
+            return {"status": "error", "events_created": 0,
+                    "error": "Empty plan_json provided"}
+
+        data = self._normalize_plan_data(data)
+
         plan = WeeklyPlan.model_validate(data)
         plan.ensure_daily_schedule()
 
