@@ -312,6 +312,11 @@ class AgentRegistry:
         # which matches how insights are stored in agent_routes.py.
         agent.clerk_user_id = mcp_uid
 
+        # Store the planner user-store key so PlannerAgent.after_run can
+        # push plans to Google Calendar automatically.
+        if planner_user_id:
+            agent._planner_user_id = planner_user_id
+
         # 8. Wire the delegate_task tool for the orchestrator.
         #    This is the Stripe Minions pattern: the orchestrator's LLM
         #    sees ``delegate_task`` as a regular tool, but under the hood

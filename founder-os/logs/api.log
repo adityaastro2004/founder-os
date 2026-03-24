@@ -1,30 +1,398 @@
 INFO:     Will watch for changes in these directories: ['/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api']
 INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [67987] using WatchFiles
-INFO:     Started server process [67990]
+INFO:     Started reloader process [63483] using WatchFiles
+INFO:     Started server process [63486]
 INFO:     Waiting for application startup.
-02:17:47  INFO      apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
-02:17:47  INFO      apscheduler.scheduler — Added job "Weekly Planner (Monday 8 AM)" to job store "default"
-02:17:47  INFO      apscheduler.scheduler — Scheduler started
-02:17:47  INFO      app.scheduler — ⏰ Background scheduler started — 1 job(s) registered
-02:17:47  INFO      app.scheduler —    • Weekly Planner (Monday 8 AM) (next run: 2026-03-09 08:00:00+05:30)
+12:00:40  INFO      apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
+12:00:40  INFO      apscheduler.scheduler — Added job "Weekly Planner (Monday 8 AM)" to job store "default"
+12:00:40  INFO      apscheduler.scheduler — Scheduler started
+12:00:40  INFO      app.scheduler — ⏰ Background scheduler started — 1 job(s) registered
+12:00:40  INFO      app.scheduler —    • Weekly Planner (Monday 8 AM) (next run: 2026-03-23 08:00:00+05:30)
 INFO:     Application startup complete.
-INFO:     127.0.0.1:63177 - "GET /api/health HTTP/1.1" 200 OK
-02:18:47  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
-02:18:47  INFO      app.agents.router — Registered agent card: orchestrator
-02:18:47  INFO      app.agents.router — Registered agent card: planner
-02:18:47  INFO      app.agents.router — Registered agent card: content
-02:18:47  INFO      app.agents.router — Registered agent card: research
-02:18:47  INFO      app.agents.router — Registered agent card: ops
-02:18:47  INFO      app.agents.router — Registered agent card: product
-02:18:47  INFO      app.agents.router — Registered agent card: support
-02:18:47  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
-02:18:47  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'planner'
-02:18:47  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
-02:18:47  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
-02:18:47  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
-02:18:47  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
-02:18:47  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
+12:01:17  INFO      httpx — HTTP Request: GET https://proud-quagga-53.clerk.accounts.dev/.well-known/jwks.json "HTTP/1.1 200 OK"
+INFO:     ::1:0 - "GET /api/onboarding/status HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52307 - "OPTIONS /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52308 - "OPTIONS /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52308 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52307 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52307 - "OPTIONS /api/activity/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52307 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+13:15:54  INFO      httpx — HTTP Request: GET https://proud-quagga-53.clerk.accounts.dev/.well-known/jwks.json "HTTP/1.1 200 OK"
+13:15:54  INFO      httpx — HTTP Request: GET https://proud-quagga-53.clerk.accounts.dev/.well-known/jwks.json "HTTP/1.1 200 OK"
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/onboarding/status HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58771 - "OPTIONS /api/activity/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58771 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58819 - "OPTIONS /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58820 - "OPTIONS /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58819 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58820 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58820 - "OPTIONS /api/profile/ideas/content?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58819 - "OPTIONS /api/profile/ideas/content?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58819 - "GET /api/profile/ideas/content?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58820 - "GET /api/profile/ideas/content?limit=50 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58820 - "OPTIONS /api/profile/ideas/content/generate HTTP/1.1" 200 OK
+13:16:08  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
+13:16:08  INFO      app.agents.router — Registered agent card: orchestrator
+13:16:08  INFO      app.agents.router — Registered agent card: planner
+13:16:08  INFO      app.agents.router — Registered agent card: content
+13:16:08  INFO      app.agents.router — Registered agent card: research
+13:16:08  INFO      app.agents.router — Registered agent card: ops
+13:16:08  INFO      app.agents.router — Registered agent card: product
+13:16:08  INFO      app.agents.router — Registered agent card: support
+INFO:     127.0.0.1:58820 - "POST /api/profile/ideas/content/generate HTTP/1.1" 200 OK
+13:16:10  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
+13:16:10  INFO      app.agents.router — Registered agent card: orchestrator
+13:16:10  INFO      app.agents.router — Registered agent card: planner
+13:16:10  INFO      app.agents.router — Registered agent card: content
+13:16:10  INFO      app.agents.router — Registered agent card: research
+13:16:10  INFO      app.agents.router — Registered agent card: ops
+13:16:10  INFO      app.agents.router — Registered agent card: product
+13:16:10  INFO      app.agents.router — Registered agent card: support
+INFO:     127.0.0.1:58820 - "POST /api/profile/ideas/content/generate HTTP/1.1" 200 OK
+13:16:13  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
+13:16:13  INFO      app.agents.router — Registered agent card: orchestrator
+13:16:13  INFO      app.agents.router — Registered agent card: planner
+13:16:13  INFO      app.agents.router — Registered agent card: content
+13:16:13  INFO      app.agents.router — Registered agent card: research
+13:16:13  INFO      app.agents.router — Registered agent card: ops
+13:16:13  INFO      app.agents.router — Registered agent card: product
+13:16:13  INFO      app.agents.router — Registered agent card: support
+INFO:     127.0.0.1:58820 - "POST /api/profile/ideas/content/generate HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/settings/profile HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/settings/apps HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/settings/profile HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/settings/apps HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58926 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58942 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58944 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58954 - "OPTIONS /api/agents/orchestrate/stream HTTP/1.1" 200 OK
+13:16:49  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
+13:16:49  INFO      app.agents.router — Registered agent card: orchestrator
+13:16:49  INFO      app.agents.router — Registered agent card: planner
+13:16:49  INFO      app.agents.router — Registered agent card: content
+13:16:49  INFO      app.agents.router — Registered agent card: research
+13:16:49  INFO      app.agents.router — Registered agent card: ops
+13:16:49  INFO      app.agents.router — Registered agent card: product
+13:16:49  INFO      app.agents.router — Registered agent card: support
+13:16:49  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
+13:16:49  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'orchestrator'
+13:16:49  INFO      app.agents.tool_protocol — Tool 'delegate_task' overridden with runtime closure
+13:16:49  INFO      app.agents.tool_protocol — Tool 'recall_last_orchestration' overridden with runtime closure
+13:16:49  INFO      app.agents.tool_protocol — Tool 'list_available_agents' overridden with runtime closure
+13:16:49  INFO      app.agents.tool_protocol — Tool 'check_delegation_health' overridden with runtime closure
+13:16:49  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+13:16:49  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+13:16:49  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
+INFO:     127.0.0.1:58954 - "POST /api/agents/orchestrate/stream HTTP/1.1" 200 OK
+13:16:49  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+13:16:49  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
 Traceback (most recent call last):
   File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
     yield
@@ -127,21 +495,441 @@ Traceback (most recent call last):
   File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
     raise mapped_exc(message) from exc
 httpx.ConnectError: All connection attempts failed
-02:18:48  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:18:48  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:18:52  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:18:52  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:18:58  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:18:58  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:18:58  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:18:58  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:19:02  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:19:02  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:19:09  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:19:09  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:19:09  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:19:09  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 400 Bad Request"
-02:19:09  ERROR     app.agents.execution — LLM call failed for agent 'planner'
+13:16:49  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:16:51  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:16:51  INFO      app.agents.execution — Agent 'orchestrator' tool 'get_user_profile' → auto-approved (always_allow)
+13:16:51  INFO      app.agents.tool_protocol — Calling tool 'get_user_profile' via provider 'closure'
+13:16:51  INFO      app.agents.execution — Agent 'orchestrator' tool call: get_user_profile → ok (3ms)
+13:16:51  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:16:54  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:16:54  INFO      app.agents.execution — Agent 'orchestrator' tool 'delegate_task' → auto-approved (always_allow)
+13:16:54  INFO      app.agents.tool_protocol — Calling tool 'delegate_task' via provider 'closure'
+13:16:54  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'planner'
+13:16:54  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+13:16:54  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+13:16:54  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
+13:16:54  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+13:16:54  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/memory.py", line 411, in build_context
+    ctx = await self.retriever.get_context(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 177, in get_context
+    results = await self.search(
+              ^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 101, in search
+    query_embedding = await self._embedder.embed(query)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 271, in embed
+    vec = await self._provider.embed(text)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 109, in embed
+    response = await self._client.post(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+13:16:55  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:16:55  INFO      app.agents.execution — Agent 'planner' tool 'get_user_profile' → auto-approved (always_allow)
+13:16:55  INFO      app.agents.tool_protocol — Calling tool 'get_user_profile' via provider 'closure'
+13:16:55  INFO      app.agents.execution — Agent 'planner' tool call: get_user_profile → ok (0ms)
+13:16:57  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:16:57  INFO      app.agents.execution — Agent 'orchestrator' tool call: delegate_task → ok (3793ms)
+13:16:57  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:17:01  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:17:26  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
+13:17:26  INFO      app.agents.router — Registered agent card: orchestrator
+13:17:26  INFO      app.agents.router — Registered agent card: planner
+13:17:26  INFO      app.agents.router — Registered agent card: content
+13:17:26  INFO      app.agents.router — Registered agent card: research
+13:17:26  INFO      app.agents.router — Registered agent card: ops
+13:17:26  INFO      app.agents.router — Registered agent card: product
+13:17:26  INFO      app.agents.router — Registered agent card: support
+13:17:26  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
+13:17:26  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'orchestrator'
+13:17:26  INFO      app.agents.tool_protocol — Tool 'delegate_task' overridden with runtime closure
+13:17:26  INFO      app.agents.tool_protocol — Tool 'recall_last_orchestration' overridden with runtime closure
+13:17:26  INFO      app.agents.tool_protocol — Tool 'list_available_agents' overridden with runtime closure
+13:17:26  INFO      app.agents.tool_protocol — Tool 'check_delegation_health' overridden with runtime closure
+13:17:26  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+13:17:26  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+13:17:26  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
+INFO:     127.0.0.1:59006 - "POST /api/agents/orchestrate/stream HTTP/1.1" 200 OK
+13:17:26  WARNING   app.agents.orchestrator — Failed to load prior orchestration: slice(None, 2000, None)
+13:17:26  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+13:17:26  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/memory.py", line 411, in build_context
+    ctx = await self.retriever.get_context(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 177, in get_context
+    results = await self.search(
+              ^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 101, in search
+    query_embedding = await self._embedder.embed(query)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 271, in embed
+    vec = await self._provider.embed(text)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 109, in embed
+    response = await self._client.post(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+13:17:26  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:17:29  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:17:29  INFO      app.agents.execution — Agent 'orchestrator' tool 'get_user_profile' → auto-approved (always_allow)
+13:17:29  INFO      app.agents.tool_protocol — Calling tool 'get_user_profile' via provider 'closure'
+13:17:29  INFO      app.agents.execution — Agent 'orchestrator' tool call: get_user_profile → ok (0ms)
+13:17:29  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:17:29  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+13:17:29  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
+  "error": {
+    "code": 429,
+    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-2.5-flash\nPlease retry in 30.557569886s.",
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.Help",
+        "links": [
+          {
+            "description": "Learn more about Gemini API quotas",
+            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"
+          }
+        ]
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+        "violations": [
+          {
+            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+            "quota
+13:17:29  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/2) — retrying in 2s
+13:17:32  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
+13:17:32  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
+  "error": {
+    "code": 429,
+    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 5, model: gemini-2.5-flash\nPlease retry in 27.963875443s.",
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.Help",
+        "links": [
+          {
+            "description": "Learn more about Gemini API quotas",
+            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"
+          }
+        ]
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+        "violations": [
+          {
+            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+            "quota
+13:17:32  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
+13:17:33  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+13:17:33  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/2) — retrying in 2s
+13:17:35  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
+13:17:35  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
+13:17:35  INFO      app.agents.llm — Gemini circuit breaker ON for 60s
+13:17:35  INFO      app.agents.llm — Falling back to OpenAI (llama-3.3-70b-versatile)
+13:17:36  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+13:17:36  INFO      app.agents.execution — Agent 'orchestrator' tool 'delegate_task' → auto-approved (always_allow)
+13:17:36  INFO      app.agents.tool_protocol — Calling tool 'delegate_task' via provider 'closure'
+13:17:36  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'planner'
+13:17:36  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+13:17:36  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+13:17:36  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
+13:17:36  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+13:17:36  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/memory.py", line 411, in build_context
+    ctx = await self.retriever.get_context(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 177, in get_context
+    results = await self.search(
+              ^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 101, in search
+    query_embedding = await self._embedder.embed(query)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 271, in embed
+    vec = await self._provider.embed(text)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 109, in embed
+    response = await self._client.post(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+13:17:36  INFO      app.agents.llm — Gemini circuit breaker active — skipping straight to fallback
+13:17:36  INFO      app.agents.llm — Falling back to OpenAI (llama-3.3-70b-versatile)
+13:17:37  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
+13:17:37  INFO      app.agents.execution — Agent 'planner' tool 'store_working_memory' → auto-approved (always_allow)
+13:17:37  INFO      app.agents.tool_protocol — Calling tool 'store_working_memory' via provider 'local'
+13:17:37  INFO      app.agents.execution — Agent 'planner' tool call: store_working_memory → ok (0ms)
+13:17:37  INFO      app.agents.execution — Agent 'planner' tool 'get_user_profile' → auto-approved (always_allow)
+13:17:37  INFO      app.agents.tool_protocol — Calling tool 'get_user_profile' via provider 'closure'
+13:17:37  INFO      app.agents.execution — Agent 'planner' tool call: get_user_profile → ok (0ms)
+13:17:37  INFO      app.agents.execution — Agent 'planner' tool 'detect_calendar_intent' → auto-approved (always_allow)
+13:17:37  INFO      app.agents.tool_protocol — Calling tool 'detect_calendar_intent' via provider 'local'
+13:17:37  INFO      app.agents.execution — Agent 'planner' tool call: detect_calendar_intent → ok (1ms)
+13:17:37  INFO      app.agents.llm — Gemini circuit breaker active — skipping straight to fallback
+13:17:37  INFO      app.agents.llm — Falling back to OpenAI (llama-3.3-70b-versatile)
+13:17:37  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+13:17:37  ERROR     app.agents.llm — OpenAI-compat 429 from https://api.groq.com/openai/v1/: {"error":{"message":"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kk7fkh8tebarq0bzwh320zbb` service tier `on_demand` on tokens per minute (TPM): Limit 12000, Used 8470, Requested 4639. Please try again in 5.545s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
+
+13:17:37  ERROR     app.agents.execution — LLM call failed for agent 'planner'
 Traceback (most recent call last):
   File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/execution.py", line 183, in run
     response = await self.llm.generate(
@@ -149,704 +937,617 @@ Traceback (most recent call last):
     ...<6 lines>...
     )
     ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/llm.py", line 887, in generate
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/llm.py", line 973, in generate
     return await self._openai.generate(
            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ...<2 lines>...
     )
     ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/llm.py", line 493, in generate
-    resp.raise_for_status()
-    ~~~~~~~~~~~~~~~~~~~~~^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_models.py", line 829, in raise_for_status
-    raise HTTPStatusError(message, request=request, response=self)
-httpx.HTTPStatusError: Client error '400 Bad Request' for url 'https://api.groq.com/openai/v1/chat/completions'
-For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/400
-INFO:     127.0.0.1:63222 - "POST /api/planner/chat HTTP/1.1" 200 OK
-WARNING:  WatchFiles detected changes in 'app/agents/llm.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-02:19:53  INFO      app.scheduler — ⏰ Background scheduler stopped
-02:19:53  INFO      apscheduler.scheduler — Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [67990]
-INFO:     Started server process [71471]
-INFO:     Waiting for application startup.
-02:19:55  INFO      apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
-02:19:55  INFO      apscheduler.scheduler — Added job "Weekly Planner (Monday 8 AM)" to job store "default"
-02:19:55  INFO      apscheduler.scheduler — Scheduler started
-02:19:55  INFO      app.scheduler — ⏰ Background scheduler started — 1 job(s) registered
-02:19:55  INFO      app.scheduler —    • Weekly Planner (Monday 8 AM) (next run: 2026-03-09 08:00:00+05:30)
-INFO:     Application startup complete.
-02:20:33  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
-02:20:33  INFO      app.agents.router — Registered agent card: orchestrator
-02:20:33  INFO      app.agents.router — Registered agent card: planner
-02:20:33  INFO      app.agents.router — Registered agent card: content
-02:20:33  INFO      app.agents.router — Registered agent card: research
-02:20:33  INFO      app.agents.router — Registered agent card: ops
-02:20:33  INFO      app.agents.router — Registered agent card: product
-02:20:33  INFO      app.agents.router — Registered agent card: support
-02:20:33  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
-02:20:33  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'planner'
-02:20:33  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
-02:20:33  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
-02:20:33  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
-02:20:33  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
-02:20:34  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
-Traceback (most recent call last):
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
-    yield
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
-    resp = await self._pool.handle_async_request(req)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
-    raise exc from None
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
-    response = await connection.handle_async_request(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        pool_request.request
-        ^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
-    raise exc
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
-    stream = await self._connect(request)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 124, in _connect
-    stream = await self._network_backend.connect_tcp(**kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
-    return await self._backend.connect_tcp(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<5 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
-    with map_exceptions(exc_map):
-         ~~~~~~~~~~~~~~^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
-    self.gen.throw(value)
-    ~~~~~~~~~~~~~~^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
-    raise to_exc(exc) from exc
-httpcore.ConnectError: All connection attempts failed
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/memory.py", line 411, in build_context
-    ctx = await self.retriever.get_context(
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 177, in get_context
-    results = await self.search(
-              ^^^^^^^^^^^^^^^^^^
-    ...<5 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 101, in search
-    query_embedding = await self._embedder.embed(query)
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 271, in embed
-    vec = await self._provider.embed(text)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 109, in embed
-    response = await self._client.post(
-               ^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<2 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
-    return await self.request(
-           ^^^^^^^^^^^^^^^^^^^
-    ...<13 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
-    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
-    response = await self._send_handling_auth(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<4 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
-    response = await self._send_handling_redirects(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
-    response = await self._send_single_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
-    response = await transport.handle_async_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
-    with map_httpcore_exceptions():
-         ~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
-    self.gen.throw(value)
-    ~~~~~~~~~~~~~~^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
-    raise mapped_exc(message) from exc
-httpx.ConnectError: All connection attempts failed
-02:20:35  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:20:35  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 25.184750034s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:20:35  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:20:38  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:20:38  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 21.803401532s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:20:38  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:20:44  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:20:44  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 15.363894258s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:20:44  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:20:45  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:20:45  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:20:49  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:20:49  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:20:55  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:20:55  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:20:55  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:20:56  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
-02:20:56  INFO      app.agents.execution — Agent 'planner' tool 'gcal_list_events' → auto-approved (always_allow)
-02:20:56  INFO      app.agents.tool_protocol — Calling tool 'gcal_list_events' via provider 'mcp:google-calendar'
-02:20:56  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=20&orderBy=startTime&singleEvents=true&timeMin=2026-03-08T20%3A50%3A56.423360%2B00%3A00 "HTTP/1.1 200 OK"
-02:20:56  INFO      app.agents.execution — Agent 'planner' tool call: gcal_list_events → ok (541ms)
-02:20:57  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:20:57  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 2.843656736s.",
-    "status": "RESOURCE_EXHAUSTED",
-    "
-02:20:57  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:21:00  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:21:00  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 59.399614526s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:21:00  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:21:07  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:21:07  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 52.650882884s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:21:07  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:21:08  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:21:08  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:21:11  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:21:11  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:21:18  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:21:18  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:21:18  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:21:19  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
-INFO:     127.0.0.1:63416 - "POST /api/planner/chat HTTP/1.1" 200 OK
-02:21:58  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
-02:21:58  INFO      app.agents.router — Registered agent card: orchestrator
-02:21:58  INFO      app.agents.router — Registered agent card: planner
-02:21:58  INFO      app.agents.router — Registered agent card: content
-02:21:58  INFO      app.agents.router — Registered agent card: research
-02:21:58  INFO      app.agents.router — Registered agent card: ops
-02:21:58  INFO      app.agents.router — Registered agent card: product
-02:21:58  INFO      app.agents.router — Registered agent card: support
-02:21:58  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
-02:21:58  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'planner'
-02:21:58  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
-02:21:58  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
-02:21:58  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
-02:21:58  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
-02:21:58  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
-Traceback (most recent call last):
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
-    yield
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
-    resp = await self._pool.handle_async_request(req)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
-    raise exc from None
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
-    response = await connection.handle_async_request(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        pool_request.request
-        ^^^^^^^^^^^^^^^^^^^^
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
-    raise exc
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
-    stream = await self._connect(request)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 124, in _connect
-    stream = await self._network_backend.connect_tcp(**kwargs)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
-    return await self._backend.connect_tcp(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<5 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
-    with map_exceptions(exc_map):
-         ~~~~~~~~~~~~~~^^^^^^^^^
-  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
-    self.gen.throw(value)
-    ~~~~~~~~~~~~~~^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
-    raise to_exc(exc) from exc
-httpcore.ConnectError: All connection attempts failed
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/memory.py", line 411, in build_context
-    ctx = await self.retriever.get_context(
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 177, in get_context
-    results = await self.search(
-              ^^^^^^^^^^^^^^^^^^
-    ...<5 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 101, in search
-    query_embedding = await self._embedder.embed(query)
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 271, in embed
-    vec = await self._provider.embed(text)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 109, in embed
-    response = await self._client.post(
-               ^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<2 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
-    return await self.request(
-           ^^^^^^^^^^^^^^^^^^^
-    ...<13 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
-    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
-    response = await self._send_handling_auth(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<4 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
-    response = await self._send_handling_redirects(
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<3 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
-    response = await self._send_single_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
-    response = await transport.handle_async_request(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
-    with map_httpcore_exceptions():
-         ~~~~~~~~~~~~~~~~~~~~~~~^^
-  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
-    self.gen.throw(value)
-    ~~~~~~~~~~~~~~^^^^^^^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
-    raise mapped_exc(message) from exc
-httpx.ConnectError: All connection attempts failed
-02:21:59  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:21:59  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 1.173084069s.",
-    "status": "RESOURCE_EXHAUSTED",
-    "
-02:21:59  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:22:02  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:22:02  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 57.772390587s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:22:02  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:22:09  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:22:09  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 51.053202787s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:22:09  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:22:09  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:22:09  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:22:13  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:22:13  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:22:19  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:22:19  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:22:19  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:22:21  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
-02:22:21  INFO      app.agents.execution — Agent 'planner' tool 'gcal_smart_delete' → auto-approved (always_allow)
-02:22:21  INFO      app.agents.tool_protocol — Calling tool 'gcal_smart_delete' via provider 'mcp:google-calendar'
-02:22:21  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=100&orderBy=startTime&singleEvents=true&timeMin=2026-03-08T20%3A52%3A21.374751%2B00%3A00 "HTTP/1.1 200 OK"
-02:22:21  INFO      app.agents.execution — Agent 'planner' tool call: gcal_smart_delete → ok (591ms)
-02:22:22  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:22:22  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 37.514265203s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:22:22  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:22:26  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:22:26  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 34.130402424s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:22:26  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:22:32  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:22:32  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 27.374400454s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:22:32  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:22:33  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:22:33  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-WARNING:  WatchFiles detected changes in 'app/agents/llm.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for connections to close. (CTRL+C to force quit)
-02:22:37  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:22:37  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:22:43  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:22:43  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:22:43  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:22:44  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
-02:22:44  INFO      app.agents.execution — Agent 'planner' tool 'gcal_smart_delete' → auto-approved (always_allow)
-02:22:44  INFO      app.agents.tool_protocol — Calling tool 'gcal_smart_delete' via provider 'mcp:google-calendar'
-02:22:44  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=100&orderBy=startTime&singleEvents=true&timeMin=2026-03-06T00%3A00%3A00Z "HTTP/1.1 200 OK"
-02:22:44  INFO      app.agents.execution — Agent 'planner' tool call: gcal_smart_delete → ok (641ms)
-02:22:45  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:22:45  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 14.534724529s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:22:45  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:22:49  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:22:49  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 11.096733013s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:22:49  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:22:55  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:22:55  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 4.663330265s.",
-    "status": "RESOURCE_EXHAUSTED",
-    "
-02:22:55  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:22:56  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:22:56  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:22:59  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:22:59  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:23:06  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:23:06  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:23:06  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:23:06  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
-02:23:06  INFO      app.agents.execution — Agent 'planner' tool 'gcal_smart_delete' → auto-approved (always_allow)
-02:23:06  INFO      app.agents.tool_protocol — Calling tool 'gcal_smart_delete' via provider 'mcp:google-calendar'
-02:23:07  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=100&orderBy=startTime&singleEvents=true&timeMin=2026-03-06T00%3A00%3A00Z "HTTP/1.1 200 OK"
-02:23:07  INFO      app.agents.execution — Agent 'planner' tool call: gcal_smart_delete → ok (580ms)
-02:23:07  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:23:07  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 52.405700268s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:23:07  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:23:11  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:23:11  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 49.003285814s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:23:11  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:23:17  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:23:17  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 42.260779474s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:23:17  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:23:18  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:23:18  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:23:22  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:23:22  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:23:28  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:23:28  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:23:28  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:23:29  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
-02:23:29  INFO      app.agents.execution — Agent 'planner' tool 'gcal_smart_delete' → auto-approved (always_allow)
-02:23:29  INFO      app.agents.tool_protocol — Calling tool 'gcal_smart_delete' via provider 'mcp:google-calendar'
-02:23:30  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=100&orderBy=startTime&singleEvents=true&timeMin=2026-03-06T00%3A00%3A00Z "HTTP/1.1 200 OK"
-02:23:30  INFO      app.agents.execution — Agent 'planner' tool call: gcal_smart_delete → ok (577ms)
-02:23:30  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:23:30  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 29.33103114s.",
-    "status": "RESOURCE_EXHAUSTED",
-    "
-02:23:30  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:23:34  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:23:34  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 25.947062166s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:23:34  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:23:41  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:23:41  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 19.143025651s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:23:41  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:23:41  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:23:41  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:23:45  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:23:45  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-INFO:     Waiting for background tasks to complete. (CTRL+C to force quit)
-02:23:51  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:23:51  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:23:51  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:23:52  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
-02:23:52  INFO      app.agents.execution — Agent 'planner' tool 'gcal_smart_delete' → auto-approved (always_allow)
-02:23:52  INFO      app.agents.tool_protocol — Calling tool 'gcal_smart_delete' via provider 'mcp:google-calendar'
-02:23:52  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=100&orderBy=startTime&singleEvents=true&timeMin=2026-03-06T00%3A00%3A00Z "HTTP/1.1 200 OK"
-02:23:52  INFO      app.agents.execution — Agent 'planner' tool call: gcal_smart_delete → ok (574ms)
-02:23:53  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:23:53  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 6.762210118s.",
-    "status": "RESOURCE_EXHAUSTED",
-    "
-02:23:53  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:23:56  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:23:56  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 3.30342126s.",
-    "status": "RESOURCE_EXHAUSTED",
-    "d
-02:23:56  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:24:03  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:24:03  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 56.537019025s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:24:03  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:24:04  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:24:04  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:24:07  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:24:07  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:24:14  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:24:14  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:24:14  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:24:14  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
-02:24:14  INFO      app.agents.execution — Agent 'planner' tool 'gcal_smart_delete' → auto-approved (always_allow)
-02:24:14  INFO      app.agents.tool_protocol — Calling tool 'gcal_smart_delete' via provider 'mcp:google-calendar'
-02:24:15  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=100&orderBy=startTime&singleEvents=true&timeMin=2026-03-06T00%3A00%3A00Z "HTTP/1.1 200 OK"
-02:24:15  INFO      app.agents.execution — Agent 'planner' tool call: gcal_smart_delete → ok (579ms)
-02:24:16  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:24:16  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 44.012996294s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:24:16  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:24:19  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:24:19  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 40.406647604s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:24:19  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:24:26  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:24:26  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 33.973655411s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:24:26  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:24:27  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:24:27  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:24:30  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:24:30  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:24:37  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:24:37  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:24:37  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:24:37  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 200 OK"
-02:24:37  INFO      app.agents.execution — Agent 'planner' tool 'gcal_list_events' → auto-approved (always_allow)
-02:24:37  INFO      app.agents.tool_protocol — Calling tool 'gcal_list_events' via provider 'mcp:google-calendar'
-02:24:38  INFO      httpx — HTTP Request: GET https://www.googleapis.com/calendar/v3/calendars/primary/events?maxResults=100&orderBy=startTime&singleEvents=true&timeMin=2026-03-06T00%3A00%3A00Z "HTTP/1.1 200 OK"
-02:24:38  INFO      app.agents.execution — Agent 'planner' tool call: gcal_list_events → ok (613ms)
-02:24:38  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:24:38  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 21.446263508s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:24:38  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 1/3) — retrying in 3s
-02:24:42  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:24:42  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 17.97006739s.",
-    "status": "RESOURCE_EXHAUSTED",
-    "
-02:24:42  INFO      app.agents.llm — Gemini OpenAI-compat 429 rate-limited (attempt 2/3) — retrying in 6s
-02:24:48  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:24:48  ERROR     app.agents.llm — OpenAI-compat 429 from https://generativelanguage.googleapis.com/v1beta/openai/: [{
-  "error": {
-    "code": 429,
-    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-2.5-flash\nPlease retry in 11.460083406s.",
-    "status": "RESOURCE_EXHAUSTED",
-    
-02:24:48  INFO      app.agents.llm — Gemini OpenAI-compat exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea) — trying native REST
-02:24:49  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:24:49  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 1/3) — retrying in 3s
-02:24:52  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:24:52  INFO      app.agents.llm — Gemini native 429 rate-limited (attempt 2/3) — retrying in 6s
-02:24:59  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=AIzaSyBnGl5o7a1_5T5oBp3mZ_5MdSp6-ziuvnc "HTTP/1.1 429 Too Many Requests"
-02:24:59  WARNING   app.agents.llm — Gemini native also exhausted (Client error '429 Too Many Requests' for url 'https://generativelanguage.googlea)
-02:24:59  INFO      app.agents.llm — Both Gemini endpoints exhausted — falling back to OpenAI (llama-3.3-70b-versatile)
-02:24:59  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
-02:24:59  ERROR     app.agents.llm — OpenAI-compat 429 from https://api.groq.com/openai/v1/: {"error":{"message":"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kk7fkh8tebarq0bzwh320zbb` service tier `on_demand` on tokens per day (TPD): Limit 100000, Used 90923, Requested 21340. Please try again in 2h56m35.232s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
-
-02:24:59  ERROR     app.agents.execution — LLM call failed for agent 'planner'
-Traceback (most recent call last):
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/execution.py", line 183, in run
-    response = await self.llm.generate(
-               ^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<6 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/llm.py", line 893, in generate
-    return await self._openai.generate(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<2 lines>...
-    )
-    ^
-  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/llm.py", line 499, in generate
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/llm.py", line 507, in generate
     resp.raise_for_status()
     ~~~~~~~~~~~~~~~~~~~~~^^
   File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_models.py", line 829, in raise_for_status
     raise HTTPStatusError(message, request=request, response=self)
 httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
 For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
-INFO:     Waiting for application shutdown.
-02:24:59  INFO      app.scheduler — ⏰ Background scheduler stopped
-02:24:59  INFO      apscheduler.scheduler — Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [71471]
-INFO:     Started server process [77095]
-INFO:     Waiting for application startup.
-02:25:01  INFO      apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
-02:25:01  INFO      apscheduler.scheduler — Added job "Weekly Planner (Monday 8 AM)" to job store "default"
-02:25:01  INFO      apscheduler.scheduler — Scheduler started
-02:25:01  INFO      app.scheduler — ⏰ Background scheduler started — 1 job(s) registered
-02:25:01  INFO      app.scheduler —    • Weekly Planner (Monday 8 AM) (next run: 2026-03-09 08:00:00+05:30)
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/agents/mcp_tools.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-02:28:20  INFO      app.scheduler — ⏰ Background scheduler stopped
-02:28:20  INFO      apscheduler.scheduler — Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [77095]
-INFO:     Started server process [80132]
-INFO:     Waiting for application startup.
-02:28:22  INFO      apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
-02:28:22  INFO      apscheduler.scheduler — Added job "Weekly Planner (Monday 8 AM)" to job store "default"
-02:28:22  INFO      apscheduler.scheduler — Scheduler started
-02:28:22  INFO      app.scheduler — ⏰ Background scheduler started — 1 job(s) registered
-02:28:22  INFO      app.scheduler —    • Weekly Planner (Monday 8 AM) (next run: 2026-03-09 08:00:00+05:30)
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/agents/llm.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-02:28:27  INFO      app.scheduler — ⏰ Background scheduler stopped
-02:28:27  INFO      apscheduler.scheduler — Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [80132]
-INFO:     Started server process [80249]
-INFO:     Waiting for application startup.
-02:28:29  INFO      apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
-02:28:29  INFO      apscheduler.scheduler — Added job "Weekly Planner (Monday 8 AM)" to job store "default"
-02:28:29  INFO      apscheduler.scheduler — Scheduler started
-02:28:29  INFO      app.scheduler — ⏰ Background scheduler started — 1 job(s) registered
-02:28:29  INFO      app.scheduler —    • Weekly Planner (Monday 8 AM) (next run: 2026-03-09 08:00:00+05:30)
-INFO:     Application startup complete.
-WARNING:  WatchFiles detected changes in 'app/agents/execution.py'. Reloading...
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-02:28:39  INFO      app.scheduler — ⏰ Background scheduler stopped
-02:28:39  INFO      apscheduler.scheduler — Scheduler has been shut down
-INFO:     Application shutdown complete.
-INFO:     Finished server process [80249]
-INFO:     Started server process [80396]
-INFO:     Waiting for application startup.
-02:28:42  INFO      apscheduler.scheduler — Adding job tentatively -- it will be properly scheduled when the scheduler starts
-02:28:42  INFO      apscheduler.scheduler — Added job "Weekly Planner (Monday 8 AM)" to job store "default"
-02:28:42  INFO      apscheduler.scheduler — Scheduler started
-02:28:42  INFO      app.scheduler — ⏰ Background scheduler started — 1 job(s) registered
-02:28:42  INFO      app.scheduler —    • Weekly Planner (Monday 8 AM) (next run: 2026-03-09 08:00:00+05:30)
-INFO:     Application startup complete.
+13:17:37  INFO      app.agents.execution — Agent 'orchestrator' tool call: delegate_task → ok (1072ms)
+13:17:37  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:17:37  INFO      app.agents.llm — Gemini circuit breaker active — skipping straight to fallback
+13:17:37  INFO      app.agents.llm — Falling back to OpenAI (llama-3.3-70b-versatile)
+13:17:37  INFO      httpx — HTTP Request: POST https://api.groq.com/openai/v1/chat/completions "HTTP/1.1 429 Too Many Requests"
+13:17:37  ERROR     app.agents.llm — OpenAI-compat 429 from https://api.groq.com/openai/v1/: {"error":{"message":"Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kk7fkh8tebarq0bzwh320zbb` service tier `on_demand` on tokens per minute (TPM): Limit 12000, Used 8459, Requested 4490. Please try again in 4.745s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
+
+13:17:37  ERROR     app.agents.execution — LLM call failed for agent 'orchestrator'
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/execution.py", line 183, in run
+    response = await self.llm.generate(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<6 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/llm.py", line 973, in generate
+    return await self._openai.generate(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/llm.py", line 507, in generate
+    resp.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)
+httpx.HTTPStatusError: Client error '429 Too Many Requests' for url 'https://api.groq.com/openai/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+13:17:37  INFO      app.api.agent_routes — Extracted 1 insights for user user_3AL from orchestrator
+13:18:42  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
+13:18:42  INFO      app.agents.router — Registered agent card: orchestrator
+13:18:42  INFO      app.agents.router — Registered agent card: planner
+13:18:42  INFO      app.agents.router — Registered agent card: content
+13:18:42  INFO      app.agents.router — Registered agent card: research
+13:18:42  INFO      app.agents.router — Registered agent card: ops
+13:18:42  INFO      app.agents.router — Registered agent card: product
+13:18:42  INFO      app.agents.router — Registered agent card: support
+13:18:42  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
+13:18:42  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'orchestrator'
+13:18:42  INFO      app.agents.tool_protocol — Tool 'delegate_task' overridden with runtime closure
+13:18:42  INFO      app.agents.tool_protocol — Tool 'recall_last_orchestration' overridden with runtime closure
+13:18:42  INFO      app.agents.tool_protocol — Tool 'list_available_agents' overridden with runtime closure
+13:18:42  INFO      app.agents.tool_protocol — Tool 'check_delegation_health' overridden with runtime closure
+13:18:42  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+13:18:42  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+13:18:42  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
+INFO:     127.0.0.1:59141 - "POST /api/agents/orchestrate/stream HTTP/1.1" 200 OK
+13:18:42  WARNING   app.agents.orchestrator — Failed to load prior orchestration: slice(None, 2000, None)
+13:18:42  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+13:18:42  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/memory.py", line 411, in build_context
+    ctx = await self.retriever.get_context(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 177, in get_context
+    results = await self.search(
+              ^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 101, in search
+    query_embedding = await self._embedder.embed(query)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 271, in embed
+    vec = await self._provider.embed(text)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 109, in embed
+    response = await self._client.post(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+13:18:42  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:18:45  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:18:45  INFO      app.agents.execution — Agent 'orchestrator' tool 'delegate_task' → auto-approved (always_allow)
+13:18:45  INFO      app.agents.tool_protocol — Calling tool 'delegate_task' via provider 'closure'
+13:18:45  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'planner'
+13:18:45  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+13:18:45  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+13:18:45  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
+13:18:45  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+13:18:45  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/memory.py", line 411, in build_context
+    ctx = await self.retriever.get_context(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 177, in get_context
+    results = await self.search(
+              ^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 101, in search
+    query_embedding = await self._embedder.embed(query)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 271, in embed
+    vec = await self._provider.embed(text)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 109, in embed
+    response = await self._client.post(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+13:18:47  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:18:47  INFO      app.agents.execution — Agent 'planner' tool 'ask_user_clarification' → auto-approved (always_allow)
+13:18:47  INFO      app.agents.tool_protocol — Calling tool 'ask_user_clarification' via provider 'local'
+13:18:47  INFO      app.agents.execution — Agent 'planner' tool call: ask_user_clarification → ok (0ms)
+13:18:49  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:18:49  INFO      app.agents.execution — Agent 'orchestrator' tool call: delegate_task → ok (4196ms)
+13:18:49  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:18:51  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:19:32  INFO      app.agents.llm — OpenAI fallback configured (model=llama-3.3-70b-versatile)
+13:19:32  INFO      app.agents.router — Registered agent card: orchestrator
+13:19:32  INFO      app.agents.router — Registered agent card: planner
+13:19:32  INFO      app.agents.router — Registered agent card: content
+13:19:32  INFO      app.agents.router — Registered agent card: research
+13:19:32  INFO      app.agents.router — Registered agent card: ops
+13:19:32  INFO      app.agents.router — Registered agent card: product
+13:19:32  INFO      app.agents.router — Registered agent card: support
+13:19:32  INFO      app.agents.mcp_tools — MCPToolManager initialized — 0 external servers
+13:19:32  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'orchestrator'
+13:19:32  INFO      app.agents.tool_protocol — Tool 'delegate_task' overridden with runtime closure
+13:19:32  INFO      app.agents.tool_protocol — Tool 'recall_last_orchestration' overridden with runtime closure
+13:19:32  INFO      app.agents.tool_protocol — Tool 'list_available_agents' overridden with runtime closure
+13:19:32  INFO      app.agents.tool_protocol — Tool 'check_delegation_health' overridden with runtime closure
+13:19:32  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+13:19:32  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+13:19:32  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
+INFO:     127.0.0.1:59219 - "POST /api/agents/orchestrate/stream HTTP/1.1" 200 OK
+13:19:32  WARNING   app.agents.orchestrator — Failed to load prior orchestration: slice(None, 2000, None)
+13:19:32  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+13:19:32  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/memory.py", line 411, in build_context
+    ctx = await self.retriever.get_context(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 177, in get_context
+    results = await self.search(
+              ^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 101, in search
+    query_embedding = await self._embedder.embed(query)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 271, in embed
+    vec = await self._provider.embed(text)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 109, in embed
+    response = await self._client.post(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+13:19:32  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:19:34  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:19:34  INFO      app.agents.execution — Agent 'orchestrator' tool 'delegate_task' → auto-approved (always_allow)
+13:19:34  INFO      app.agents.tool_protocol — Calling tool 'delegate_task' via provider 'closure'
+13:19:34  INFO      app.agents.registry — Added MCP provider 'mcp:google-calendar' for agent 'planner'
+13:19:34  INFO      app.agents.tool_protocol — Tool 'get_user_profile' overridden with runtime closure
+13:19:34  INFO      app.agents.tool_protocol — Tool 'check_calendar_conflicts' overridden with runtime closure
+13:19:34  INFO      app.agents.tool_protocol — Tool 'search_knowledge' overridden with runtime closure
+13:19:35  WARNING   app.agents.base — Auto-embedding failed, skipping RAG: All connection attempts failed
+13:19:35  WARNING   app.agents.memory — ContextRetriever failed, falling back to LongTermMemory
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 101, in handle_async_request
+    raise exc
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 78, in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 124, in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/auto.py", line 31, in connect_tcp
+    return await self._backend.connect_tcp(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 113, in connect_tcp
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ConnectError: All connection attempts failed
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/agents/memory.py", line 411, in build_context
+    ctx = await self.retriever.get_context(
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 177, in get_context
+    results = await self.search(
+              ^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/retriever.py", line 101, in search
+    query_embedding = await self._embedder.embed(query)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 271, in embed
+    vec = await self._provider.embed(text)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/app/retrieval/embeddings.py", line 109, in embed
+    response = await self._client.post(
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<2 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2/Frameworks/Python.framework/Versions/3.14/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ConnectError: All connection attempts failed
+13:19:37  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:19:37  INFO      app.agents.execution — Agent 'planner' tool 'delegate_to_agent' → auto-approved (always_allow)
+13:19:37  INFO      app.agents.execution — Agent 'planner' tool call: delegate_to_agent → error (0ms)
+13:19:48  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool 'create_task' → auto-approved (always_allow)
+13:19:48  INFO      app.agents.tool_protocol — Calling tool 'create_task' via provider 'local'
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool call: create_task → ok (0ms)
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool 'create_task' → auto-approved (always_allow)
+13:19:48  INFO      app.agents.tool_protocol — Calling tool 'create_task' via provider 'local'
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool call: create_task → ok (0ms)
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool 'create_task' → auto-approved (always_allow)
+13:19:48  INFO      app.agents.tool_protocol — Calling tool 'create_task' via provider 'local'
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool call: create_task → ok (0ms)
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool 'create_task' → auto-approved (always_allow)
+13:19:48  INFO      app.agents.tool_protocol — Calling tool 'create_task' via provider 'local'
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool call: create_task → ok (0ms)
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool 'create_task' → auto-approved (always_allow)
+13:19:48  INFO      app.agents.tool_protocol — Calling tool 'create_task' via provider 'local'
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool call: create_task → ok (0ms)
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool 'create_task' → auto-approved (always_allow)
+13:19:48  INFO      app.agents.tool_protocol — Calling tool 'create_task' via provider 'local'
+13:19:48  INFO      app.agents.execution — Agent 'planner' tool call: create_task → ok (0ms)
+13:19:52  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:19:52  INFO      app.agents.execution — Agent 'orchestrator' tool call: delegate_task → ok (17643ms)
+13:19:52  WARNING   app.agents.llm — Ignoring non-Gemini model 'claude-sonnet-4-20250514' — using default 'gemini-2.5-flash'
+13:19:56  INFO      httpx — HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/openai/chat/completions "HTTP/1.1 200 OK"
+13:19:56  INFO      app.api.agent_routes — Extracted 1 insights for user user_3AL from orchestrator
+INFO:     127.0.0.1:59532 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59549 - "OPTIONS /api/history/chat/planner-chat-1773000130636 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59550 - "OPTIONS /api/history/chat/planner-chat-1773000130636 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59550 - "GET /api/history/chat/planner-chat-1773000130636 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59549 - "GET /api/history/chat/planner-chat-1773000130636 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59549 - "GET /api/history/chat/planner-chat-1773000130636 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59550 - "GET /api/history/chat/planner-chat-1773000130636 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/planner/status HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/planner/history?limit=5 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/planner/mcp-tools HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/planner/status HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/planner/history?limit=5 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/planner/mcp-tools HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59628 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/history/chat/planner-chat-1773000130636 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "GET /api/history/chat/planner-chat-1773000130636 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "OPTIONS /api/history/chat/content-chat-1772994585368 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "OPTIONS /api/history/chat/content-chat-1772994585368 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/history/chat/content-chat-1772994585368 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "GET /api/history/chat/content-chat-1772994585368 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "OPTIONS /api/history/chat/research-chat-1772999750056 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "OPTIONS /api/history/chat/research-chat-1772999750056 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/history/chat/research-chat-1772999750056 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "GET /api/history/chat/research-chat-1772999750056 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "OPTIONS /api/history/chat/ops-chat-1772999751263 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "OPTIONS /api/history/chat/ops-chat-1772999751263 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59642 - "GET /api/history/chat/ops-chat-1772999751263 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59644 - "GET /api/history/chat/ops-chat-1772999751263 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/tasks?limit=50 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59678 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59680 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stream HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/recent?limit=10 HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/memory/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/knowledge/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/review/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     ::1:0 - "GET /api/activity/stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59723 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59725 - "GET /api/history/chat/4f349a2c-3eba-4969-91ba-56dd6f8fe1f7 HTTP/1.1" 200 OK

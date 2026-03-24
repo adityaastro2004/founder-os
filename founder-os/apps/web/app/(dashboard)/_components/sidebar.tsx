@@ -13,6 +13,8 @@ import {
   MessageSquare,
   BookOpen,
   Blocks,
+  Lightbulb,
+  CalendarDays,
   X,
 } from "lucide-react";
 
@@ -21,8 +23,10 @@ const navigation = [
   { name: "Chat", href: "/dashboard/chat", icon: MessageSquare },
   { name: "Agents", href: "/dashboard/agents", icon: Bot },
   { name: "Tasks", href: "/dashboard/tasks", icon: ListTodo },
+  { name: "Planner", href: "/dashboard/planner", icon: CalendarDays },
   { name: "Memory", href: "/dashboard/memory", icon: Brain },
   { name: "Knowledge", href: "/dashboard/knowledge", icon: BookOpen },
+  { name: "Content Ideas", href: "/dashboard/content-ideas", icon: Lightbulb },
   { name: "Automations", href: "/dashboard/automations", icon: Zap },
   { name: "Apps", href: "/dashboard/apps", icon: Blocks },
 ];
