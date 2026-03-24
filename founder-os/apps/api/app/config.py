@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     CLERK_AUDIENCE: str = ""  # optional — leave empty to skip audience check
 
     # ── LLM Providers ──
-    LLM_PROVIDER: str = "openai_compatible"  # "ollama" | "anthropic" | "openai_compatible" | "gemini"
+    LLM_PROVIDER: str = "ollama"  # "ollama" | "anthropic" | "openai_compatible" | "gemini"
 
     # Ollama (free, local — default)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
@@ -26,10 +26,10 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
 
-    # OpenAI-compatible (Groq — fast open-source LLM inference)
-    OPENAI_API_KEY: str = "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"
-    OPENAI_BASE_URL: str = "https://api.groq.com/openai/v1"
-    OPENAI_MODEL: str = "llama-3.3-70b-versatile"
+    # OpenAI-compatible (set OPENAI_BASE_URL to use Groq, Together, LM Studio, etc.)
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    OPENAI_MODEL: str = "gpt-4o-mini"
 
     # Gemini (Google)
     GEMINI_API_KEY: str = ""
@@ -50,8 +50,8 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
 
     # ── Google Calendar Integration ──
-    GOOGLE_CLIENT_ID: str = "219004168797-pdlev58p5d9jsh4mle1k0uggtmh0uvak.apps.googleusercontent.com"
-    GOOGLE_CLIENT_SECRET: str = "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"
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://127.0.0.1:8000/api/planner/connect/callback"
 
     # ── MCP Tool Servers ──
