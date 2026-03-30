@@ -14,12 +14,10 @@ import time
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 
 from app.auth import ClerkUser, require_auth
@@ -805,7 +803,12 @@ async def orchestrate_stream(
                     except (json.JSONDecodeError, KeyError):
                         pass
                 else:
-                    yield _sse({"type": "thinking", "timestamp": time.time()})
+                    # Send periodic heartbeat, not every 500ms
+                    if not hasattr(event_generator, '_hb_count'):
+                        event_generator._hb_count = 0
+                    event_generator._hb_count += 1
+                    if event_generator._hb_count % 10 == 0:
+                        yield _sse({"type": "thinking", "timestamp": time.time()})
 
             # Final result
             if result_future.done() and not result_future.cancelled():

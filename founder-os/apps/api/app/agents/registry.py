@@ -896,6 +896,144 @@ class AgentRegistry:
 
             tool_registry.override_tool_impl("web_search", _web_search_tavily)
 
+        # ── 21. Research crawler tools ─────────────────────────
+        # Wire the crawler engine into the research agent's tools
+        try:
+            from app.crawler.engine import CrawlEngine
+            from app.crawler.research import ResearchEngine
+            from app.memory.manager import get_memory_manager
+
+            _crawl_engine = CrawlEngine()
+            _memory_mgr = get_memory_manager()
+            _research_engine = ResearchEngine(
+                crawl_engine=_crawl_engine,
+                db_session=self._db,
+                memory_manager=_memory_mgr,
+                settings=self._settings,
+            )
+
+            async def _run_research(**kwargs: Any) -> str:
+                try:
+                    report = await _research_engine.run_research_cycle(str(user_id))
+                    return json.dumps({
+                        "status": "completed",
+                        "competitor_updates": len(report.competitor_updates),
+                        "trends": len(report.trends),
+                        "customer_signals": len(report.customer_signals),
+                        "findings_stored": report.findings_stored,
+                        "queries_executed": report.queries_executed,
+                        "pages_crawled": report.pages_crawled,
+                        "summary": {
+                            "competitors": [
+                                {"name": u.competitor, "title": u.title, "type": u.change_type}
+                                for u in report.competitor_updates[:5]
+                            ],
+                            "top_trends": [
+                                {"topic": t.topic, "relevance": t.relevance}
+                                for t in report.trends[:5]
+                            ],
+                            "customer_signals": [
+                                {"topic": s.topic, "sentiment": s.sentiment}
+                                for s in report.customer_signals[:5]
+                            ],
+                        },
+                    })
+                except Exception as exc:
+                    logger.error("run_research failed: %s", exc)
+                    return json.dumps({"error": str(exc)})
+
+            tool_registry.override_tool_impl("run_research", _run_research)
+
+            async def _monitor_competitors(competitors: str = "", **kwargs: Any) -> str:
+                try:
+                    comp_list = [c.strip() for c in competitors.split(",") if c.strip()] if competitors else []
+                    updates = await _research_engine.monitor_competitors(str(user_id), comp_list)
+                    return json.dumps({
+                        "updates": [
+                            {
+                                "competitor": u.competitor,
+                                "title": u.title,
+                                "summary": u.summary,
+                                "source_url": u.source_url,
+                                "change_type": u.change_type,
+                            }
+                            for u in updates
+                        ],
+                        "total": len(updates),
+                    })
+                except Exception as exc:
+                    logger.error("monitor_competitors failed: %s", exc)
+                    return json.dumps({"error": str(exc)})
+
+            tool_registry.override_tool_impl("monitor_competitors", _monitor_competitors)
+
+            async def _track_industry_trends(**kwargs: Any) -> str:
+                try:
+                    trends = await _research_engine.track_industry_trends(str(user_id))
+                    return json.dumps({
+                        "trends": [
+                            {
+                                "topic": t.topic,
+                                "summary": t.summary,
+                                "sources": t.sources[:3],
+                                "relevance": t.relevance,
+                            }
+                            for t in trends
+                        ],
+                        "total": len(trends),
+                    })
+                except Exception as exc:
+                    logger.error("track_industry_trends failed: %s", exc)
+                    return json.dumps({"error": str(exc)})
+
+            tool_registry.override_tool_impl("track_industry_trends", _track_industry_trends)
+
+            async def _gather_customer_signals(**kwargs: Any) -> str:
+                try:
+                    signals = await _research_engine.gather_customer_signals(str(user_id))
+                    return json.dumps({
+                        "signals": [
+                            {
+                                "topic": s.topic,
+                                "sentiment": s.sentiment,
+                                "summary": s.summary,
+                                "source_url": s.source_url,
+                                "platform": s.platform,
+                            }
+                            for s in signals
+                        ],
+                        "total": len(signals),
+                    })
+                except Exception as exc:
+                    logger.error("gather_customer_signals failed: %s", exc)
+                    return json.dumps({"error": str(exc)})
+
+            tool_registry.override_tool_impl("gather_customer_signals", _gather_customer_signals)
+
+            async def _crawl_url(url: str, **kwargs: Any) -> str:
+                try:
+                    result = await _crawl_engine.fetch_page(url)
+                    if result.error:
+                        return json.dumps({"error": result.error, "url": url})
+                    return json.dumps({
+                        "url": result.url,
+                        "title": result.title,
+                        "text": result.text[:5000],
+                        "links_count": len(result.links),
+                        "status_code": result.status_code,
+                        "crawled_at": result.crawled_at.isoformat(),
+                    })
+                except Exception as exc:
+                    logger.error("crawl_url failed: %s", exc)
+                    return json.dumps({"error": str(exc)})
+
+            tool_registry.override_tool_impl("crawl_url", _crawl_url)
+
+        except ImportError:
+            logger.warning("Crawler module not available — research tools will use stubs")
+        except Exception as exc:
+            logger.warning("Failed to wire crawler tools: %s", exc)
+
         return agent
 
     async def list_available(self) -> list[dict]:

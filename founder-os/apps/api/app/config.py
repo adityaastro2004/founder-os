@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
     # App
     APP_ENV: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]

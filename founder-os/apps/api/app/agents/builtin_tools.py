@@ -740,3 +740,73 @@ async def list_available_agents() -> str:
 async def check_delegation_health() -> str:
     """Placeholder — wired at runtime by the registry."""
     return json.dumps({"status": "healthy", "agents_available": 6, "router_connected": True})
+
+
+# ============================================================================
+# Research Crawler Tools
+# ============================================================================
+
+@tool(
+    name="run_research",
+    description=(
+        "Run a full research cycle: crawl the web for competitor updates, "
+        "industry trends, technology changes, and customer signals relevant "
+        "to the founder's business. Stores findings in memory automatically. "
+        "Returns a summary report."
+    ),
+)
+async def run_research() -> str:
+    """Placeholder — wired to ResearchEngine at runtime by AgentRegistry."""
+    return json.dumps({"status": "not_wired", "note": "Research engine not initialised"})
+
+
+@tool(
+    name="monitor_competitors",
+    description=(
+        "Check tracked competitors for recent news, product launches, "
+        "pricing changes, and funding announcements. "
+        "Pass a comma-separated list of competitor names, or leave empty "
+        "to use the auto-detected competitors from founder context."
+    ),
+)
+async def monitor_competitors(competitors: str = "") -> str:
+    """Placeholder — wired at runtime."""
+    return json.dumps({"updates": [], "note": "Competitor monitoring not wired"})
+
+
+@tool(
+    name="track_industry_trends",
+    description=(
+        "Search for recent trends, emerging technologies, and market shifts "
+        "in the founder's industry. Returns scored and ranked trend items."
+    ),
+)
+async def track_industry_trends() -> str:
+    """Placeholder — wired at runtime."""
+    return json.dumps({"trends": [], "note": "Trend tracking not wired"})
+
+
+@tool(
+    name="gather_customer_signals",
+    description=(
+        "Search Reddit, Product Hunt, G2, Capterra, and forums for customer "
+        "pain points, reviews, and discussions relevant to the founder's "
+        "target audience and product category."
+    ),
+)
+async def gather_customer_signals() -> str:
+    """Placeholder — wired at runtime."""
+    return json.dumps({"signals": [], "note": "Customer signal gathering not wired"})
+
+
+@tool(
+    name="crawl_url",
+    description=(
+        "Crawl a specific URL and extract its text content. "
+        "Useful for reading articles, blog posts, documentation, or "
+        "competitor pages. Returns the extracted text and metadata."
+    ),
+)
+async def crawl_url(url: str) -> str:
+    """Placeholder — wired at runtime."""
+    return json.dumps({"error": "Crawler not wired"})
