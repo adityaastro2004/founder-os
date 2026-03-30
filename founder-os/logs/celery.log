@@ -1,10 +1,10 @@
  
  -------------- celery@Adityas-MacBook-Air-5.local v5.6.2 (recovery)
 --- ***** ----- 
--- ******* ---- macOS-26.3.1-arm64-arm-64bit-Mach-O 2026-03-19 12:00:40
+-- ******* ---- macOS-26.3.1-arm64-arm-64bit-Mach-O 2026-03-30 16:58:49
 - *** --- * --- 
 - ** ---------- [config]
-- ** ---------- .> app:         founder_os:0x10b93e270
+- ** ---------- .> app:         founder_os:0x109531be0
 - ** ---------- .> transport:   redis://localhost:6379/0
 - ** ---------- .> results:     redis://localhost:6379/0
 - *** --- * --- .> concurrency: 4 (prefork)
@@ -18,13 +18,12 @@
 [tasks]
 
 
-[2026-03-19 12:00:41,128: INFO/MainProcess] Connected to redis://localhost:6379/0
-[2026-03-19 12:00:41,134: INFO/MainProcess] mingle: searching for neighbors
-[2026-03-19 12:00:42,148: INFO/MainProcess] mingle: all alone
-[2026-03-19 12:00:42,188: INFO/MainProcess] celery@Adityas-MacBook-Air-5.local ready.
+[2026-03-30 16:58:49,422: INFO/MainProcess] Connected to redis://localhost:6379/0
+[2026-03-30 16:58:49,426: INFO/MainProcess] mingle: searching for neighbors
+[2026-03-30 16:58:50,492: WARNING/MainProcess] /Users/adityaastro/Documents/GitHub/founder-os/founder-os/apps/api/.venv/lib/python3.14/site-packages/celery/app/control.py:56: DuplicateNodenameWarning: Received multiple replies from node name: celery@Adityas-MacBook-Air-5.local.
+Please make sure you give each node a unique nodename using
+the celery worker `-n` option.
+  warnings.warn(DuplicateNodenameWarning(
 
-SIGHUP not supported: Restarting with SIGHUP is unstable on this platform!
-[2026-03-19 13:36:49,939: ERROR/MainProcess] Process 'ForkPoolWorker-4' pid:63578 exited with 'exitcode 70'
-[2026-03-19 13:36:49,975: ERROR/MainProcess] Process 'ForkPoolWorker-3' pid:63577 exited with 'exitcode 70'
-[2026-03-19 13:36:49,986: ERROR/MainProcess] Process 'ForkPoolWorker-2' pid:63576 exited with 'exitcode 70'
-[2026-03-19 13:36:49,997: ERROR/MainProcess] Process 'ForkPoolWorker-1' pid:63575 exited with 'exitcode 70'
+[2026-03-30 16:58:50,492: INFO/MainProcess] mingle: all alone
+[2026-03-30 16:58:50,561: INFO/MainProcess] celery@Adityas-MacBook-Air-5.local ready.

@@ -220,19 +220,22 @@ export default function MemoryPage() {
         api("/api/memory/recall", {
           method: "POST",
           body: JSON.stringify({ limit: 20 }),
-        }).catch(() => ({ results: [] })),
+        }).catch(() => ({ memories: [] })),
       ]);
       if (statsData) setStats(statsData);
       if (chaptersData?.chapters) {
         const ch = Array.isArray(chaptersData.chapters)
-          ? chaptersData.chapters
+          ? chaptersData.chapters.map((c: Record<string, unknown>) => ({
+              name: c.chapter ?? c.name,
+              count: c.count as number,
+            }))
           : Object.entries(chaptersData.chapters).map(([name, count]) => ({
               name,
               count: count as number,
             }));
         setChapters(ch);
       }
-      if (recallData?.results) setMemories(recallData.results);
+      if (recallData?.memories) setMemories(recallData.memories);
     } catch {
       // backend not ready
     } finally {
@@ -255,13 +258,19 @@ export default function MemoryPage() {
         method: "POST",
         body: JSON.stringify(body),
       });
-      setMemories(data.results || []);
+      setMemories(data.memories || []);
     } catch {
       // ignore
     } finally {
       setSearching(false);
     }
   };
+
+  // Re-fetch when chapter filter changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!loading) handleRecall();
+  }, [selectedChapter]);
 
   const handlePin = async (id: string, currentlyPinned: boolean) => {
     setPinningId(id);
@@ -456,7 +465,6 @@ export default function MemoryPage() {
               key="__all__"
               onClick={() => {
                 setSelectedChapter(null);
-                handleRecall();
               }}
               className={clsx(
                 "px-2.5 py-1.5 text-xs rounded-lg transition-colors",
@@ -472,7 +480,7 @@ export default function MemoryPage() {
                 key={`ch-${idx}-${ch.name}`}
                 onClick={() => {
                   setSelectedChapter(ch.name);
-                }}
+                }
                 className={clsx(
                   "px-2.5 py-1.5 text-xs rounded-lg transition-colors",
                   selectedChapter === ch.name

@@ -236,7 +236,7 @@ async def push_plan_to_gcal(
 
     day_offsets = {
         "monday": 0, "tuesday": 1, "wednesday": 2,
-        "thursday": 3, "friday": 4,
+        "thursday": 3, "friday": 4, "saturday": 5, "sunday": 6,
     }
 
     created_events = []
@@ -249,8 +249,16 @@ async def push_plan_to_gcal(
     ) as client:
         for day_name, schedule in plan.daily_schedule.items():
             day_key = day_name.lower()
-            offset = day_offsets.get(day_key, 0)
-            task_date = plan.week_of + timedelta(days=offset)
+            # Support both day names ("monday") and date strings ("2026-03-24")
+            if day_key in day_offsets:
+                task_date = plan.week_of + timedelta(days=day_offsets[day_key])
+            else:
+                # Try parsing as a date string
+                try:
+                    from datetime import date as _date_cls
+                    task_date = _date_cls.fromisoformat(day_key)
+                except (ValueError, TypeError):
+                    task_date = plan.week_of  # fallback
 
             for task in schedule.tasks:
                 event_body = _build_gcal_event(

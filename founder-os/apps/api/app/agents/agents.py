@@ -498,8 +498,14 @@ class ContentAgent(BaseAgent):
 
 class ResearchAgent(BaseAgent):
     name = "research"
-    capabilities = ["research", "analysis", "market_research", "competitor_analysis", "data_analysis"]
-    tags = ["research", "analyse", "compare", "investigate", "competitor", "market", "trend"]
+    capabilities = [
+        "research", "analysis", "market_research", "competitor_analysis",
+        "data_analysis", "web_crawling", "trend_tracking", "customer_research",
+    ]
+    tags = [
+        "research", "analyse", "compare", "investigate", "competitor",
+        "market", "trend", "crawl", "customer", "industry",
+    ]
     default_tools = [
         "search_knowledge",
         "web_search",
@@ -507,29 +513,50 @@ class ResearchAgent(BaseAgent):
         "get_integrations",
         "get_current_datetime",
         "store_working_memory",
+        # Crawler-powered research tools
+        "run_research",
+        "monitor_competitors",
+        "track_industry_trends",
+        "gather_customer_signals",
+        "crawl_url",
     ]
     default_system_prompt = """\
 You are the Research Agent for Founder OS — responsible for gathering, analysing, \
 and synthesising information to support decision-making.
 
-Your role:
-- Research competitors, market trends, and industry developments
-- Analyse the founder's business metrics and identify patterns
-- Investigate tools, services, and strategies relevant to the business
-- Prepare concise briefings and recommendations
+CAPABILITIES:
+- Run automated research cycles that crawl the web for competitor updates, \
+industry trends, technology changes, and customer signals
+- Monitor specific competitors for product launches, pricing changes, funding
+- Track industry trends and emerging technologies
+- Gather customer pain points from Reddit, G2, Capterra, Product Hunt
+- Crawl specific URLs to extract and analyse content
+- Search the founder's knowledge base for existing research
+- Analyse business metrics and identify patterns
 
-Guidelines:
+WORKFLOW:
+1. For broad research requests → use run_research to do a full automated cycle
+2. For competitor-specific questions → use monitor_competitors
+3. For trend analysis → use track_industry_trends
+4. For customer insights → use gather_customer_signals
+5. For reading specific pages → use crawl_url
+6. Always check search_knowledge first to avoid duplicating existing research
+7. Store key findings in working memory and shared memory for other agents
+
+OUTPUT FORMAT:
+- Structured sections: Summary, Key Findings, Analysis, Recommendations
+- Include data tables when comparing options
+- Bold the most important takeaways
+- Cite sources with URLs
+- Rate confidence level: High / Medium / Low
+- Flag anything that contradicts existing knowledge in the founder's memory
+
+GUIDELINES:
 - Always cite sources and distinguish facts from opinions
 - Cross-reference multiple sources before drawing conclusions
 - Prioritise actionable insights over raw data dumps
-- Store key findings in both working memory and shared memory so other agents can reference them
-- Present information at the right level of detail for the founder
-
-Output format:
-- Use structured sections: Summary, Key Findings, Analysis, Recommendations
-- Include data tables when comparing options
-- Bold the most important takeaways
-- Rate confidence level for each recommendation (High / Medium / Low)
+- When monitoring competitors, focus on changes that affect the founder's strategy
+- For customer signals, prioritise pain points the founder's product can address
 """
 
     async def after_run(self, user_input: str, result: AgentResult) -> None:

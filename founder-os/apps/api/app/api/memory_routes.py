@@ -25,9 +25,10 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.auth import require_auth, ClerkUser
 from app.memory.manager import get_memory_manager, MemoryHit
 
 logger = logging.getLogger(__name__)
@@ -117,7 +118,7 @@ def _hit_to_dict(h: MemoryHit) -> dict:
 # ============================================================================
 
 @router.post("/store")
-async def store_memory(body: StoreRequest):
+async def store_memory(body: StoreRequest, user: ClerkUser = Depends(require_auth)):
     """Store a new memory page in the temporal knowledge graph."""
     mgr = get_memory_manager()
 
@@ -136,7 +137,7 @@ async def store_memory(body: StoreRequest):
             raise HTTPException(400, "Invalid parent_id UUID")
 
     page_id = await mgr.async_store(
-        user_id=body.user_id,
+        user_id=user.user_id,
         title=body.title,
         content=body.content,
         page_type=body.page_type,
@@ -168,7 +169,7 @@ async def store_memory(body: StoreRequest):
 # ============================================================================
 
 @router.post("/recall")
-async def recall_memories(body: RecallRequest):
+async def recall_memories(body: RecallRequest, user: ClerkUser = Depends(require_auth)):
     """
     Retrieve memories using composite scoring:
     score = semantic_similarity × w1 + temporal_relevance × w2 + importance × w3 + access_freq × w4
@@ -189,7 +190,7 @@ async def recall_memories(body: RecallRequest):
             raise HTTPException(400, "Invalid 'until' datetime")
 
     hits = await mgr.async_recall(
-        user_id=body.user_id,
+        user_id=user.user_id,
         query=body.query,
         limit=body.limit,
         chapter=body.chapter,
@@ -201,7 +202,7 @@ async def recall_memories(body: RecallRequest):
     )
 
     return {
-        "user_id": body.user_id,
+        "user_id": user.user_id,
         "query": body.query,
         "total_results": len(hits),
         "memories": [_hit_to_dict(h) for h in hits],
@@ -213,19 +214,19 @@ async def recall_memories(body: RecallRequest):
 # ============================================================================
 
 @router.get("/reviews")
-async def get_reviews(user_id: str = Query("default-user"), limit: int = 20):
+async def get_reviews(user: ClerkUser = Depends(require_auth), limit: int = 20):
     """Get memories due for review (spaced-repetition)."""
     mgr = get_memory_manager()
-    hits = await mgr.async_get_due_reviews(user_id, limit)
+    hits = await mgr.async_get_due_reviews(user.user_id, limit)
     return {
-        "user_id": user_id,
+        "user_id": user.user_id,
         "reviews_due": len(hits),
         "memories": [_hit_to_dict(h) for h in hits],
     }
 
 
 @router.post("/review/{page_id}")
-async def mark_reviewed(page_id: str):
+async def mark_reviewed(page_id: str, user: ClerkUser = Depends(require_auth)):
     """Mark a memory as reviewed — advances the review schedule."""
     mgr = get_memory_manager()
     try:
@@ -242,26 +243,26 @@ async def mark_reviewed(page_id: str):
 # ============================================================================
 
 @router.get("/chapters")
-async def list_chapters(user_id: str = Query("default-user")):
+async def list_chapters(user: ClerkUser = Depends(require_auth)):
     """List all memory chapters with counts."""
     mgr = get_memory_manager()
-    chapters = await mgr.async_list_chapters(user_id)
-    return {"user_id": user_id, "chapters": chapters}
+    chapters = await mgr.async_list_chapters(user.user_id)
+    return {"user_id": user.user_id, "chapters": chapters}
 
 
 @router.get("/chapter/{chapter}")
 async def browse_chapter(
     chapter: str,
-    user_id: str = Query("default-user"),
+    user: ClerkUser = Depends(require_auth),
     limit: int = 50,
     offset: int = 0,
     order: str = Query("desc", pattern="^(asc|desc)$"),
 ):
     """Browse memories within a chapter, ordered chronologically."""
     mgr = get_memory_manager()
-    hits = await mgr.async_browse_chapter(user_id, chapter, limit=limit, offset=offset, order=order)
+    hits = await mgr.async_browse_chapter(user.user_id, chapter, limit=limit, offset=offset, order=order)
     return {
-        "user_id": user_id,
+        "user_id": user.user_id,
         "chapter": chapter,
         "count": len(hits),
         "memories": [_hit_to_dict(h) for h in hits],
@@ -273,12 +274,12 @@ async def browse_chapter(
 # ============================================================================
 
 @router.post("/search/entity")
-async def search_entities(body: EntitySearchRequest):
+async def search_entities(body: EntitySearchRequest, user: ClerkUser = Depends(require_auth)):
     """Find memories mentioning a specific entity (person, company, tool)."""
     mgr = get_memory_manager()
-    hits = await mgr.async_search_entities(body.user_id, body.entity, limit=body.limit)
+    hits = await mgr.async_search_entities(user.user_id, body.entity, limit=body.limit)
     return {
-        "user_id": body.user_id,
+        "user_id": user.user_id,
         "entity": body.entity,
         "total_results": len(hits),
         "memories": [_hit_to_dict(h) for h in hits],
@@ -290,7 +291,7 @@ async def search_entities(body: EntitySearchRequest):
 # ============================================================================
 
 @router.post("/link")
-async def link_memories(body: LinkRequest):
+async def link_memories(body: LinkRequest, user: ClerkUser = Depends(require_auth)):
     """Create a typed link between two memory pages."""
     mgr = get_memory_manager()
     try:
@@ -310,6 +311,7 @@ async def link_memories(body: LinkRequest):
 @router.get("/links/{page_id}")
 async def get_links(
     page_id: str,
+    user: ClerkUser = Depends(require_auth),
     link_type: Optional[str] = None,
     direction: str = Query("both", pattern="^(both|incoming|outgoing)$"),
 ):
@@ -329,11 +331,11 @@ async def get_links(
 # ============================================================================
 
 @router.get("/stats")
-async def memory_stats(user_id: str = Query("default-user")):
+async def memory_stats(user: ClerkUser = Depends(require_auth)):
     """Memory system stats for a user."""
     mgr = get_memory_manager()
-    stats = await mgr.async_stats(user_id)
-    return {"user_id": user_id, **stats}
+    stats = await mgr.async_stats(user.user_id)
+    return {"user_id": user.user_id, **stats}
 
 
 # ============================================================================
@@ -341,7 +343,7 @@ async def memory_stats(user_id: str = Query("default-user")):
 # ============================================================================
 
 @router.post("/pin/{page_id}")
-async def pin_memory(page_id: str, pin: bool = Query(True)):
+async def pin_memory(page_id: str, user: ClerkUser = Depends(require_auth), pin: bool = Query(True)):
     """Pin a memory (pinned = never decays, always top-ranked)."""
     mgr = get_memory_manager()
     try:
@@ -360,7 +362,7 @@ async def pin_memory(page_id: str, pin: bool = Query(True)):
 # ============================================================================
 
 @router.delete("/{page_id}")
-async def delete_memory(page_id: str):
+async def delete_memory(page_id: str, user: ClerkUser = Depends(require_auth)):
     """Soft-delete a memory page."""
     mgr = get_memory_manager()
     try:

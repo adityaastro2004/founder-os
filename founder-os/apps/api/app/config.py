@@ -26,10 +26,10 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
 
-    # OpenAI-compatible (set OPENAI_BASE_URL to use Groq, Together, LM Studio, etc.)
+    # OpenAI-compatible (Groq — fast open-source LLM inference)
     OPENAI_API_KEY: str = ""
-    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
-    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_BASE_URL: str = "https://api.groq.com/openai/v1"
+    OPENAI_MODEL: str = "llama-3.3-70b-versatile"
 
     # Gemini (Google)
     GEMINI_API_KEY: str = ""
@@ -44,7 +44,7 @@ class Settings(BaseSettings):
 
     # App
     APP_ENV: str = "development"
-    DEBUG: bool = True
+    DEBUG: bool = False
 
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://127.0.0.1:8000/api/planner/connect/callback"
+
+    # ── Web Search (optional — for real web_search tool) ──
+    SERPAPI_KEY: str = ""
+    TAVILY_API_KEY: str = ""
 
     # ── MCP Tool Servers ──
     # External MCP servers (stdio or SSE) to connect to.

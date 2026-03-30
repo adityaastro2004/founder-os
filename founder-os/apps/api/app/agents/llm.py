@@ -558,14 +558,14 @@ class OpenAICompatibleProvider(LLMProvider):
 
             return LLMResponse(
                 content="",
-                tool_calls=[ToolCall(
+                tool_calls=[ToolCallRequest(
                     id=f"recovered_{tool_name}",
                     name=tool_name,
                     arguments=args,
                 )],
                 model=model,
                 stop_reason="tool_calls",
-                usage=Usage(input_tokens=0, output_tokens=0),
+                usage=TokenUsage(input_tokens=0, output_tokens=0),
             )
         except Exception:
             logger.debug("Failed to recover tool call from error body", exc_info=True)
