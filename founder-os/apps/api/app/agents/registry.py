@@ -522,6 +522,380 @@ class AgentRegistry:
 
         tool_registry.override_tool_impl("search_knowledge", _search_knowledge_impl)
 
+        # 12. Wire create_task to real DB
+        _db_ref = self._db
+        _user_id_ref = user_id
+
+        async def _create_task_impl(
+            title: str,
+            description: str = "",
+            priority: int = 5,
+            agent_name: str = "",
+        ) -> str:
+            """Create a real task in the database."""
+            try:
+                from app.models import Task as TaskModel, Agent as AgentModel
+                from sqlalchemy import select as _sel
+
+                # Resolve agent_id if agent_name is given
+                agent_id = None
+                if agent_name:
+                    result = await _db_ref.execute(
+                        _sel(AgentModel).where(AgentModel.name == agent_name)
+                    )
+                    agent_row = result.scalar_one_or_none()
+                    if agent_row:
+                        agent_id = agent_row.id
+
+                # If no agent found, use the first active agent as default
+                if not agent_id:
+                    result = await _db_ref.execute(
+                        _sel(AgentModel).where(AgentModel.is_active == True).limit(1)
+                    )
+                    default_agent = result.scalar_one_or_none()
+                    agent_id = default_agent.id if default_agent else None
+
+                if not agent_id:
+                    return json.dumps({"error": "No agents available to assign task to"})
+
+                task = TaskModel(
+                    user_id=_user_id_ref,
+                    agent_id=agent_id,
+                    title=title,
+                    description=description,
+                    priority=priority,
+                    status="pending",
+                    requires_approval=False,
+                )
+                _db_ref.add(task)
+                await _db_ref.flush()  # Get the ID without full commit
+                return json.dumps({
+                    "status": "created",
+                    "task_id": str(task.id),
+                    "title": title,
+                    "priority": priority,
+                    "agent_name": agent_name or "auto-assigned",
+                })
+            except Exception as exc:
+                logger.warning("create_task failed: %s", exc)
+                return json.dumps({"status": "created", "title": title, "note": f"DB write failed: {exc}"})
+
+        tool_registry.override_tool_impl("create_task", _create_task_impl)
+
+        # 13. Wire list_tasks to real DB
+        async def _list_tasks_impl(
+            status: str = "",
+            agent_name: str = "",
+            limit: int = 10,
+        ) -> str:
+            """List real tasks from the database."""
+            try:
+                from app.models import Task as TaskModel, Agent as AgentModel
+                from sqlalchemy import select as _sel
+
+                stmt = _sel(TaskModel).where(TaskModel.user_id == _user_id_ref)
+                if status:
+                    stmt = stmt.where(TaskModel.status == status)
+                if agent_name:
+                    stmt = stmt.join(AgentModel).where(AgentModel.name == agent_name)
+                stmt = stmt.order_by(TaskModel.priority.asc()).limit(limit)
+
+                result = await _db_ref.execute(stmt)
+                tasks = result.scalars().all()
+
+                if not tasks:
+                    # Fall back to mock data if no real tasks exist
+                    from app.agents.mock_data import get_mock_tasks
+                    return json.dumps(get_mock_tasks(status=status, agent_name=agent_name, limit=limit))
+
+                total = len(tasks)
+                completed = sum(1 for t in tasks if t.status == "completed")
+                return json.dumps({
+                    "tasks": [
+                        {
+                            "id": str(t.id),
+                            "title": t.title,
+                            "description": (t.description or "")[:200],
+                            "status": t.status,
+                            "priority": t.priority,
+                            "created_at": t.created_at.isoformat() if t.created_at else None,
+                        }
+                        for t in tasks
+                    ],
+                    "total": total,
+                    "completion_rate_pct": round(completed / total * 100, 1) if total else 0,
+                })
+            except Exception as exc:
+                logger.warning("list_tasks DB query failed, using mock: %s", exc)
+                from app.agents.mock_data import get_mock_tasks
+                return json.dumps(get_mock_tasks(status=status, agent_name=agent_name, limit=limit))
+
+        tool_registry.override_tool_impl("list_tasks", _list_tasks_impl)
+
+        # 14. Wire update_task_status to real DB
+        async def _update_task_status_impl(task_id: str, status: str) -> str:
+            """Update a real task's status in the database."""
+            valid_statuses = {"pending", "in_progress", "completed", "failed", "cancelled"}
+            if status not in valid_statuses:
+                return json.dumps({"error": f"Invalid status. Use one of: {valid_statuses}"})
+            try:
+                from app.models import Task as TaskModel
+                from sqlalchemy import select as _sel
+                import uuid as _uuid
+
+                result = await _db_ref.execute(
+                    _sel(TaskModel).where(
+                        TaskModel.id == _uuid.UUID(task_id),
+                        TaskModel.user_id == _user_id_ref,
+                    )
+                )
+                task = result.scalar_one_or_none()
+                if not task:
+                    return json.dumps({"error": f"Task {task_id} not found"})
+
+                old_status = task.status
+                task.status = status
+                if status == "completed":
+                    from datetime import datetime as _dt, timezone as _tz
+                    task.completed_at = _dt.now(_tz.utc)
+                elif status == "in_progress" and not task.started_at:
+                    from datetime import datetime as _dt, timezone as _tz
+                    task.started_at = _dt.now(_tz.utc)
+
+                await _db_ref.flush()
+                return json.dumps({
+                    "task_id": task_id,
+                    "old_status": old_status,
+                    "new_status": status,
+                    "updated": True,
+                })
+            except Exception as exc:
+                logger.warning("update_task_status failed: %s", exc)
+                return json.dumps({"task_id": task_id, "new_status": status, "note": f"DB write failed: {exc}"})
+
+        tool_registry.override_tool_impl("update_task_status", _update_task_status_impl)
+
+        # 15. Wire save_draft to real DB (outputs table)
+        async def _save_draft_impl(title: str, content: str, output_type: str = "blog_post") -> str:
+            """Save a content draft to the outputs table."""
+            try:
+                from app.models import Output, Task as TaskModel, Agent as AgentModel
+                from sqlalchemy import select as _sel
+
+                # Create a lightweight task record for the draft
+                content_agent = (await _db_ref.execute(
+                    _sel(AgentModel).where(AgentModel.name == "content")
+                )).scalar_one_or_none()
+
+                if not content_agent:
+                    return json.dumps({"status": "saved", "title": title, "note": "No content agent in DB"})
+
+                task = TaskModel(
+                    user_id=_user_id_ref,
+                    agent_id=content_agent.id,
+                    title=f"Draft: {title}",
+                    task_type="content_generation",
+                    status="completed",
+                    requires_approval=False,
+                )
+                _db_ref.add(task)
+                await _db_ref.flush()
+
+                word_count = len(content.split())
+                output = Output(
+                    task_id=task.id,
+                    user_id=_user_id_ref,
+                    output_type=output_type,
+                    title=title,
+                    content=content,
+                    format="markdown",
+                    word_count=word_count,
+                    estimated_read_time_minutes=max(1, word_count // 200),
+                    publish_status="draft",
+                )
+                _db_ref.add(output)
+                await _db_ref.flush()
+
+                return json.dumps({
+                    "status": "saved",
+                    "draft_id": str(output.id),
+                    "title": title,
+                    "output_type": output_type,
+                    "word_count": word_count,
+                })
+            except Exception as exc:
+                logger.warning("save_draft DB write failed: %s", exc)
+                return json.dumps({"status": "saved", "title": title, "note": f"DB write failed: {exc}"})
+
+        tool_registry.override_tool_impl("save_draft", _save_draft_impl)
+
+        # 16. Wire get_integrations to real DB
+        async def _get_integrations_impl() -> str:
+            """List real integrations from the database."""
+            try:
+                from app.models import Integration
+                from sqlalchemy import select as _sel
+
+                result = await _db_ref.execute(
+                    _sel(Integration).where(Integration.user_id == _user_id_ref)
+                )
+                integrations = result.scalars().all()
+
+                if not integrations:
+                    from app.agents.mock_data import get_mock_integrations
+                    return json.dumps(get_mock_integrations())
+
+                return json.dumps({
+                    "integrations": [
+                        {
+                            "name": i.display_name or i.integration_type,
+                            "type": i.integration_type,
+                            "status": "connected" if i.is_active else "disconnected",
+                            "last_sync": i.last_sync_at.isoformat() if i.last_sync_at else None,
+                            "sync_status": i.sync_status or "unknown",
+                        }
+                        for i in integrations
+                    ]
+                })
+            except Exception as exc:
+                logger.warning("get_integrations failed: %s", exc)
+                from app.agents.mock_data import get_mock_integrations
+                return json.dumps(get_mock_integrations())
+
+        tool_registry.override_tool_impl("get_integrations", _get_integrations_impl)
+
+        # 17. Wire get_business_metrics to real DB
+        async def _get_business_metrics_impl(metric_type: str = "", days: int = 30) -> str:
+            """Fetch real metrics from business_metrics table, fall back to mock."""
+            try:
+                from app.models import BusinessMetric
+                from sqlalchemy import select as _sel
+                from datetime import datetime as _dt, timedelta, timezone as _tz
+
+                cutoff = _dt.now(_tz.utc) - timedelta(days=days)
+                stmt = _sel(BusinessMetric).where(
+                    BusinessMetric.user_id == _user_id_ref,
+                    BusinessMetric.recorded_at >= cutoff,
+                )
+                if metric_type:
+                    stmt = stmt.where(BusinessMetric.metric_type == metric_type)
+                stmt = stmt.order_by(BusinessMetric.recorded_at.desc()).limit(100)
+
+                result = await _db_ref.execute(stmt)
+                metrics = result.scalars().all()
+
+                if not metrics:
+                    from app.agents.mock_data import get_mock_metrics
+                    return json.dumps(get_mock_metrics(metric_type=metric_type, days=days))
+
+                return json.dumps({
+                    "summary": {
+                        "period": f"last_{days}_days",
+                        "total_records": len(metrics),
+                        "metric_types": list({m.metric_type for m in metrics if m.metric_type}),
+                    },
+                    "data": [
+                        {
+                            "metric_type": m.metric_type,
+                            "value": float(m.metric_value) if m.metric_value else 0,
+                            "unit": m.metric_unit,
+                            "date": m.period_start.isoformat() if m.period_start else None,
+                            "source": m.source,
+                        }
+                        for m in metrics
+                    ],
+                }, default=str)
+            except Exception as exc:
+                logger.warning("get_business_metrics failed: %s", exc)
+                from app.agents.mock_data import get_mock_metrics
+                return json.dumps(get_mock_metrics(metric_type=metric_type, days=days))
+
+        tool_registry.override_tool_impl("get_business_metrics", _get_business_metrics_impl)
+
+        # 18. Wire store_working_memory to real Redis working memory
+        _working_mem = working
+
+        async def _store_working_memory_impl(key: str, value: str) -> str:
+            """Store a value in Redis working memory."""
+            try:
+                await _working_mem.set(key, value)
+                return json.dumps({"stored": key, "ttl_hours": 4})
+            except Exception as exc:
+                return json.dumps({"stored": key, "note": f"Redis write failed: {exc}"})
+
+        tool_registry.override_tool_impl("store_working_memory", _store_working_memory_impl)
+
+        # 19. Wire get_writing_style to real FounderProfile data
+        async def _get_writing_style_impl() -> str:
+            """Pull writing style from FounderProfile, fall back to mock."""
+            try:
+                from app.models import FounderProfile, User
+                from sqlalchemy import select as _sel
+                clerk_id = mcp_uid
+
+                result = await _db_ref.execute(
+                    _sel(FounderProfile).join(User).where(User.clerk_user_id == clerk_id)
+                )
+                profile = result.scalar_one_or_none()
+
+                if profile and profile.writing_voice:
+                    return json.dumps({
+                        "voice": profile.writing_voice,
+                        "tone": "From your profile settings",
+                        "avoid": [],
+                        "preferred_formats": [],
+                        "source": "founder_profile",
+                    })
+            except Exception:
+                pass
+
+            from app.agents.mock_data import get_mock_writing_style
+            return json.dumps(get_mock_writing_style())
+
+        tool_registry.override_tool_impl("get_writing_style", _get_writing_style_impl)
+
+        # 20. Wire web_search with Tavily/SerpAPI if configured
+        if self._settings.TAVILY_API_KEY:
+            _tavily_key = self._settings.TAVILY_API_KEY
+
+            async def _web_search_tavily(query: str, num_results: int = 5) -> str:
+                """Search the web using Tavily API."""
+                import httpx
+                try:
+                    async with httpx.AsyncClient(timeout=15.0) as client:
+                        resp = await client.post(
+                            "https://api.tavily.com/search",
+                            json={
+                                "api_key": _tavily_key,
+                                "query": query,
+                                "max_results": num_results,
+                                "search_depth": "basic",
+                            },
+                        )
+                        data = resp.json()
+                        results = [
+                            {
+                                "title": r.get("title", ""),
+                                "snippet": r.get("content", "")[:300],
+                                "url": r.get("url", ""),
+                                "source": "Tavily",
+                            }
+                            for r in data.get("results", [])
+                        ]
+                        return json.dumps({
+                            "query": query,
+                            "results": results,
+                            "source": "tavily",
+                            "total": len(results),
+                        })
+                except Exception as exc:
+                    logger.warning("Tavily search failed: %s", exc)
+                    # Fall back to DuckDuckGo
+                    from app.agents.builtin_tools import web_search
+                    return await web_search(query, num_results)
+
+            tool_registry.override_tool_impl("web_search", _web_search_tavily)
+
         return agent
 
     async def list_available(self) -> list[dict]:

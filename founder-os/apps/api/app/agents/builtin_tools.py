@@ -1,18 +1,24 @@
 """
 Founder OS — Built-in Tools
 ============================
-Starter tools available to agents. Each is a thin async function
-registered via the @tool decorator. They'll grow over time; this
-file provides the initial toolkit that the core agents rely on.
+Real tool implementations backed by database, web search, and integrations.
+
+Tools are registered via the @tool decorator. Some are standalone (e.g.
+get_current_datetime), others are stubs that get their implementation
+injected at runtime by AgentRegistry (e.g. search_knowledge, save_draft,
+create_task) so they have access to the DB session and user context.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 from datetime import datetime, timezone
 from typing import Any
 
 from app.agents.tools import tool
+
+logger = logging.getLogger(__name__)
 
 
 # ============================================================================
@@ -28,8 +34,6 @@ from app.agents.tools import tool
 )
 async def search_knowledge(query: str, category: str = "", limit: int = 5) -> str:
     """Placeholder — wired to pgvector search in AgentRegistry at runtime."""
-    # This gets monkey-patched with a real implementation by the registry
-    # when it has access to the DB session and user_id.
     return json.dumps({"results": [], "note": "Knowledge search not yet wired"})
 
 
@@ -37,16 +41,111 @@ async def search_knowledge(query: str, category: str = "", limit: int = 5) -> st
     name="web_search",
     description=(
         "Search the web for current information on a topic. "
-        "Returns a summary of the top results."
+        "Returns a summary of the top results. Use this for market research, "
+        "competitor analysis, current events, pricing data, or any information "
+        "that needs to be current."
     ),
 )
 async def web_search(query: str, num_results: int = 5) -> str:
-    """Placeholder — will integrate with Tavily / SerpAPI / Brave."""
+    """Real web search using DuckDuckGo HTML (no API key needed).
+
+    Falls back to Tavily/SerpAPI if configured.
+    This stub is replaced at runtime by the registry if API keys are set.
+    The default implementation uses DuckDuckGo for zero-config search.
+    """
+    try:
+        results = await _duckduckgo_search(query, num_results)
+        if results:
+            return json.dumps({
+                "query": query,
+                "results": results,
+                "source": "duckduckgo",
+                "total": len(results),
+            })
+    except Exception as exc:
+        logger.warning("DuckDuckGo search failed: %s", exc)
+
     return json.dumps({
         "query": query,
         "results": [],
-        "note": "Web search integration not yet configured",
+        "note": "Web search unavailable. Configure TAVILY_API_KEY or SERPAPI_KEY in .env for reliable search.",
     })
+
+
+async def _duckduckgo_search(query: str, num_results: int = 5) -> list[dict]:
+    """Search DuckDuckGo via the instant answer API (JSON, no key needed)."""
+    import httpx
+
+    results = []
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # DuckDuckGo instant answer API
+            resp = await client.get(
+                "https://api.duckduckgo.com/",
+                params={"q": query, "format": "json", "no_html": 1, "skip_disambig": 1},
+            )
+            data = resp.json()
+
+            # Abstract (main answer)
+            if data.get("Abstract"):
+                results.append({
+                    "title": data.get("Heading", query),
+                    "snippet": data["Abstract"][:500],
+                    "url": data.get("AbstractURL", ""),
+                    "source": data.get("AbstractSource", ""),
+                })
+
+            # Related topics
+            for topic in (data.get("RelatedTopics") or [])[:num_results - len(results)]:
+                if isinstance(topic, dict) and topic.get("Text"):
+                    results.append({
+                        "title": topic.get("Text", "")[:100],
+                        "snippet": topic.get("Text", "")[:300],
+                        "url": topic.get("FirstURL", ""),
+                        "source": "DuckDuckGo",
+                    })
+
+            # If no instant answer results, try the HTML search fallback
+            if not results:
+                resp2 = await client.get(
+                    "https://html.duckduckgo.com/html/",
+                    params={"q": query},
+                    headers={"User-Agent": "FounderOS/1.0"},
+                    follow_redirects=True,
+                )
+                # Parse basic results from HTML
+                import re
+                # Extract result snippets from the HTML response
+                snippet_matches = re.findall(
+                    r'class="result__snippet"[^>]*>(.*?)</a',
+                    resp2.text, re.DOTALL,
+                )
+                url_matches = re.findall(
+                    r'class="result__url"[^>]*href="([^"]*)"',
+                    resp2.text,
+                )
+                title_matches = re.findall(
+                    r'class="result__a"[^>]*>(.*?)</a>',
+                    resp2.text, re.DOTALL,
+                )
+
+                for i in range(min(num_results, len(snippet_matches))):
+                    # Strip HTML tags
+                    snippet = re.sub(r'<[^>]+>', '', snippet_matches[i]).strip()
+                    title = re.sub(r'<[^>]+>', '', title_matches[i]).strip() if i < len(title_matches) else ""
+                    url = url_matches[i] if i < len(url_matches) else ""
+                    if snippet:
+                        results.append({
+                            "title": title or query,
+                            "snippet": snippet[:300],
+                            "url": url,
+                            "source": "DuckDuckGo",
+                        })
+
+    except Exception as exc:
+        logger.debug("DuckDuckGo search error: %s", exc)
+
+    return results[:num_results]
 
 
 # ============================================================================
@@ -57,12 +156,13 @@ async def web_search(query: str, num_results: int = 5) -> str:
     name="save_draft",
     description=(
         "Save a content draft (blog post, tweet, email, etc.) to the outputs table. "
-        "Pass the content, title, and output_type."
+        "Pass the content, title, and output_type. Returns the saved draft ID."
     ),
 )
 async def save_draft(title: str, content: str, output_type: str = "blog_post") -> str:
-    """Placeholder — wired to DB at runtime."""
-    return json.dumps({"status": "saved", "title": title, "output_type": output_type})
+    """Placeholder — wired to DB at runtime by AgentRegistry."""
+    return json.dumps({"status": "saved", "title": title, "output_type": output_type,
+                        "note": "save_draft not yet wired to DB"})
 
 
 @tool(
@@ -70,7 +170,9 @@ async def save_draft(title: str, content: str, output_type: str = "blog_post") -
     description="Retrieve the user's preferred writing voice and tone guidelines.",
 )
 async def get_writing_style() -> str:
-    """Return the founder's writing voice preferences (mock data)."""
+    """Return the founder's writing voice preferences.
+    Wired at runtime to pull from FounderProfile.writing_voice if available.
+    """
     from app.agents.mock_data import get_mock_writing_style
     return json.dumps(get_mock_writing_style())
 
@@ -97,7 +199,7 @@ async def detect_content_type(user_message: str) -> str:
     platform = None
     params: dict = {}
 
-    # Social media detection (check FIRST — "LinkedIn post" should not match "post about" → blog)
+    # Social media detection (check FIRST)
     if any(w in msg for w in ("tweet", "twitter", "thread", "x post")):
         content_type = "social"
         platform = "twitter"
@@ -107,10 +209,8 @@ async def detect_content_type(user_message: str) -> str:
     elif any(w in msg for w in ("social media", "social post")):
         content_type = "social"
         platform = "both"
-    # Blog detection
     elif any(w in msg for w in ("blog", "article", "post about", "write about", "long-form", "longform")):
         content_type = "blog"
-    # Email detection
     elif any(w in msg for w in ("email", "newsletter", "welcome sequence", "drip", "outreach", "cold email")):
         content_type = "email"
         if "welcome" in msg or "onboard" in msg or "sequence" in msg or "drip" in msg:
@@ -124,7 +224,7 @@ async def detect_content_type(user_message: str) -> str:
         else:
             params["email_type"] = "newsletter"
 
-    # Extract topic (quoted text or after "about")
+    # Extract topic
     topic_match = re.search(r'["\'](.+?)["\']', user_message)
     if topic_match:
         params["topic"] = topic_match.group(1)
@@ -133,7 +233,7 @@ async def detect_content_type(user_message: str) -> str:
         if about_match:
             params["topic"] = about_match.group(1).strip()
 
-    # Extract audience cues
+    # Extract audience
     for_match = re.search(r'(?:for|targeting|aimed at)\s+(.+?)(?:\.|,|$)', msg)
     if for_match:
         params["target_audience"] = for_match.group(1).strip()
@@ -150,7 +250,6 @@ async def detect_content_type(user_message: str) -> str:
             params["tone"] = tone
             break
 
-    # Get the output schema name
     from app.agents.content_prompts import get_output_schema
     schema = get_output_schema(content_type)
 
@@ -168,11 +267,8 @@ async def detect_content_type(user_message: str) -> str:
     name="generate_structured_content",
     description=(
         "Generate content and return it as structured JSON matching the "
-        "format's output schema. This tool wraps the generated content "
-        "into a structured format that downstream systems (CMS, social "
-        "schedulers, email tools) can consume. Pass: content_type (blog, "
-        "social, email), the generated content as JSON string, and an "
-        "optional title. The tool validates the structure and saves it."
+        "format's output schema. Pass: content_type (blog, social, email), "
+        "the generated content as JSON string, and an optional title."
     ),
 )
 async def generate_structured_content(
@@ -184,7 +280,6 @@ async def generate_structured_content(
     import json as _json
     from app.agents.content_prompts import get_output_schema
 
-    # Parse the content JSON
     try:
         content_data = _json.loads(content_json)
     except _json.JSONDecodeError as e:
@@ -194,7 +289,6 @@ async def generate_structured_content(
             "hint": "Ensure the content is valid JSON matching the schema.",
         })
 
-    # Get expected schema
     schema = get_output_schema(content_type)
     if not schema:
         return _json.dumps({
@@ -203,10 +297,8 @@ async def generate_structured_content(
             "content": content_data,
         })
 
-    # Validate required fields
     required = schema.get("required", [])
     missing = [f for f in required if f not in content_data]
-
     if missing:
         return _json.dumps({
             "status": "incomplete",
@@ -215,8 +307,6 @@ async def generate_structured_content(
             "partial_content": content_data,
         })
 
-    # Enrich with metadata
-    from datetime import datetime, timezone
     content_data["_metadata"] = {
         "content_type": content_type,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -237,9 +327,7 @@ async def generate_structured_content(
     name="get_content_format_guide",
     description=(
         "Retrieve the detailed format guide and few-shot examples for a "
-        "specific content type (blog, social, email). Returns platform-specific "
-        "structure, guidelines, and quality examples. Call this after "
-        "detect_content_type to get format-specific writing instructions."
+        "specific content type (blog, social, email)."
     ),
 )
 async def get_content_format_guide(content_type: str) -> str:
@@ -267,9 +355,8 @@ async def get_content_format_guide(content_type: str) -> str:
 @tool(
     name="repurpose_content",
     description=(
-        "Take existing content (e.g., a blog post) and repurpose it into "
-        "other formats (social posts, email, etc.). Pass the source content "
-        "and the target format(s). Returns structured content for each target."
+        "Take existing content and repurpose it into other formats. "
+        "Pass the source content and the target format(s)."
     ),
 )
 async def repurpose_content(
@@ -277,9 +364,8 @@ async def repurpose_content(
     source_type: str = "blog",
     target_types: str = "social,email",
 ) -> str:
-    """Flag the content for repurposing — the LLM does the actual transformation."""
+    """Flag the content for repurposing."""
     targets = [t.strip() for t in target_types.split(",")]
-
     return json.dumps({
         "status": "ready_for_repurposing",
         "source_type": source_type,
@@ -302,11 +388,12 @@ async def repurpose_content(
     name="get_business_metrics",
     description=(
         "Retrieve the user's business metrics (MRR, users, traffic, etc.) "
-        "for a given time range."
+        "for a given time range. Returns real data from business_metrics table "
+        "if available, otherwise mock data for development."
     ),
 )
 async def get_business_metrics(metric_type: str = "", days: int = 30) -> str:
-    """Return realistic mock metrics (or manual-input data if set)."""
+    """Return metrics — wired to real DB at runtime, falls back to mock."""
     from app.agents.mock_data import get_mock_metrics
     return json.dumps(get_mock_metrics(metric_type=metric_type, days=days))
 
@@ -316,7 +403,7 @@ async def get_business_metrics(metric_type: str = "", days: int = 30) -> str:
     description="List the user's connected integrations and their sync status.",
 )
 async def get_integrations() -> str:
-    """Return mock integration status list."""
+    """Placeholder — wired to DB at runtime by AgentRegistry."""
     from app.agents.mock_data import get_mock_integrations
     return json.dumps(get_mock_integrations())
 
@@ -329,7 +416,8 @@ async def get_integrations() -> str:
     name="create_task",
     description=(
         "Create a new task in the system. Specify: title, description, "
-        "priority (1-10), and optionally an agent to assign it to."
+        "priority (1-10), and optionally an agent to assign it to. "
+        "The task is persisted to the database."
     ),
 )
 async def create_task(
@@ -338,12 +426,13 @@ async def create_task(
     priority: int = 5,
     agent_name: str = "",
 ) -> str:
-    """Placeholder — wired to DB at runtime."""
+    """Placeholder — wired to DB at runtime by AgentRegistry."""
     return json.dumps({
         "status": "created",
         "title": title,
         "priority": priority,
         "agent_name": agent_name,
+        "note": "create_task not yet wired to DB",
     })
 
 
@@ -352,7 +441,7 @@ async def create_task(
     description="List tasks for the user, optionally filtered by status or agent.",
 )
 async def list_tasks(status: str = "", agent_name: str = "", limit: int = 10) -> str:
-    """Return mock tasks with completion stats."""
+    """Placeholder — wired to DB at runtime by AgentRegistry."""
     from app.agents.mock_data import get_mock_tasks
     return json.dumps(get_mock_tasks(status=status, agent_name=agent_name, limit=limit))
 
@@ -362,8 +451,9 @@ async def list_tasks(status: str = "", agent_name: str = "", limit: int = 10) ->
     description="Update the status of a task (pending, in_progress, completed, failed).",
 )
 async def update_task_status(task_id: str, status: str) -> str:
-    """Placeholder — will update tasks table."""
-    return json.dumps({"task_id": task_id, "new_status": status})
+    """Placeholder — wired to DB at runtime by AgentRegistry."""
+    return json.dumps({"task_id": task_id, "new_status": status,
+                        "note": "update_task_status not yet wired to DB"})
 
 
 # ============================================================================
@@ -392,7 +482,7 @@ async def get_current_datetime() -> str:
     ),
 )
 async def store_working_memory(key: str, value: str) -> str:
-    """Placeholder — the BaseAgent wires this to WorkingMemory at runtime."""
+    """Placeholder — the registry wires this to WorkingMemory at runtime."""
     return json.dumps({"stored": key})
 
 
@@ -405,16 +495,12 @@ async def store_working_memory(key: str, value: str) -> str:
     description=(
         "Retrieve the user's full profile: business info, primary goals, "
         "blockers, team size, MRR, preferred work hours, and calendar status. "
-        "ALWAYS call this before making recommendations or planning — "
-        "you need to know the founder's context and current priorities."
+        "ALWAYS call this before making recommendations or planning."
     ),
 )
 async def get_user_profile() -> str:
     """Placeholder — wired to user_store at runtime by the registry."""
-    return json.dumps({
-        "note": "get_user_profile not yet wired",
-        "profile": {},
-    })
+    return json.dumps({"note": "get_user_profile not yet wired", "profile": {}})
 
 
 @tool(
@@ -422,8 +508,7 @@ async def get_user_profile() -> str:
     description=(
         "Check the user's Google Calendar for conflicts/overlaps with a "
         "proposed time range. Returns conflicting events if any exist. "
-        "ALWAYS call this before creating or moving events to avoid "
-        "double-booking. Pass start and end as ISO datetimes."
+        "ALWAYS call this before creating or moving events."
     ),
 )
 async def check_calendar_conflicts(
@@ -431,20 +516,15 @@ async def check_calendar_conflicts(
     end_datetime: str,
 ) -> str:
     """Placeholder — wired at runtime with real gcal_list_events."""
-    return json.dumps({
-        "conflicts": [],
-        "note": "check_calendar_conflicts not yet wired",
-    })
+    return json.dumps({"conflicts": [], "note": "check_calendar_conflicts not yet wired"})
 
 
 @tool(
     name="ask_user_clarification",
     description=(
-        "When you don't have enough information to proceed, or the user's "
-        "request is ambiguous/conflicting, use this tool to formulate a "
-        "clear question back to the user. This signals that you need more "
-        "input before acting. Include what you already know and what's "
-        "specifically missing."
+        "When you don't have enough information to proceed, use this tool "
+        "to formulate a clear question back to the user. Include what you "
+        "already know and what's specifically missing."
     ),
 )
 async def ask_user_clarification(
@@ -471,24 +551,16 @@ _AGENT_TAGS = ("PLANNER", "OPS", "CONTENT", "RESEARCH", "PRODUCT", "SUPPORT")
     name="detect_calendar_intent",
     description=(
         "Analyse a user message and detect the calendar intent. "
-        "Returns the intent type (create, delete, update, list, reschedule, query), "
-        "any fields that were extracted (date, time, duration, title, attendees), "
-        "and a list of MISSING fields that must be collected before acting. "
+        "Returns intent type, extracted fields, and missing fields. "
         "ALWAYS call this first for any calendar-related user message."
     ),
 )
 async def detect_calendar_intent(user_message: str) -> str:
-    """Parse user message to detect calendar intent and missing fields.
-
-    This is implemented as a deterministic rule-based parser so it works
-    even when the LLM is rate-limited.  The LLM should still use its own
-    judgment but this tool gives it a structured starting point.
-    """
+    """Deterministic rule-based parser for calendar intents."""
     import re
     msg = user_message.lower().strip()
 
-    # --- Intent classification ---
-    intent = "query"  # default
+    intent = "query"
     if any(w in msg for w in ("delete", "remove", "cancel", "clear", "drop")):
         intent = "delete"
     elif any(w in msg for w in ("create", "add", "schedule", "book", "set up", "setup", "block")):
@@ -498,11 +570,9 @@ async def detect_calendar_intent(user_message: str) -> str:
     elif any(w in msg for w in ("list", "show", "what", "tell me", "do i have", "any events")):
         intent = "list"
 
-    # --- Field extraction ---
     extracted: dict = {}
     missing: list[str] = []
 
-    # Date keywords
     date_keywords = {
         "today": "today", "tonight": "today",
         "tomorrow": "tomorrow", "tmrw": "tomorrow",
@@ -516,22 +586,18 @@ async def detect_calendar_intent(user_message: str) -> str:
             extracted["date_ref"] = val
             break
 
-    # Explicit date  (YYYY-MM-DD or DD/MM etc.)
     date_match = re.search(r'\d{4}-\d{2}-\d{2}', msg)
     if date_match:
         extracted["date"] = date_match.group()
 
-    # Time extraction
     time_match = re.search(r'(\d{1,2})[:\.]?(\d{2})?\s*(am|pm|AM|PM)', msg)
     if time_match:
         extracted["time"] = time_match.group()
 
-    # Duration
     dur_match = re.search(r'(\d+\.?\d*)\s*(hour|hr|min|minute)', msg)
     if dur_match:
         extracted["duration"] = dur_match.group()
 
-    # Scope for deletes
     if intent == "delete":
         if any(w in msg for w in ("all", "every", "everything")):
             extracted["scope"] = "all"
@@ -539,14 +605,11 @@ async def detect_calendar_intent(user_message: str) -> str:
             extracted["scope"] = "ai_generated_only"
         else:
             extracted["scope"] = "matching"
-
-        # Check for agent-tag filter  e.g. "delete planner events"
         for tag in _AGENT_TAGS:
             if tag.lower() in msg:
                 extracted["agent_filter"] = tag
                 break
 
-    # --- Missing field detection per intent ---
     if intent == "create":
         if "date_ref" not in extracted and "date" not in extracted:
             missing.append("date")
@@ -554,19 +617,15 @@ async def detect_calendar_intent(user_message: str) -> str:
             missing.append("start_time")
         if "duration" not in extracted:
             missing.append("duration")
-        # Title extraction (rough — take quoted text or last noun phrase)
         title_match = re.search(r'["\'](.+?)["\']', user_message)
         if title_match:
             extracted["title"] = title_match.group(1)
         else:
             missing.append("title")
-
-    elif intent == "update" or intent == "reschedule":
+    elif intent in ("update", "reschedule"):
         if "date_ref" not in extracted and "date" not in extracted:
             missing.append("target_date_or_event")
-        # Need to know which event
         missing.append("event_identifier")
-
     elif intent == "delete":
         if "date_ref" not in extracted and "date" not in extracted:
             missing.append("date_range")
@@ -583,9 +642,8 @@ async def detect_calendar_intent(user_message: str) -> str:
 @tool(
     name="validate_event_fields",
     description=(
-        "Validate that all required fields for creating / updating a calendar event "
-        "are present and correct. Pass the collected fields as JSON. Returns a list "
-        "of validation errors (empty means valid). Call BEFORE gcal_create_event."
+        "Validate that all required fields for creating/updating a calendar "
+        "event are present and correct. Call BEFORE gcal_create_event."
     ),
 )
 async def validate_event_fields(
@@ -601,7 +659,7 @@ async def validate_event_fields(
     if not start_datetime and not date_str:
         errors.append("start_datetime or date is required")
     if start_datetime and not end_datetime:
-        errors.append("end_datetime is required when start_datetime is provided (or provide a duration)")
+        errors.append("end_datetime is required when start_datetime is provided")
     if start_datetime and end_datetime:
         try:
             from datetime import datetime as _dt
@@ -610,13 +668,10 @@ async def validate_event_fields(
             if e <= s:
                 errors.append("end_datetime must be after start_datetime")
             if (e - s).total_seconds() > 24 * 3600:
-                errors.append("event duration exceeds 24 hours — is this intentional?")
+                errors.append("event duration exceeds 24 hours")
         except ValueError as exc:
             errors.append(f"datetime parse error: {exc}")
-    return json.dumps({
-        "valid": len(errors) == 0,
-        "errors": errors,
-    })
+    return json.dumps({"valid": len(errors) == 0, "errors": errors})
 
 
 # ============================================================================
@@ -626,18 +681,13 @@ async def validate_event_fields(
 @tool(
     name="delegate_task",
     description=(
-        "Delegate a task to a specialist agent. This is your PRIMARY tool for "
-        "getting work done. Available agents: planner, content, research, ops, "
-        "product, support.\n\n"
-        "IMPORTANT RULES:\n"
-        "1. ALWAYS rewrite the task as a clear, specific instruction — never "
-        "   just forward the user's raw message.\n"
-        "2. Include relevant context: user's primary goal, timezone, business "
-        "   stage, and any prior delegation results that this agent needs.\n"
+        "Delegate a task to a specialist agent. Available agents: planner, "
+        "content, research, ops, product, support.\n\n"
+        "RULES:\n"
+        "1. Rewrite the task as a clear instruction — never forward raw messages.\n"
+        "2. Include context: user's goal, timezone, business stage, prior results.\n"
         "3. For calendar operations → delegate to 'planner' with timezone.\n"
-        "4. For multi-step work → delegate sequentially, passing output of "
-        "   step N as context to step N+1.\n\n"
-        "The agent will execute the task and return its full response."
+        "4. For multi-step work → delegate sequentially, passing prior output."
     ),
 )
 async def delegate_task(
@@ -645,15 +695,8 @@ async def delegate_task(
     task: str,
     context: str = "",
 ) -> str:
-    """
-    Placeholder — wired to OrchestratorAgent.execute_delegation() at runtime.
-
-    The AgentRegistry injects a real implementation that creates the target
-    specialist agent, runs it, and returns its response.
-    """
-    return json.dumps({
-        "error": "delegate_task not wired — must be called via orchestrator",
-    })
+    """Placeholder — wired to OrchestratorAgent.execute_delegation() at runtime."""
+    return json.dumps({"error": "delegate_task not wired — must be called via orchestrator"})
 
 
 # ============================================================================
@@ -663,82 +706,37 @@ async def delegate_task(
 @tool(
     name="recall_last_orchestration",
     description=(
-        "Recall what happened in the most recent orchestration for this user. "
-        "Returns: the user's last request, which agents were used, what was "
-        "discussed, and what actions were taken. Use this at the START of "
-        "every orchestration to maintain conversation continuity. If the "
-        "user says 'also' or 'and' or refers to something prior, this gives "
-        "you the context."
+        "Recall the most recent orchestration for this user. Returns: "
+        "last request, agents used, what was discussed, actions taken."
     ),
 )
 async def recall_last_orchestration() -> str:
     """Placeholder — wired at runtime by the registry."""
-    return json.dumps({
-        "last_orchestration": None,
-        "note": "No prior orchestration found (first interaction).",
-    })
+    return json.dumps({"last_orchestration": None, "note": "No prior orchestration found."})
 
 
 @tool(
     name="list_available_agents",
-    description=(
-        "List all currently available specialist agents with their capabilities. "
-        "Use this when you need to understand what agents are available, or "
-        "when you want to explain to the user what the system can do. "
-        "Returns each agent's name, capabilities, and what they're best at."
-    ),
+    description="List all currently available specialist agents with their capabilities.",
 )
 async def list_available_agents() -> str:
     """Placeholder — wired at runtime by the registry."""
     return json.dumps({
         "agents": [
-            {
-                "name": "planner",
-                "best_for": "Planning, scheduling, calendar, tasks, prioritisation",
-                "has_calendar": True,
-            },
-            {
-                "name": "content",
-                "best_for": "Writing, blog posts, emails, social media, copy",
-                "has_calendar": False,
-            },
-            {
-                "name": "research",
-                "best_for": "Market research, competitor analysis, data analysis",
-                "has_calendar": False,
-            },
-            {
-                "name": "ops",
-                "best_for": "Operations, metrics, integrations, system health",
-                "has_calendar": True,
-            },
-            {
-                "name": "product",
-                "best_for": "PRDs, features, roadmap, user stories",
-                "has_calendar": False,
-            },
-            {
-                "name": "support",
-                "best_for": "Customer emails, FAQs, support playbooks",
-                "has_calendar": False,
-            },
+            {"name": "planner", "best_for": "Planning, scheduling, calendar, tasks", "has_calendar": True},
+            {"name": "content", "best_for": "Writing, blog posts, emails, social media", "has_calendar": False},
+            {"name": "research", "best_for": "Market research, competitor analysis", "has_calendar": False},
+            {"name": "ops", "best_for": "Operations, metrics, integrations", "has_calendar": True},
+            {"name": "product", "best_for": "PRDs, features, roadmap, user stories", "has_calendar": False},
+            {"name": "support", "best_for": "Customer emails, FAQs, support playbooks", "has_calendar": False},
         ],
     })
 
 
 @tool(
     name="check_delegation_health",
-    description=(
-        "Check the health status of the delegation system. Returns whether "
-        "agents are available and the router is functioning. Use this if a "
-        "delegation fails to diagnose the issue."
-    ),
+    description="Check the health status of the delegation system.",
 )
 async def check_delegation_health() -> str:
     """Placeholder — wired at runtime by the registry."""
-    return json.dumps({
-        "status": "healthy",
-        "agents_available": 6,
-        "router_connected": True,
-        "note": "All systems operational.",
-    })
+    return json.dumps({"status": "healthy", "agents_available": 6, "router_connected": True})

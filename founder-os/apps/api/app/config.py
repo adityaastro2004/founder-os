@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     ANTHROPIC_MODEL: str = "claude-sonnet-4-20250514"
 
     # OpenAI-compatible (Groq — fast open-source LLM inference)
-    OPENAI_API_KEY: str = "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"
+    OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://api.groq.com/openai/v1"
     OPENAI_MODEL: str = "llama-3.3-70b-versatile"
 
@@ -50,9 +50,13 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
 
     # ── Google Calendar Integration ──
-    GOOGLE_CLIENT_ID: str = "219004168797-pdlev58p5d9jsh4mle1k0uggtmh0uvak.apps.googleusercontent.com"
-    GOOGLE_CLIENT_SECRET: str = "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"
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://127.0.0.1:8000/api/planner/connect/callback"
+
+    # ── Web Search (optional — for real web_search tool) ──
+    SERPAPI_KEY: str = ""
+    TAVILY_API_KEY: str = ""
 
     # ── MCP Tool Servers ──
     # External MCP servers (stdio or SSE) to connect to.

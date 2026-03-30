@@ -365,9 +365,21 @@ class ExecutionEngine:
                 ))
 
             # -- Execute the tool --
-            result = await self.tools.call_tool(
-                tc.name, args, tc.id,
-            )
+            try:
+                result = await self.tools.call_tool(
+                    tc.name, args, tc.id,
+                )
+            except Exception as exc:
+                logger.exception(
+                    "Agent '%s' tool '%s' crashed: %s",
+                    agent_name, tc.name, exc,
+                )
+                result = ToolResult(
+                    tool_call_id=tc.id,
+                    content=f"Tool error: {type(exc).__name__}: {exc}",
+                    is_error=True,
+                    duration_ms=0.0,
+                )
             results.append(result)
 
             # -- Emit tool.result event --
