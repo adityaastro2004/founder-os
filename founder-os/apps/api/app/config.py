@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     CLERK_AUDIENCE: str = ""  # optional — leave empty to skip audience check
 
     # ── LLM Providers ──
-    LLM_PROVIDER: str = "openai_compatible"  # "ollama" | "anthropic" | "openai_compatible" | "gemini"
+    LLM_PROVIDER: str = "ollama"  # "ollama" | "anthropic" | "openai_compatible" | "gemini"
 
     # Ollama (free, local — default)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
