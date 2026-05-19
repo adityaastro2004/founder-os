@@ -425,6 +425,7 @@ Pattern 4: GATHER-THEN-ACT (research informs action)
                     "input_preview": user_input[:300],
                     "input_length": len(user_input),
                     "phase": "starting",
+                    "user_id": str(self.user_id),
                 },
             ))
 
@@ -476,6 +477,7 @@ Pattern 4: GATHER-THEN-ACT (research informs action)
                     "actions_executed": self._trace.actions_executed,
                     "profile_loaded": self._trace.user_profile_loaded,
                     "memory_loaded": self._trace.memory_context_loaded,
+                    "user_id": str(self.user_id),
                 },
             ))
 
@@ -568,6 +570,7 @@ Pattern 4: GATHER-THEN-ACT (research informs action)
                     "target_agent": agent_name,
                     "task_preview": task[:200],
                     "has_context": bool(context),
+                    "user_id": str(user_id if user_id is not None else self.user_id),
                 },
             ))
 
@@ -612,6 +615,7 @@ Pattern 4: GATHER-THEN-ACT (research informs action)
                             "from": "orchestrator",
                             "task_preview": task[:150],
                             "attempt": attempt,
+                            "user_id": str(user_id if user_id is not None else self.user_id),
                         },
                     ))
 
@@ -651,6 +655,7 @@ Pattern 4: GATHER-THEN-ACT (research informs action)
                                 "tokens_used": delegation_result.tokens_used,
                                 "duration": round(duration, 2),
                                 "result_preview": delegation_result.content[:200],
+                                "user_id": str(user_id if user_id is not None else self.user_id),
                             },
                         ))
 
@@ -684,6 +689,7 @@ Pattern 4: GATHER-THEN-ACT (research informs action)
                                 data={
                                     "attempt": attempt + 1,
                                     "reason": step.error[:200],
+                                    "user_id": str(user_id if user_id is not None else self.user_id),
                                 },
                             ))
                         continue
@@ -711,6 +717,7 @@ Pattern 4: GATHER-THEN-ACT (research informs action)
                         "from": "orchestrator",
                         "error": step.error[:300],
                         "attempts": attempt,
+                        "user_id": str(user_id if user_id is not None else self.user_id),
                     },
                 ))
 

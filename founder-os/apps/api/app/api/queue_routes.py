@@ -15,6 +15,7 @@ Routes:
 
 from __future__ import annotations
 
+import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -26,6 +27,7 @@ from app.tasks.agent_tasks import run_agent_task, run_orchestration_task
 from app.tasks.status import TaskStatusService
 
 router = APIRouter(prefix="/api/queue", tags=["queue"])
+logger = logging.getLogger(__name__)
 
 
 # ── Request / Response models ─────────────────────────────────
@@ -99,6 +101,21 @@ async def submit_agent_run(
         extra_context=body.extra_context,
     )
 
+    redis = get_redis()
+    service = TaskStatusService(redis)
+    try:
+        await service.index_task_for_user(
+            user.user_id,
+            result.id,
+            {
+                "agent_name": agent_name,
+                "task_type": "agent_run",
+                "message_preview": body.message[:100],
+            },
+        )
+    except Exception as exc:
+        logger.warning("Failed to pre-index submitted task %s: %s", result.id, exc)
+
     return TaskSubmittedResponse(
         task_id=result.id,
         status="pending",
@@ -131,6 +148,21 @@ async def submit_orchestration(
         extra_context=body.extra_context,
     )
 
+    redis = get_redis()
+    service = TaskStatusService(redis)
+    try:
+        await service.index_task_for_user(
+            user.user_id,
+            result.id,
+            {
+                "agent_name": "orchestrator",
+                "task_type": "orchestration",
+                "message_preview": body.message[:100],
+            },
+        )
+    except Exception as exc:
+        logger.warning("Failed to pre-index submitted task %s: %s", result.id, exc)
+
     return TaskSubmittedResponse(
         task_id=result.id,
         status="pending",
@@ -155,6 +187,10 @@ async def get_task_status(
     """
     redis = get_redis()
     service = TaskStatusService(redis)
+
+    if not await service.user_owns_task(user.user_id, task_id):
+        raise HTTPException(status_code=404, detail=f"Task '{task_id}' not found")
+
     status = await service.get_status(task_id)
 
     if status is None:
@@ -205,6 +241,9 @@ async def cancel_task(
     redis = get_redis()
     service = TaskStatusService(redis)
 
+    if not await service.user_owns_task(user.user_id, task_id):
+        raise HTTPException(status_code=404, detail=f"Task '{task_id}' not found")
+
     # Verify task exists
     status = await service.get_status(task_id)
     if status is None:
@@ -216,7 +255,7 @@ async def cancel_task(
             detail=f"Task is already {status['status']} and cannot be cancelled",
         )
 
-    result = await service.cancel_task(task_id)
+    result = await service.cancel_task(task_id, user_id=user.user_id)
 
     return TaskCancelResponse(
         task_id=task_id,

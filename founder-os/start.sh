@@ -78,6 +78,27 @@ if [[ ! -d "apps/api/.venv" ]]; then
 fi
 ok "Python venv found"
 
+# ── Optional: Google Calendar OAuth config check ──
+GOOGLE_ENV_FILE="apps/api/.env"
+if [[ -f "$GOOGLE_ENV_FILE" ]]; then
+  missing_google_vars=()
+  for k in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET GOOGLE_REDIRECT_URI OAUTH_STATE_SECRET; do
+    line=$(grep -E "^${k}=" "$GOOGLE_ENV_FILE" | tail -n 1 || true)
+    val="${line#*=}"
+    if [[ -z "$line" || -z "$val" ]]; then
+      missing_google_vars+=("$k")
+    fi
+  done
+
+  if [[ ${#missing_google_vars[@]} -gt 0 ]]; then
+    warn "Google Calendar connect unavailable (missing in $GOOGLE_ENV_FILE): ${missing_google_vars[*]}"
+  else
+    ok "Google Calendar OAuth env looks configured"
+  fi
+else
+  warn "No apps/api/.env found; Google Calendar connect will be unavailable"
+fi
+
 # ── 2. Start Docker services (PostgreSQL + Redis) ──
 log "Starting PostgreSQL & Redis..."
 docker compose up -d

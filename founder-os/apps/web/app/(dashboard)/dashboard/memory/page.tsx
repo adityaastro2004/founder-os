@@ -480,7 +480,7 @@ export default function MemoryPage() {
                 key={`ch-${idx}-${ch.name}`}
                 onClick={() => {
                   setSelectedChapter(ch.name);
-                }
+                }}
                 className={clsx(
                   "px-2.5 py-1.5 text-xs rounded-lg transition-colors",
                   selectedChapter === ch.name

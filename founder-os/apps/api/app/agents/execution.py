@@ -361,6 +361,7 @@ class ExecutionEngine:
                     data={
                         "tool_name": tc.name,
                         "arguments": {k: str(v)[:200] for k, v in args.items()},
+                        "user_id": str(self.user_id),
                     },
                 ))
 
@@ -393,6 +394,7 @@ class ExecutionEngine:
                         "is_error": result.is_error,
                         "duration_ms": round(result.duration_ms, 1),
                         "result_preview": result.content[:300],
+                        "user_id": str(self.user_id),
                     },
                 ))
 

@@ -1,5 +1,9 @@
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+from pathlib import Path
+
+
+ENV_FILE_PATH = Path(__file__).resolve().parent.parent / ".env"
 
 
 class Settings(BaseSettings):
@@ -53,6 +57,7 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://127.0.0.1:8000/api/planner/connect/callback"
+    OAUTH_STATE_SECRET: str = ""  # optional; falls back to GOOGLE_CLIENT_SECRET
 
     # ── Web Search (optional — for real web_search tool) ──
     SERPAPI_KEY: str = ""
@@ -65,7 +70,7 @@ class Settings(BaseSettings):
     # In-process providers (Google Calendar) are auto-registered — no config needed.
     MCP_SERVERS: list[dict] = []
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": str(ENV_FILE_PATH), "env_file_encoding": "utf-8"}
 
 
 @lru_cache

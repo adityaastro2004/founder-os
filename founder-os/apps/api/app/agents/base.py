@@ -176,7 +176,11 @@ class BaseAgent:
             await self.event_bus.publish(Event(
                 type="agent.started",
                 agent=self.name,
-                data={"input_preview": user_input[:200]},
+                data={
+                    "input_preview": user_input[:200],
+                    "user_id": str(self.user_id),
+                    "clerk_user_id": str(self.clerk_user_id or ""),
+                },
             ))
 
         # 1b. Auto-embed the user query for RAG (if embedder is available)
@@ -240,6 +244,8 @@ class BaseAgent:
                     "tool_calls": len(result.tool_calls_made),
                     "cost_usd": result.cost_usd,
                     "duration": result.duration_seconds,
+                    "user_id": str(self.user_id),
+                    "clerk_user_id": str(self.clerk_user_id or ""),
                 },
             ))
 

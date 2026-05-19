@@ -84,6 +84,36 @@ def _get_user_id(user: ClerkUser) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}"))
 
 
+def _get_user_aliases(user: ClerkUser) -> set[str]:
+    return {
+        user.user_id,
+        _get_user_id(user),
+        str(uuid.uuid5(uuid.NAMESPACE_URL, f"planner:{user.user_id}")),
+    }
+
+
+def _extract_event_user_ids(data: object) -> set[str]:
+    if not isinstance(data, dict):
+        return set()
+
+    ids = set()
+    for key in ("user_id", "clerk_user_id", "planner_user_id", "owner_user_id"):
+        value = data.get(key)
+        if isinstance(value, str) and value:
+            ids.add(value)
+
+    metadata = data.get("metadata")
+    if isinstance(metadata, dict):
+        ids.update(_extract_event_user_ids(metadata))
+
+    return ids
+
+
+def _event_belongs_to_user(event: Event, user_aliases: set[str]) -> bool:
+    event_user_ids = _extract_event_user_ids(event.data)
+    return bool(event_user_ids and event_user_ids.intersection(user_aliases))
+
+
 _AGENT_DISPLAY_NAMES = {
     "orchestrator": "Orchestrator",
     "planner": "Planner Agent",
@@ -167,6 +197,7 @@ async def activity_stream(
     """
     redis = get_redis()
     user_id = _get_user_id(user)
+    user_aliases = _get_user_aliases(user)
 
     async def event_generator():
         pubsub = redis.pubsub()
@@ -190,6 +221,8 @@ async def activity_stream(
                 if message and message.get("data") and not isinstance(message["data"], int):
                     try:
                         event = Event.from_json(message["data"])
+                        if not _event_belongs_to_user(event, user_aliases):
+                            continue
                         activity = _make_activity_event(event)
                         
                         # Store in Redis for history

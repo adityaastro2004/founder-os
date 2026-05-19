@@ -22,18 +22,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const body = (
+  const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+  return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        {children}
+        {hasClerk ? (
+          <ClerkProvider>{children}</ClerkProvider>
+        ) : (
+          children
+        )}
       </body>
     </html>
   );
-
-  // ClerkProvider requires a publishable key — skip during build or if not configured
-  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-    return body;
-  }
-
-  return <ClerkProvider>{body}</ClerkProvider>;
 }

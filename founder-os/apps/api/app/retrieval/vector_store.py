@@ -197,11 +197,11 @@ class VectorStore:
                 ki.category,
                 ki.tags,
                 ki.source_url,
-                1 - (ki.embedding <=> :emb::vector) AS similarity
+                                1 - (ki.embedding <=> CAST(:emb AS vector)) AS similarity
             FROM knowledge_items ki
             WHERE {where_clause}
-              AND 1 - (ki.embedding <=> :emb::vector) >= :min_sim
-            ORDER BY ki.embedding <=> :emb::vector
+                            AND 1 - (ki.embedding <=> CAST(:emb AS vector)) >= :min_sim
+                        ORDER BY ki.embedding <=> CAST(:emb AS vector)
             LIMIT :lim
         """)
         params["min_sim"] = min_similarity
@@ -347,14 +347,14 @@ class VectorStore:
                     ki.category,
                     ki.tags,
                     ki.source_url,
-                    1 - (ki.embedding <=> :emb::vector) AS similarity,
-                    ROW_NUMBER() OVER (ORDER BY ki.embedding <=> :emb::vector) AS sem_rank
+                    1 - (ki.embedding <=> CAST(:emb AS vector)) AS similarity,
+                    ROW_NUMBER() OVER (ORDER BY ki.embedding <=> CAST(:emb AS vector)) AS sem_rank
                 FROM knowledge_items ki
                 WHERE ki.user_id = :uid
                   AND ki.is_active = true
                   AND ki.embedding IS NOT NULL
                   {cat_filter}
-                ORDER BY ki.embedding <=> :emb::vector
+                ORDER BY ki.embedding <=> CAST(:emb AS vector)
                 LIMIT :lim * 3
             ),
             fulltext AS (
@@ -534,12 +534,12 @@ class VectorStore:
                 ki.category,
                 ki.tags,
                 ki.source_url,
-                1 - (ki.embedding <=> :emb::vector) AS similarity,
+                                1 - (ki.embedding <=> CAST(:emb AS vector)) AS similarity,
                 ki.embedding::text AS emb_text
             FROM knowledge_items ki
             WHERE {where_clause}
-              AND 1 - (ki.embedding <=> :emb::vector) >= :min_sim
-            ORDER BY ki.embedding <=> :emb::vector
+                            AND 1 - (ki.embedding <=> CAST(:emb AS vector)) >= :min_sim
+                        ORDER BY ki.embedding <=> CAST(:emb AS vector)
             LIMIT :lim
         """)
 

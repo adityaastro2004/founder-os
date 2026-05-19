@@ -1,0 +1,44 @@
+# ── Secrets ──────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+
+# ── Python ───────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# ── Logs ─────────────────────────────
+*.log
+nohup.out
+logs/
+
+# ── OS ───────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── IDE ──────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Claude / AI tools ────────────────
+.claude/
+
+# ── Node ─────────────────────────────
+node_modules/
+.turbo/
+.next/
+out/
+
+# ── Backups ──────────────────────────
+*.bak
+*.backup

@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 TASK_STATUS_PREFIX = "founder_os:task:"
 TASK_INDEX_PREFIX = "founder_os:user_tasks:"
+TASK_INDEX_MAX = 100
 
 
 class TaskStatusService:
@@ -136,7 +137,28 @@ class TaskStatusService:
 
         return tasks
 
-    async def cancel_task(self, task_id: str) -> dict:
+    async def index_task_for_user(self, user_id: str, task_id: str, meta: dict[str, Any]) -> None:
+        """Index a submitted task under the user's task list."""
+        key = f"{TASK_INDEX_PREFIX}{user_id}"
+        entry = json.dumps({"task_id": task_id, **meta})
+        await self._redis.zadd(key, {entry: time.time()})
+        await self._redis.zremrangebyrank(key, 0, -(TASK_INDEX_MAX + 1))
+        await self._redis.expire(key, 86400)
+
+    async def user_owns_task(self, user_id: str, task_id: str) -> bool:
+        """Return True when the task appears in the user's indexed task history."""
+        key = f"{TASK_INDEX_PREFIX}{user_id}"
+        entries = await self._redis.zrange(key, 0, -1)
+        for raw in entries:
+            try:
+                meta = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if meta.get("task_id") == task_id:
+                return True
+        return False
+
+    async def cancel_task(self, task_id: str, user_id: str | None = None) -> dict:
         """
         Cancel a pending or running background task.
 
@@ -159,6 +181,8 @@ class TaskStatusService:
             "result": None,
             "error": "Cancelled by user",
         }
+        if user_id:
+            status["user_id"] = user_id
         await self._redis.set(key, json.dumps(status), ex=86400)
 
         logger.info(f"Task {task_id} cancelled by user")

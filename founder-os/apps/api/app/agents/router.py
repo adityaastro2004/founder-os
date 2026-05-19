@@ -231,7 +231,10 @@ class AgentRouter:
             await self._event_bus.publish(Event(
                 type="delegation.requested",
                 agent=message.from_agent,
-                data=message.to_dict(),
+                data={
+                    **message.to_dict(),
+                    "user_id": str(user_id) if user_id is not None else "",
+                },
                 correlation_id=correlation,
             ))
 
@@ -291,6 +294,7 @@ class AgentRouter:
                         "task": message.task,
                         "success": True,
                         "tokens_used": result.tokens_used,
+                        "user_id": str(user_id) if user_id is not None else "",
                     },
                     correlation_id=correlation,
                 ))
@@ -308,6 +312,7 @@ class AgentRouter:
                         "from_agent": message.from_agent,
                         "task": message.task,
                         "error": str(exc),
+                        "user_id": str(user_id) if user_id is not None else "",
                     },
                     correlation_id=correlation,
                 ))

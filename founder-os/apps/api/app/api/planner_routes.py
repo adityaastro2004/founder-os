@@ -17,13 +17,19 @@ Optional:
 
 from __future__ import annotations
 
+import base64
+import hashlib
+import hmac
+import json
+import secrets
 import time
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from app.auth import require_auth, ClerkUser
 from app.config import get_settings
 from app.user_store import (
     UserProfile,
@@ -38,6 +44,61 @@ from app.user_store import (
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/planner", tags=["planner"])
+
+
+def _oauth_state_secret() -> str:
+    settings = get_settings()
+    secret = settings.OAUTH_STATE_SECRET or settings.GOOGLE_CLIENT_SECRET
+    if not secret:
+        raise HTTPException(
+            status_code=500,
+            detail="OAuth state secret is not configured.",
+        )
+    return secret
+
+
+def _encode_oauth_state(user_id: str, ttl_seconds: int = 600) -> str:
+    payload = {
+        "u": user_id,
+        "exp": int(time.time()) + ttl_seconds,
+        "n": secrets.token_urlsafe(8),
+    }
+    payload_raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
+    payload_b64 = base64.urlsafe_b64encode(payload_raw).decode("ascii").rstrip("=")
+    signature = hmac.new(
+        _oauth_state_secret().encode("utf-8"),
+        payload_b64.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    return f"{payload_b64}.{signature}"
+
+
+def _decode_oauth_state(state: str) -> str:
+    try:
+        payload_b64, signature = state.split(".", 1)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid OAuth state.")
+
+    expected = hmac.new(
+        _oauth_state_secret().encode("utf-8"),
+        payload_b64.encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    if not hmac.compare_digest(signature, expected):
+        raise HTTPException(status_code=400, detail="Invalid OAuth state signature.")
+
+    try:
+        payload_raw = base64.urlsafe_b64decode(payload_b64 + "=" * (-len(payload_b64) % 4))
+        payload = json.loads(payload_raw.decode("utf-8"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="Malformed OAuth state payload.")
+
+    exp = int(payload.get("exp", 0))
+    user_id = str(payload.get("u", ""))
+    if not user_id or exp < int(time.time()):
+        raise HTTPException(status_code=400, detail="OAuth state is missing or expired.")
+
+    return user_id
 
 
 # Plan history is now DB-backed via user_store.store_plan_history / get_plan_history
@@ -154,14 +215,14 @@ class PromptRequest(BaseModel):
 # ============================================================================
 
 @router.post("/onboard")
-async def onboard(body: OnboardRequest):
+async def onboard(body: OnboardRequest, clerk: ClerkUser = Depends(require_auth)):
     """
     Set up your business profile. Call this once — your data is remembered
     and used automatically every Monday when the planner runs.
 
     After onboarding, connect Google Calendar via GET /api/planner/connect.
     """
-    user = get_or_create_user(body.user_id)
+    user = get_or_create_user(clerk.user_id)
 
     # Merge all fields
     for field_name in body.model_fields:
@@ -195,7 +256,7 @@ async def onboard(body: OnboardRequest):
 # ============================================================================
 
 @router.get("/connect")
-async def connect_gcal(user_id: str = Query("default-user")):
+async def connect_gcal(clerk: ClerkUser = Depends(require_auth)):
     """
     Start Google Calendar connection. Opens OAuth consent screen.
     After granting access, your calendar is linked permanently.
@@ -210,16 +271,16 @@ async def connect_gcal(user_id: str = Query("default-user")):
         )
 
     # Ensure user exists
-    user = get_or_create_user(user_id)
+    user = get_or_create_user(clerk.user_id)
 
     # If user already has valid tokens and is connected, skip the OAuth dance
     if user.gcal_connected and user.has_valid_gcal_tokens():
         return {
             "status": "already_connected",
-            "user_id": user_id,
+            "user_id": clerk.user_id,
             "gcal_connected": True,
             "message": (
-                f"Google Calendar is already connected for {user.business_name or user_id}. "
+                f"Google Calendar is already connected for {user.business_name or clerk.user_id}. "
                 "No need to re-authenticate — your tokens are saved permanently."
             ),
         }
@@ -228,18 +289,18 @@ async def connect_gcal(user_id: str = Query("default-user")):
     auth_url = get_auth_url(
         client_id=settings.GOOGLE_CLIENT_ID,
         redirect_uri=settings.GOOGLE_REDIRECT_URI,
-        state=user_id,
+        state=_encode_oauth_state(clerk.user_id),
         force_consent=True,
     )
     return {
         "auth_url": auth_url,
         "message": "Open this URL in your browser to connect Google Calendar.",
-        "user_id": user_id,
+        "user_id": clerk.user_id,
     }
 
 
 @router.get("/connect/callback")
-async def connect_callback(code: str, state: str = "default-user"):
+async def connect_callback(code: str, state: str):
     """
     OAuth2 callback — automatically called by Google after user grants access.
     Links the calendar to the user's profile.
@@ -247,7 +308,7 @@ async def connect_callback(code: str, state: str = "default-user"):
     from app.integrations.calendar_integration import exchange_code_for_tokens
 
     settings = get_settings()
-    user_id = state  # state param carries the user_id
+    user_id = _decode_oauth_state(state)
 
     try:
         tokens = await exchange_code_for_tokens(
@@ -331,7 +392,7 @@ from fastapi.responses import RedirectResponse
 
 
 @router.get("/connect/legacy-callback")
-async def legacy_callback_redirect(code: str, state: str = "default-user"):
+async def legacy_callback_redirect(code: str, state: str):
     """Redirect from old callback path — not typically called directly."""
     return await connect_callback(code=code, state=state)
 
@@ -341,7 +402,7 @@ async def legacy_callback_redirect(code: str, state: str = "default-user"):
 # ============================================================================
 
 @router.post("/update")
-async def update_context(body: UpdateContextRequest):
+async def update_context(body: UpdateContextRequest, clerk: ClerkUser = Depends(require_auth)):
     """
     Update your business context. You can send:
     - Natural language: "We hit $15k MRR, hired 2 engineers, focusing on enterprise this week"
@@ -350,7 +411,7 @@ async def update_context(body: UpdateContextRequest):
 
     The updated context will be used in the next plan generation.
     """
-    user = get_or_create_user(body.user_id)
+    user = get_or_create_user(clerk.user_id)
     settings = get_settings()
     changes: dict[str, Any] = {}
 
@@ -376,7 +437,7 @@ async def update_context(body: UpdateContextRequest):
                 changes["custom_instructions"] = body.message
 
     if changes:
-        user = update_user_context(body.user_id, changes)
+        user = update_user_context(clerk.user_id, changes)
 
     return {
         "status": "updated",
@@ -400,17 +461,17 @@ async def update_context(body: UpdateContextRequest):
 # ============================================================================
 
 @router.post("/generate")
-async def generate_now(body: GenerateRequest):
+async def generate_now(body: GenerateRequest, clerk: ClerkUser = Depends(require_auth)):
     """
     Generate and push a weekly plan immediately (don't wait for Monday).
     Uses your stored business context + any extra context in the message.
     Pushes directly to your connected Google Calendar.
     """
-    user = get_user(body.user_id)
+    user = get_user(clerk.user_id)
     if not user:
         raise HTTPException(
             status_code=404,
-            detail=f"User '{body.user_id}' not found. Call POST /api/planner/onboard first.",
+            detail=f"User '{clerk.user_id}' not found. Call POST /api/planner/onboard first.",
         )
 
     if not user.gcal_connected:
@@ -500,11 +561,11 @@ async def generate_now(body: GenerateRequest):
 # ============================================================================
 
 @router.get("/status")
-async def get_status(user_id: str = Query("default-user")):
+async def get_status(clerk: ClerkUser = Depends(require_auth)):
     """
     Check your planner status — connection, last plan, upcoming schedule.
     """
-    user = get_user(user_id)
+    user = get_user(clerk.user_id)
     if not user:
         return {
             "status": "not_onboarded",
@@ -535,11 +596,11 @@ async def get_status(user_id: str = Query("default-user")):
 # ============================================================================
 
 @router.get("/history")
-async def get_history(user_id: str = Query("default-user"), limit: int = 10):
+async def get_history(clerk: ClerkUser = Depends(require_auth), limit: int = 10):
     """View your past plan summaries (from database)."""
-    plans = get_plan_history(user_id, limit=limit)
+    plans = get_plan_history(clerk.user_id, limit=limit)
     return {
-        "user_id": user_id,
+        "user_id": clerk.user_id,
         "total_plans": len(plans),
         "plans": plans,
     }
@@ -550,7 +611,7 @@ async def get_history(user_id: str = Query("default-user"), limit: int = 10):
 # ============================================================================
 
 @router.post("/prompt")
-async def handle_prompt(body: PromptRequest):
+async def handle_prompt(body: PromptRequest, clerk: ClerkUser = Depends(require_auth)):
     """
     **The main endpoint.** Send any natural language prompt and the system will:
 
@@ -570,12 +631,12 @@ async def handle_prompt(body: PromptRequest):
     - "Remind me to follow up with Acme Corp next Tuesday at 10 AM"
     - "Plan my week — focus on hiring and closing the Series A"
     """
-    user = get_user(body.user_id)
+    user = get_user(clerk.user_id)
     if not user:
         raise HTTPException(
             status_code=404,
             detail=(
-                f"User '{body.user_id}' not found. "
+                f"User '{clerk.user_id}' not found. "
                 "Call POST /api/planner/onboard first."
             ),
         )
@@ -585,7 +646,7 @@ async def handle_prompt(body: PromptRequest):
             status_code=400,
             detail=(
                 "Google Calendar not connected. "
-                "One-time setup: GET /api/planner/connect?user_id=" + body.user_id
+                "One-time setup: GET /api/planner/connect?user_id=" + clerk.user_id
             ),
         )
 
@@ -600,13 +661,13 @@ async def handle_prompt(body: PromptRequest):
 
         # Get memories relevant to the prompt + any due for review
         recall_hits = await mgr.async_recall(
-            body.user_id,
+            clerk.user_id,
             query=body.message,
             limit=10,
             min_importance=0.2,
             auto_embed_query=False,
         )
-        review_hits = await mgr.async_get_due_reviews(body.user_id, limit=5)
+        review_hits = await mgr.async_get_due_reviews(clerk.user_id, limit=5)
 
         all_memories = recall_hits + [
             h for h in review_hits if h.id not in {r.id for r in recall_hits}
@@ -821,7 +882,7 @@ UPDATE RULES:
     # ── Step 4: Execute actions ──────────────────────────────────
     results: dict[str, Any] = {
         "status": "completed",
-        "user_id": body.user_id,
+        "user_id": clerk.user_id,
         "intent": actions.get("intent", "mixed"),
         "reply": actions.get("reply", "Done."),
     }
@@ -1102,7 +1163,7 @@ UPDATE RULES:
             memory_content += "Full weekly replan generated.\n"
 
         await mgr.async_store(
-            user_id=body.user_id,
+            user_id=clerk.user_id,
             title=memory_title,
             content=memory_content,
             page_type="interaction",
@@ -1143,7 +1204,7 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat")
-async def planner_chat(body: ChatRequest):
+async def planner_chat(body: ChatRequest, clerk: ClerkUser = Depends(require_auth)):
     """
     **Conversational planner endpoint** — uses the full PlannerAgent with MCP tools.
 
@@ -1166,11 +1227,11 @@ async def planner_chat(body: ChatRequest):
     from app.config import get_settings
     from app.redis import get_redis
 
-    user = get_user(body.user_id)
+    user = get_user(clerk.user_id)
     if not user:
         raise HTTPException(
             status_code=404,
-            detail=f"User '{body.user_id}' not found. Call POST /api/planner/onboard first.",
+            detail=f"User '{clerk.user_id}' not found. Call POST /api/planner/onboard first.",
         )
 
     if not user.gcal_connected or not user.has_valid_gcal_tokens():
@@ -1178,7 +1239,7 @@ async def planner_chat(body: ChatRequest):
             status_code=400,
             detail=(
                 "Google Calendar not connected. "
-                "One-time setup: GET /api/planner/connect?user_id=" + body.user_id
+                "One-time setup: GET /api/planner/connect?user_id=" + clerk.user_id
             ),
         )
 
@@ -1187,8 +1248,8 @@ async def planner_chat(body: ChatRequest):
     start_time = time.time()
 
     # Create a deterministic UUID from the user_id string
-    user_uuid = _uuid.uuid5(_uuid.NAMESPACE_URL, f"planner:{body.user_id}")
-    session_id = body.session_id or f"planner-chat-{body.user_id}"
+    user_uuid = _uuid.uuid5(_uuid.NAMESPACE_URL, f"clerk:{clerk.user_id}")
+    session_id = body.session_id or f"planner-chat-{clerk.user_id}"
 
     try:
         from app.database import async_session as _async_session
@@ -1198,7 +1259,7 @@ async def planner_chat(body: ChatRequest):
                 "planner",
                 user_id=user_uuid,
                 session_id=session_id,
-                planner_user_id=body.user_id,
+                planner_user_id=clerk.user_id,
             )
 
             result = await agent.run(body.message)
@@ -1218,7 +1279,7 @@ async def planner_chat(body: ChatRequest):
 
             return {
                 "status": "completed",
-                "user_id": body.user_id,
+                "user_id": clerk.user_id,
                 "reply": result.content,
                 "agent": "planner",
                 "model": result.model,
@@ -1247,14 +1308,14 @@ async def planner_chat(body: ChatRequest):
 
 @router.get("/calendar")
 async def get_upcoming_calendar(
-    user_id: str = Query("default-user"),
+    clerk: ClerkUser = Depends(require_auth),
     max_results: int = Query(20, ge=1, le=100),
 ):
     """
     View your upcoming Google Calendar events.
     Uses stored tokens — no re-auth needed.
     """
-    user = get_user(user_id)
+    user = get_user(clerk.user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     if not user.gcal_connected or not user.has_valid_gcal_tokens():
@@ -1269,7 +1330,7 @@ async def get_upcoming_calendar(
         raise HTTPException(status_code=502, detail=f"Calendar read failed: {exc}")
 
     return {
-        "user_id": user_id,
+        "user_id": clerk.user_id,
         "events_count": len(events),
         "events": events,
     }
@@ -1282,10 +1343,10 @@ async def get_upcoming_calendar(
 @router.get("/calendar/event/{event_id}")
 async def get_calendar_event(
     event_id: str,
-    user_id: str = Query("default-user"),
+    clerk: ClerkUser = Depends(require_auth),
 ):
     """Get a single calendar event by ID."""
-    user = get_user(user_id)
+    user = get_user(clerk.user_id)
     if not user or not user.gcal_connected:
         raise HTTPException(status_code=400, detail="Google Calendar not connected.")
 
@@ -1294,18 +1355,17 @@ async def get_calendar_event(
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Calendar read failed: {exc}")
 
-    return {"user_id": user_id, "event": ev}
+    return {"user_id": clerk.user_id, "event": ev}
 
 
 @router.post("/calendar/event")
-async def create_calendar_event(request: Request):
+async def create_calendar_event(request: Request, clerk: ClerkUser = Depends(require_auth)):
     """
     Create a single event directly (no LLM).
-    Body: { user_id, summary, start, end, description?, timezone? }
+    Body: { summary, start, end, description?, timezone? }
     """
     body = await request.json()
-    uid = body.get("user_id", "default-user")
-    user = get_user(uid)
+    user = get_user(clerk.user_id)
     if not user or not user.gcal_connected:
         raise HTTPException(status_code=400, detail="Google Calendar not connected.")
 
@@ -1321,18 +1381,17 @@ async def create_calendar_event(request: Request):
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Calendar create failed: {exc}")
 
-    return {"user_id": uid, "created": True, "event": ev}
+    return {"user_id": clerk.user_id, "created": True, "event": ev}
 
 
 @router.patch("/calendar/event/{event_id}")
-async def update_calendar_event(event_id: str, request: Request):
+async def update_calendar_event(event_id: str, request: Request, clerk: ClerkUser = Depends(require_auth)):
     """
     Update a calendar event by ID.
-    Body: { user_id, summary?, start_datetime?, end_datetime?, description?, color_id? }
+    Body: { summary?, start_datetime?, end_datetime?, description?, color_id? }
     """
     body = await request.json()
-    uid = body.get("user_id", "default-user")
-    user = get_user(uid)
+    user = get_user(clerk.user_id)
     if not user or not user.gcal_connected:
         raise HTTPException(status_code=400, detail="Google Calendar not connected.")
 
@@ -1344,16 +1403,16 @@ async def update_calendar_event(event_id: str, request: Request):
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Calendar update failed: {exc}")
 
-    return {"user_id": uid, "updated": True, "event": ev}
+    return {"user_id": clerk.user_id, "updated": True, "event": ev}
 
 
 @router.delete("/calendar/event/{event_id}")
 async def delete_calendar_event(
     event_id: str,
-    user_id: str = Query("default-user"),
+    clerk: ClerkUser = Depends(require_auth),
 ):
     """Delete a calendar event by ID."""
-    user = get_user(user_id)
+    user = get_user(clerk.user_id)
     if not user or not user.gcal_connected:
         raise HTTPException(status_code=400, detail="Google Calendar not connected.")
 
@@ -1366,7 +1425,7 @@ async def delete_calendar_event(
     if not ok:
         raise HTTPException(status_code=404, detail="Event not found or already deleted.")
 
-    return {"user_id": user_id, "deleted": True, "event_id": event_id}
+    return {"user_id": clerk.user_id, "deleted": True, "event_id": event_id}
 
 
 # ============================================================================
@@ -1684,15 +1743,15 @@ def _get_model(settings) -> str:
 # ============================================================================
 
 @router.get("/mcp-tools")
-async def get_mcp_tools_status(user_id: str = Query("default-user")):
+async def get_mcp_tools_status(clerk: ClerkUser = Depends(require_auth)):
     """
     Return the list of MCP tools available for this user.
     Used by the frontend to show MCP connection status and available tools.
     """
-    user = get_user(user_id)
+    user = get_user(clerk.user_id)
     if not user:
         return {
-            "user_id": user_id,
+            "user_id": clerk.user_id,
             "mcp_connected": False,
             "providers": [],
             "tools": [],
@@ -1732,7 +1791,7 @@ async def get_mcp_tools_status(user_id: str = Query("default-user")):
         })
 
     return {
-        "user_id": user_id,
+        "user_id": clerk.user_id,
         "mcp_connected": len(providers) > 0,
         "providers": providers,
         "tools": tools,

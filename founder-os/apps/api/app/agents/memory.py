@@ -298,13 +298,13 @@ class LongTermMemory:
                 ki.title,
                 ki.content,
                 ki.category,
-                1 - (ki.embedding <=> :emb::vector) AS similarity
+                1 - (ki.embedding <=> CAST(:emb AS vector)) AS similarity
             FROM knowledge_items ki
             WHERE ki.user_id = :uid
               AND ki.is_active = true
               AND ki.embedding IS NOT NULL
               {cat_filter}
-            ORDER BY ki.embedding <=> :emb::vector
+            ORDER BY ki.embedding <=> CAST(:emb AS vector)
             LIMIT :lim
         """)
 

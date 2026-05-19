@@ -318,7 +318,15 @@ function BusinessInfoCard({ profile }: { profile: FounderProfile | null }) {
 
 /* ── App Card ──────────────────────────────────────── */
 
-function AppCard({ app }: { app: AppStatus }) {
+function AppCard({
+  app,
+  onConnect,
+  connecting,
+}: {
+  app: AppStatus;
+  onConnect?: (app: AppStatus) => void;
+  connecting?: boolean;
+}) {
   const Icon = iconMap[app.icon] || Plug;
   const status = statusConfig[app.status] || statusConfig.coming_soon!;
   const StatusIcon = status!.Icon;
@@ -382,13 +390,24 @@ function AppCard({ app }: { app: AppStatus }) {
               : "Active"}
           </span>
         ) : app.connect_url && app.status !== "coming_soon" ? (
-          <a
-            href={app.connect_url}
-            className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-medium bg-[var(--color-accent)] text-[var(--color-accent-foreground)] rounded-md hover:bg-[var(--color-accent-hover)] transition-colors"
+          <button
+            type="button"
+            onClick={() => onConnect?.(app)}
+            disabled={connecting}
+            className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-medium bg-[var(--color-accent)] text-[var(--color-accent-foreground)] rounded-md hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60"
           >
-            Connect
-            <ExternalLink className="w-3 h-3" />
-          </a>
+            {connecting ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Connecting
+              </>
+            ) : (
+              <>
+                Connect
+                <ExternalLink className="w-3 h-3" />
+              </>
+            )}
+          </button>
         ) : null}
       </div>
     </div>
@@ -402,6 +421,8 @@ export default function AppsPage() {
   const [apps, setApps] = useState<AppStatus[]>([]);
   const [profile, setProfile] = useState<FounderProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connectingAppKey, setConnectingAppKey] = useState<string | null>(null);
+  const [connectError, setConnectError] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -428,6 +449,113 @@ export default function AppsPage() {
     setProfile(updated);
   };
 
+  const handleConnectApp = useCallback(
+    async (app: AppStatus) => {
+      if (!app.connect_url || app.status === "coming_soon") return;
+
+      setConnectError(null);
+      setConnectingAppKey(app.key);
+      let waitingForPopupClose = false;
+
+      const beginOauthFlow = async (data: unknown) => {
+        const payload = (data ?? {}) as {
+          status?: string;
+          auth_url?: string;
+          redirect_url?: string;
+          message?: string;
+        };
+
+        if (payload.status === "already_connected") {
+          await loadData();
+          return true;
+        }
+
+        if (typeof payload.auth_url === "string" && payload.auth_url.length > 0) {
+          const popup = window.open(
+            payload.auth_url,
+            `${app.key}-connect`,
+            "width=600,height=700,popup=yes"
+          );
+
+          if (popup) {
+            waitingForPopupClose = true;
+            const timer = setInterval(() => {
+              if (popup.closed) {
+                clearInterval(timer);
+                setConnectingAppKey(null);
+                void loadData();
+              }
+            }, 500);
+            return true;
+          }
+
+          // Popup blocked: continue in current tab
+          window.location.href = payload.auth_url;
+          return true;
+        }
+
+        if (
+          typeof payload.redirect_url === "string" &&
+          payload.redirect_url.length > 0
+        ) {
+          window.location.href = payload.redirect_url;
+          return true;
+        }
+
+        const message =
+          typeof payload.message === "string" && payload.message.length > 0
+            ? payload.message
+            : `Couldn't start ${app.display_name} connection. Please try again.`;
+        setConnectError(message);
+        return false;
+      };
+
+      try {
+        const data = await api(app.connect_url);
+        await beginOauthFlow(data);
+      } catch (err: unknown) {
+        // Retry direct-to-backend in case Next.js proxy/middleware path fails.
+        try {
+          const data = await api(app.connect_url, { direct: true });
+          const started = await beginOauthFlow(data);
+          if (started) {
+            return;
+          }
+        } catch {
+          let raw = "";
+          if (typeof err === "string") {
+            raw = err;
+          } else if (
+            err &&
+            typeof err === "object" &&
+            "message" in err &&
+            typeof (err as { message?: unknown }).message === "string"
+          ) {
+            raw = (err as { message: string }).message;
+          }
+
+          if (raw.toLowerCase().includes("missing authentication token")) {
+            setConnectError(
+              "Authentication token missing. Refresh the page and sign in again, then retry connect."
+            );
+          } else {
+            setConnectError(
+              raw ||
+              "Couldn't start connection. Your session may have expired. Refresh and try again."
+            );
+          }
+        }
+      } finally {
+        if (!waitingForPopupClose) {
+          setConnectingAppKey((current) =>
+            current === app.key ? null : current
+          );
+        }
+      }
+    },
+    [api, loadData]
+  );
+
   const connectedApps = apps.filter((a) => a.status === "connected");
   const availableApps = apps.filter((a) => a.status !== "connected");
 
@@ -451,6 +579,12 @@ export default function AppsPage() {
           Manage your connected tools and company direction
         </p>
       </div>
+
+      {connectError && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {connectError}
+        </div>
+      )}
 
       {/* Primary Goal */}
       <PrimaryGoalCard profile={profile} onUpdate={handleUpdateProfile} />
@@ -482,7 +616,12 @@ export default function AppsPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {availableApps.map((app) => (
-            <AppCard key={app.key} app={app} />
+            <AppCard
+              key={app.key}
+              app={app}
+              onConnect={handleConnectApp}
+              connecting={connectingAppKey === app.key}
+            />
           ))}
         </div>
       </div>
