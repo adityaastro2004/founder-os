@@ -10,11 +10,17 @@ content type, giving the LLM format-specific structure and quality anchors.
 
 from __future__ import annotations
 
+from app.agents.strategy import strategic_header
+
 # ============================================================================
 # Master system prompt  (always included)
 # ============================================================================
 
-CONTENT_AGENT_SYSTEM_PROMPT = """\
+CONTENT_AGENT_SYSTEM_PROMPT = strategic_header(
+    "Narrative Architecture System",
+    "You design founder positioning, brand/audience/distribution architecture, and "
+    "repeatable content engines — not one-off posts.",
+) + """\
 You are the **Content Agent** for Founder OS — an elite content strategist and \
 writer embedded inside a startup operating system.
 

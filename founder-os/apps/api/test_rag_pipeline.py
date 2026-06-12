@@ -62,9 +62,9 @@ client = httpx.Client(base_url=BASE, headers=auth_headers(), timeout=60)
 
 def test_health():
     header("1. Health Check")
-    r = client.get("/health")
-    if r.status_code == 200:
-        ok("API healthy", r.json().get("status", ""))
+    r = client.get("/api/health")
+    if r.status_code == 200 and r.json().get("healthy"):
+        ok("API healthy", str(r.json().get("checks", "")))
     else:
         fail("API health check", f"status={r.status_code}")
 
@@ -372,8 +372,7 @@ def test_search_with_filter():
 def test_agent_uses_knowledge():
     header("11. Agent Uses Uploaded Context in Responses")
 
-    r = client.post("/api/agents/chat", json={
-        "agent_name": "content",
+    r = client.post("/api/agents/content/chat", json={
         "message": "What is our enterprise pricing? How much does it cost per seat?",
         "session_id": "rag-test-session",
     })
@@ -383,7 +382,7 @@ def test_agent_uses_knowledge():
         return
 
     data = r.json()
-    response_text = data.get("response", "") or data.get("content", "") or str(data)
+    response_text = data.get("reply", "") or data.get("response", "") or data.get("content", "") or str(data)
     response_lower = response_text.lower()
 
     # Check if the agent's response includes information from our ingested doc

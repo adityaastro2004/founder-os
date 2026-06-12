@@ -133,8 +133,11 @@ class ReviewStatsResponse(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────
 
-def _get_user_uuid(user: ClerkUser) -> uuid.UUID:
-    return uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")
+async def _get_user_uuid(user: ClerkUser, db) -> uuid.UUID:
+    """Resolve the REAL users.id (replaces the legacy synthetic uuid5, which never
+    matched the id agents write tasks under)."""
+    from app.users import get_or_create_user_id
+    return await get_or_create_user_id(user.user_id, db, email=user.email)
 
 
 def _format_dt(dt: Optional[datetime]) -> Optional[str]:
@@ -216,7 +219,7 @@ async def list_review_tasks(
     db: AsyncSession = Depends(get_db),
 ):
     """List tasks available for review."""
-    user_uuid = _get_user_uuid(user)
+    user_uuid = await _get_user_uuid(user, db)
 
     query = (
         select(Task)
@@ -276,7 +279,7 @@ async def get_task_detail(
     db: AsyncSession = Depends(get_db),
 ):
     """Get detailed task info with all outputs."""
-    user_uuid = _get_user_uuid(user)
+    user_uuid = await _get_user_uuid(user, db)
 
     try:
         tid = uuid.UUID(task_id)
@@ -305,7 +308,7 @@ async def approve_task(
     db: AsyncSession = Depends(get_db),
 ):
     """Approve a task output — accept as-is."""
-    user_uuid = _get_user_uuid(user)
+    user_uuid = await _get_user_uuid(user, db)
 
     try:
         tid = uuid.UUID(task_id)
@@ -346,7 +349,7 @@ async def reject_task(
     db: AsyncSession = Depends(get_db),
 ):
     """Reject a task output — optionally retry."""
-    user_uuid = _get_user_uuid(user)
+    user_uuid = await _get_user_uuid(user, db)
 
     try:
         tid = uuid.UUID(task_id)
@@ -390,7 +393,7 @@ async def edit_task_output(
     Edit a task's output content, then approve it.
     Creates a new version of the output with the edited content.
     """
-    user_uuid = _get_user_uuid(user)
+    user_uuid = await _get_user_uuid(user, db)
 
     try:
         tid = uuid.UUID(task_id)
@@ -457,7 +460,7 @@ async def submit_task_feedback(
     db: AsyncSession = Depends(get_db),
 ):
     """Submit feedback for a task (rating + comments)."""
-    user_uuid = _get_user_uuid(user)
+    user_uuid = await _get_user_uuid(user, db)
 
     try:
         tid = uuid.UUID(task_id)
@@ -498,7 +501,7 @@ async def get_review_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Get review queue stats."""
-    user_uuid = _get_user_uuid(user)
+    user_uuid = await _get_user_uuid(user, db)
     today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
 
     # Pending review count

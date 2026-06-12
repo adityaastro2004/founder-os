@@ -305,12 +305,15 @@ def start_scheduler() -> AsyncIOScheduler:
 
     scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
 
-    # ── Production: every Monday at 8 AM ──────────────────────
+    # ── Production: every Monday at 8 AM IST ───────────────────
+    # Explicit timezone: a CronTrigger instance built without one resolves to the
+    # MACHINE-local zone (not the scheduler's Asia/Kolkata default), which made the
+    # weekly plan fire at 8 AM in whatever tz the host happened to be in.
     scheduler.add_job(
         automated_planner_job,
-        trigger=CronTrigger(day_of_week="mon", hour=8, minute=0),
+        trigger=CronTrigger(day_of_week="mon", hour=8, minute=0, timezone="Asia/Kolkata"),
         id="weekly_planner",
-        name="Weekly Planner (Monday 8 AM)",
+        name="Weekly Planner (Monday 8 AM IST)",
         replace_existing=True,
     )
 

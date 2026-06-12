@@ -201,6 +201,14 @@ class ExecutionEngine:
                         "I'm temporarily rate-limited by the AI provider. "
                         "Please wait a minute and try again."
                     )
+                else:
+                    # Never return a silent-empty "completed" result — surface the
+                    # failure so callers/UIs see what actually happened.
+                    final_text = (
+                        f"Agent '{agent_name}' could not get a response from the "
+                        f"LLM provider ({type(exc).__name__}: {exc}). "
+                        "Check the LLM provider configuration and try again."
+                    )
                 break
 
             llm_duration = (time.time() - llm_start) * 1000

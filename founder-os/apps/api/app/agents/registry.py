@@ -46,7 +46,7 @@ from app.agents.memory import (
 from app.agents.mcp_tools import MCPToolManager, MCPGoogleCalendarProvider
 from app.agents.router import AgentCard, AgentRouter
 from app.agents.tool_protocol import LocalToolProvider, ToolRegistry
-from app.models import Agent as AgentModel, UserAgentConfig
+from app.models import Agent as AgentModel, AgentDefinition, UserAgentConfig
 from app.retrieval.embeddings import EmbeddingProvider, create_embedding_provider
 from app.retrieval.retriever import ContextRetriever
 
@@ -163,6 +163,33 @@ class AgentRegistry:
             return settings.GEMINI_MODEL
         return ""
 
+    def _sanitize_model(self, db_model: str | None) -> str:
+        """Drop a stale provider-specific model name pinned in the agents row.
+
+        Agent rows persist a model string (e.g. 'gemini-2.5-flash') across
+        LLM_PROVIDER switches; passing it verbatim to a different provider 404s
+        (Ollama was asked for gemini-2.5-flash). If the row's model doesn't belong
+        to the configured provider, return "" so the provider's own configured
+        default wins (every provider does `model or self.default_model`).
+        """
+        m = (db_model or "").strip()
+        if not m:
+            return ""
+        provider = self._settings.LLM_PROVIDER
+        lower = m.lower()
+        if provider == "anthropic":
+            return m if lower.startswith("claude") else ""
+        if provider == "gemini":
+            return m if lower.startswith("gemini") else ""
+        if lower.startswith(("claude", "gemini")):
+            return ""
+        if provider == "ollama":
+            # Local tags conventionally carry ':tag' (llama3.1:8b); hosted names
+            # (llama-3.3-70b-versatile, gpt-4o) don't — don't ask Ollama for those.
+            return m if (":" in m or m == getattr(self._settings, "OLLAMA_MODEL", "")) else ""
+        # openai_compatible: reject ollama-style local tags
+        return "" if ":" in m else m
+
     @staticmethod
     def _create_embedder(settings: Any, redis: aioredis.Redis) -> EmbeddingProvider:
         """Create the shared embedding provider for auto-RAG."""
@@ -224,15 +251,24 @@ class AgentRegistry:
         # 3. Load per-user config overlay (optional)
         user_config = await self._load_user_config(db_agent.id, user_id)
 
+        # 3b. Load the founder's ACTIVE regenerated definition (Agent Evolution Engine,
+        #     task 003). If present, it overrides the global agent's prompt + tools.
+        active_def = await self._load_active_definition(agent_name, user_id)
+        effective_prompt = active_def.system_prompt if active_def else db_agent.system_prompt
+        effective_tools = (
+            (active_def.selected_tools if active_def else db_agent.available_tools)
+            or agent_cls.default_tools
+        )
+
         # 4. Merge into AgentConfig
         config = AgentConfig(
             name=db_agent.name,
             display_name=db_agent.display_name,
-            model=db_agent.model,
+            model=self._sanitize_model(db_agent.model),
             temperature=float(db_agent.temperature),
             max_tokens=db_agent.max_tokens,
-            system_prompt=db_agent.system_prompt,
-            tool_names=(db_agent.available_tools or agent_cls.default_tools),
+            system_prompt=effective_prompt,
+            tool_names=effective_tools,
             custom_instructions=(
                 user_config.custom_instructions if user_config else None
             ),
@@ -905,10 +941,11 @@ class AgentRegistry:
 
             _crawl_engine = CrawlEngine()
             _memory_mgr = get_memory_manager()
+            # ResearchEngine opens its own DB sessions internally; it only takes
+            # (crawl_engine, settings). Passing db_session/memory_manager raised
+            # TypeError and silently downgraded all 5 crawler tools to stubs.
             _research_engine = ResearchEngine(
                 crawl_engine=_crawl_engine,
-                db_session=self._db,
-                memory_manager=_memory_mgr,
                 settings=self._settings,
             )
 
@@ -1092,3 +1129,68 @@ class AgentRegistry:
             )
         )
         return result.scalar_one_or_none()
+
+    async def _load_active_definition(
+        self, agent_name: str, user_id: uuid.UUID
+    ) -> Optional[AgentDefinition]:
+        """Load the founder's ACTIVE regenerated agent definition, if any (task 003)."""
+        result = await self._db.execute(
+            select(AgentDefinition).where(
+                AgentDefinition.user_id == user_id,
+                AgentDefinition.agent_name == agent_name,
+                AgentDefinition.status == "active",
+            )
+        )
+        return result.scalar_one_or_none()
+
+
+# ============================================================================
+# Code → DB sync (code is the source of truth for agent definitions)
+# ============================================================================
+
+async def sync_agents_to_db(db: AsyncSession) -> int:
+    """Upsert the canonical agent definitions from code into the ``agents`` table.
+
+    The runtime loads ``agents.system_prompt`` from the DB (base.py:351 prefers the
+    DB value), and the DB was historically seeded with generic placeholder prompts
+    (schema.sql). This makes **code the source of truth**: every active agent class in
+    ``AGENT_CLASSES`` has its system prompt, capabilities, and tools written to its DB
+    row so the rich/strategic prompts actually run. Idempotent; no schema migration.
+
+    See docs/decisions.md ADR-004. Returns the number of agents synced.
+    """
+    synced = 0
+    for slug, cls in AGENT_CLASSES.items():
+        prompt = (getattr(cls, "default_system_prompt", "") or "").strip()
+        if not prompt:
+            continue
+        capabilities = list(getattr(cls, "capabilities", []) or [])
+        tools = list(getattr(cls, "default_tools", []) or [])
+        display_name = slug.replace("_", " ").title()
+        description = prompt[:200]
+
+        result = await db.execute(select(AgentModel).where(AgentModel.name == slug))
+        row = result.scalar_one_or_none()
+        if row is None:
+            db.add(
+                AgentModel(
+                    name=slug,
+                    display_name=display_name,
+                    description=description,
+                    system_prompt=prompt,
+                    capabilities=capabilities,
+                    available_tools=tools,
+                )
+            )
+        else:
+            row.system_prompt = prompt
+            row.capabilities = capabilities
+            row.available_tools = tools
+            row.is_active = True
+            if not row.description:
+                row.description = description
+        synced += 1
+
+    await db.flush()
+    logger.info("sync_agents_to_db: synced %d agent definitions from code", synced)
+    return synced

@@ -960,3 +960,60 @@ class ContentIdea(Base):
 
     def __repr__(self) -> str:
         return f"<ContentIdea {self.title[:40]}>"
+
+
+# ============================================================================
+# AGENT EVOLUTION ENGINE (task 003)
+# ============================================================================
+
+class FounderContextModel(Base):
+    """A structured, versioned model of a founder's business, distilled from
+    FounderProfile + UserProfileIntel. Consumed by the AgentGenerator to regenerate
+    agent definitions. See docs/agent-evolution.md."""
+    __tablename__ = "founder_context_models"
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    # {business_model, customer_profile, market_profile, operating_style,
+    #  risk_tolerance, goals, summary}
+    model: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    source_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = _ts_now()
+
+    def __repr__(self) -> str:
+        return f"<FounderContextModel user={self.user_id} v{self.version}>"
+
+
+class AgentDefinition(Base):
+    """A versioned, per-founder regeneration of an agent's full definition (system
+    prompt + decision framework + tool selection). Staged as ``proposed``; the founder
+    approves to make it ``active``; the registry prefers the active row over the global
+    agents row. See docs/decisions.md ADR-006."""
+    __tablename__ = "agent_definitions"
+    __table_args__ = (
+        Index("ix_agent_definitions_user_agent_status", "user_id", "agent_name", "status"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    agent_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+
+    system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    decision_framework: Mapped[Optional[str]] = mapped_column(Text)
+    selected_tools: Mapped[Optional[list]] = mapped_column(JSONB)
+
+    # proposed | active | superseded
+    status: Mapped[str] = mapped_column(String(20), default="proposed", server_default="proposed")
+    context_model_version: Mapped[Optional[int]] = mapped_column(Integer)
+
+    created_at: Mapped[datetime] = _ts_now()
+    approved_at: Mapped[Optional[datetime]] = _ts_now_nullable()
+
+    def __repr__(self) -> str:
+        return f"<AgentDefinition {self.agent_name} user={self.user_id} v{self.version} {self.status}>"

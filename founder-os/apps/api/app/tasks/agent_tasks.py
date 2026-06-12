@@ -182,7 +182,8 @@ async def _run_agent_async(
         # Build registry and agent
         registry = AgentRegistry(db=session, redis=redis_client, settings=settings)
 
-        user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user_id}")
+        from app.users import get_or_create_user_id
+        user_uuid = await get_or_create_user_id(user_id, session)
         agent = await registry.get(agent_name, user_id=user_uuid, session_id=session_id)
 
         # Run the agent
@@ -240,7 +241,8 @@ async def _run_orchestration_async(
 
         registry = AgentRegistry(db=session, redis=redis_client, settings=settings)
 
-        user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user_id}")
+        from app.users import get_or_create_user_id
+        user_uuid = await get_or_create_user_id(user_id, session)
         agent = await registry.get("orchestrator", user_id=user_uuid, session_id=session_id)
 
         result = await agent.run(message, extra_context=extra_context)

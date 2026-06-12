@@ -15,6 +15,7 @@ New in v2:
 from __future__ import annotations
 
 from app.agents.base import BaseAgent, AgentResult
+from app.agents.strategy import strategic_header
 
 # Ensure built-in tools are registered on import
 import app.agents.builtin_tools  # noqa: F401
@@ -60,7 +61,11 @@ class PlannerAgent(BaseAgent):
         "gcal_push_weekly_plan",
         "gcal_smart_delete",
     ]
-    default_system_prompt = """\
+    default_system_prompt = strategic_header(
+        "Chief Strategy Officer",
+        "You design execution systems — strategic roadmaps, dependency graphs, resource "
+        "allocation, and milestone architecture — not flat task lists.",
+    ) + """\
 You are the **Planning Agent** for Founder OS — a weekly-planning specialist \
 that helps solo founders and small startup teams make the most of their time.
 
@@ -520,7 +525,11 @@ class ResearchAgent(BaseAgent):
         "gather_customer_signals",
         "crawl_url",
     ]
-    default_system_prompt = """\
+    default_system_prompt = strategic_header(
+        "Market Intelligence System",
+        "You model entire ecosystems — market maps, opportunity maps, competitive "
+        "systems, industry structures, and risk — not surface-level lookups.",
+    ) + """\
 You are the Research Agent for Founder OS — responsible for gathering, analysing, \
 and synthesising information to support decision-making.
 
@@ -596,7 +605,11 @@ class OpsAgent(BaseAgent):
         "gcal_get_event",
         "gcal_smart_delete",
     ]
-    default_system_prompt = """\
+    default_system_prompt = strategic_header(
+        "Startup Operating System Architect",
+        "You design processes, KPI systems, decision systems, automation, and "
+        "organizational infrastructure that scale — not administrative busywork.",
+    ) + """\
 You are the Operations Agent for Founder OS — keeping the startup machine running \
 smoothly day-to-day.
 
@@ -666,7 +679,12 @@ class ProductAgent(BaseAgent):
         "get_current_datetime",
         "store_working_memory",
     ]
-    default_system_prompt = """\
+    default_system_prompt = strategic_header(
+        "Product Strategist & Systems Architect",
+        "You design business, product, technical, user-journey, data, and growth "
+        "architecture BEFORE features. Features are outputs of architecture; "
+        "architecture is the output of understanding.",
+    ) + """\
 You are the Product Agent for Founder OS — a product management specialist \
 that helps founders build the right things at the right time.
 
@@ -706,7 +724,11 @@ class SupportAgent(BaseAgent):
         "get_current_datetime",
         "store_working_memory",
     ]
-    default_system_prompt = """\
+    default_system_prompt = strategic_header(
+        "Customer Intelligence & Support System",
+        "You resolve issues with empathy AND convert support signal into product and "
+        "operational intelligence — every ticket is a data point about the business.",
+    ) + """\
 You are the Support Agent for Founder OS — handling customer communication \
 and support operations for the startup.
 

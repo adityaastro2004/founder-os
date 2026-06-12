@@ -26,6 +26,7 @@ from app.database import get_db
 from app.redis import get_redis
 from app.agents.registry import AgentRegistry
 from app.user_store import get_user as get_planner_user
+from app.users import get_or_create_user_id
 from app.models import AgentRun, ChatMessage as ChatMessageModel
 
 logger = logging.getLogger(__name__)
@@ -266,7 +267,7 @@ async def run_agent(
 
     try:
         # user_id from Clerk is a string; derive a deterministic UUID.
-        user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")
+        user_uuid = await get_or_create_user_id(user.user_id, db, email=user.email)
         planner_uid = _resolve_planner_user_id(user.user_id)
 
         agent = await registry.get(
@@ -376,7 +377,7 @@ async def chat_with_agent(
     registry = AgentRegistry(db=db, redis=redis, settings=settings)
 
     try:
-        user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")
+        user_uuid = await get_or_create_user_id(user.user_id, db, email=user.email)
         planner_uid = _resolve_planner_user_id(user.user_id)
         session_id = body.session_id or f"{agent_name}-chat-{user.user_id}"
 
@@ -518,7 +519,7 @@ async def orchestrate(
     redis = get_redis()
     registry = AgentRegistry(db=db, redis=redis, settings=settings)
 
-    user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")
+    user_uuid = await get_or_create_user_id(user.user_id, db, email=user.email)
     planner_uid = _resolve_planner_user_id(user.user_id)
 
     try:
@@ -664,7 +665,7 @@ async def orchestrate_stream(
     redis = get_redis()
     registry = AgentRegistry(db=db, redis=redis, settings=settings)
 
-    user_uuid = uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")
+    user_uuid = await get_or_create_user_id(user.user_id, db, email=user.email)
     planner_uid = _resolve_planner_user_id(user.user_id)
 
     try:

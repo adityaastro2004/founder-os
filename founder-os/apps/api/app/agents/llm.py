@@ -141,8 +141,10 @@ class OllamaProvider(LLMProvider):
         self,
         base_url: str = "http://localhost:11434",
         default_model: str = "llama3.1:8b",
-        timeout: float = 120.0,
+        timeout: float = 300.0,
     ) -> None:
+        # 300s: local models pay a long prompt-eval cost on orchestrator-sized
+        # prompts (large system prompt + tool schemas); 120s read-timed-out.
         self.base_url = base_url.rstrip("/")
         self.default_model = default_model
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=timeout)
@@ -219,7 +221,13 @@ class OllamaProvider(LLMProvider):
                             "type": "function",
                             "function": {
                                 "name": tc.name,
-                                "arguments": json.dumps(tc.arguments),
+                                # Ollama's NATIVE /api/chat requires arguments as a
+                                # JSON object (only the OpenAI-compat endpoint takes
+                                # a stringified form). A string here 400s every
+                                # round that replays tool-call history.
+                                "arguments": tc.arguments
+                                if isinstance(tc.arguments, dict)
+                                else json.loads(tc.arguments or "{}"),
                             },
                         }
                         for tc in msg.tool_calls

@@ -80,14 +80,25 @@ class ActivityStatsResponse(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────
 
-def _get_user_id(user: ClerkUser) -> str:
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}"))
+async def _get_user_id(user: ClerkUser) -> str:
+    """Resolve the REAL users.id (string) — the key agents now write events/tasks
+    under. Opens its own short-lived session (some endpoints here are Redis-only)."""
+    from app.database import async_session
+    from app.users import get_or_create_user_id
+
+    async with async_session() as session:
+        uid = await get_or_create_user_id(user.user_id, session, email=user.email)
+        await session.commit()
+    return str(uid)
 
 
-def _get_user_aliases(user: ClerkUser) -> set[str]:
+async def _get_user_aliases(user: ClerkUser) -> set[str]:
+    """All ids this user's events may be keyed under: the real users.id (current),
+    plus the raw Clerk id and the legacy synthetic uuid5 keys (older events)."""
     return {
         user.user_id,
-        _get_user_id(user),
+        await _get_user_id(user),
+        str(uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")),
         str(uuid.uuid5(uuid.NAMESPACE_URL, f"planner:{user.user_id}")),
     }
 
@@ -196,8 +207,8 @@ async def activity_stream(
         es.onmessage = (e) => console.log(JSON.parse(e.data));
     """
     redis = get_redis()
-    user_id = _get_user_id(user)
-    user_aliases = _get_user_aliases(user)
+    user_id = await _get_user_id(user)
+    user_aliases = await _get_user_aliases(user)
 
     async def event_generator():
         pubsub = redis.pubsub()
@@ -262,7 +273,7 @@ async def get_recent_activity(
 ):
     """Get recent activity events (from Redis cache)."""
     redis = get_redis()
-    user_id = _get_user_id(user)
+    user_id = await _get_user_id(user)
     key = _ACTIVITY_KEY.format(user_id=user_id)
 
     # Get all events then filter (Redis list doesn't support filtering)
@@ -299,7 +310,7 @@ async def get_activity_stats(
 ):
     """Get agent status summaries and activity stats."""
     redis = get_redis()
-    user_id = _get_user_id(user)
+    user_id = await _get_user_id(user)
     user_uuid = uuid.UUID(user_id)
 
     # Get all agents

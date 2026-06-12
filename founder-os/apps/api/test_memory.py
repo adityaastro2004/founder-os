@@ -8,7 +8,8 @@ import sys
 BASE = "http://localhost:8000/api/memory"
 
 def main():
-    client = httpx.Client(timeout=30)
+    # x-test-user: dev-only auth identity (APP_ENV=development bypass in app/auth.py)
+    client = httpx.Client(timeout=30, headers={"x-test-user": "default-user"})
     
     # ── Store memories ──────────────────────────────────────────
     memories = [

@@ -133,8 +133,27 @@ async def _verify_token(token: str) -> ClerkUser:
     return _parse_clerk_token(payload)
 
 
+# ── Dev-only test-user bypass ────────────────────────────
+def _dev_test_user(request: Request) -> ClerkUser | None:
+    """Accept an ``x-test-user`` header as the identity — ONLY in development.
+
+    Hard-gated on ``APP_ENV == "development"`` (the same gate that mounts the
+    unauthenticated dev test routes in main.py). Lets the local test scripts
+    (test_system / test_memory / test_rag_pipeline / test_content_agent) exercise
+    authenticated endpoints without minting Clerk JWTs. Never active in production.
+    """
+    settings = get_settings()
+    if settings.APP_ENV != "development":
+        return None
+    test_user = request.headers.get("x-test-user")
+    if not test_user:
+        return None
+    return ClerkUser(user_id=test_user, email=f"{test_user}@test.local")
+
+
 # ── FastAPI dependencies ─────────────────────────────────
 async def require_auth(
+    request: Request,
     credentials: Annotated[
         HTTPAuthorizationCredentials | None,
         Depends(_bearer_scheme),
@@ -147,6 +166,9 @@ async def require_auth(
         async def me(user: ClerkUser = Depends(require_auth)):
             return {"user_id": user.user_id}
     """
+    dev_user = _dev_test_user(request)
+    if dev_user is not None:
+        return dev_user
     if credentials is None or not credentials.credentials:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -157,6 +179,7 @@ async def require_auth(
 
 
 async def optional_auth(
+    request: Request,
     credentials: Annotated[
         HTTPAuthorizationCredentials | None,
         Depends(_bearer_scheme),
@@ -169,6 +192,9 @@ async def optional_auth(
         async def feed(user: ClerkUser | None = Depends(optional_auth)):
             ...
     """
+    dev_user = _dev_test_user(request)
+    if dev_user is not None:
+        return dev_user
     if credentials is None or not credentials.credentials:
         return None
     try:

@@ -369,7 +369,9 @@ def run_integration_tests():
         RESULTS.append((name, "SKIP", detail))
         print(f"  [SKIP] {name}" + (f" — {detail}" if detail else ""))
 
-    c = httpx.Client(base_url=BASE, timeout=120)
+    # x-test-user: dev-only auth identity (APP_ENV=development bypass in app/auth.py)
+    # 300s: local Ollama generations + multi-round orchestrator delegation need headroom
+    c = httpx.Client(base_url=BASE, timeout=300, headers={"x-test-user": USER})
 
     # ── 1. Health check ─────────────────────────────────────
     print("\n" + "=" * 60)
@@ -388,9 +390,7 @@ def run_integration_tests():
     # ── 2. Generate blog post via agent chat ────────────────
     print("\n--- Blog Post Generation ---")
     try:
-        r = c.post("/api/agents/chat", json={
-            "user_id": USER,
-            "agent": "content",
+        r = c.post("/api/agents/content/chat", json={
             "message": (
                 'Write a full blog post about "Why solo founders should automate '
                 'their content pipeline". Make it actionable with specific tools '
@@ -399,7 +399,7 @@ def run_integration_tests():
         })
         assert r.status_code == 200
         data = r.json()
-        content = data.get("response", data.get("content", ""))
+        content = data.get("reply") or data.get("response") or data.get("content", "")
         assert len(content) > 200, f"Blog too short: {len(content)} chars"
         ok("Blog post generated", f"{len(content)} chars")
 
@@ -421,9 +421,7 @@ def run_integration_tests():
     # ── 3. Generate social posts via agent chat ─────────────
     print("\n--- Social Post Generation ---")
     try:
-        r = c.post("/api/agents/chat", json={
-            "user_id": USER,
-            "agent": "content",
+        r = c.post("/api/agents/content/chat", json={
             "message": (
                 'Create a Twitter thread and LinkedIn post about "How we reached '
                 '$10k MRR as a bootstrapped startup". Make it authentic and '
@@ -432,7 +430,7 @@ def run_integration_tests():
         })
         assert r.status_code == 200
         data = r.json()
-        content = data.get("response", data.get("content", ""))
+        content = data.get("reply") or data.get("response") or data.get("content", "")
         assert len(content) > 100, f"Social posts too short: {len(content)} chars"
         ok("Social posts generated", f"{len(content)} chars")
 
@@ -454,9 +452,7 @@ def run_integration_tests():
     # ── 4. Generate email via agent chat ────────────────────
     print("\n--- Email Generation ---")
     try:
-        r = c.post("/api/agents/chat", json={
-            "user_id": USER,
-            "agent": "content",
+        r = c.post("/api/agents/content/chat", json={
             "message": (
                 "Draft a product update email announcing our new AI-powered "
                 "dashboard feature. Include 2-3 subject line variants for A/B "
@@ -465,7 +461,7 @@ def run_integration_tests():
         })
         assert r.status_code == 200
         data = r.json()
-        content = data.get("response", data.get("content", ""))
+        content = data.get("reply") or data.get("response") or data.get("content", "")
         assert len(content) > 100, f"Email too short: {len(content)} chars"
         ok("Email generated", f"{len(content)} chars")
 
@@ -481,9 +477,7 @@ def run_integration_tests():
     # ── 5. Content repurposing test ─────────────────────────
     print("\n--- Content Repurposing ---")
     try:
-        r = c.post("/api/agents/chat", json={
-            "user_id": USER,
-            "agent": "content",
+        r = c.post("/api/agents/content/chat", json={
             "message": (
                 "Take this blog post idea and repurpose it: 'We switched from "
                 "per-seat to usage-based pricing and tripled our enterprise "
@@ -493,7 +487,7 @@ def run_integration_tests():
         })
         assert r.status_code == 200
         data = r.json()
-        content = data.get("response", data.get("content", ""))
+        content = data.get("reply") or data.get("response") or data.get("content", "")
         assert len(content) > 200, f"Repurposed content too short: {len(content)} chars"
         ok("Content repurposed", f"{len(content)} chars, multiple formats")
     except Exception as e:
@@ -502,9 +496,7 @@ def run_integration_tests():
     # ── 6. Agent delegation (orchestrator → content) ────────
     print("\n--- Delegation Test ---")
     try:
-        r = c.post("/api/agents/chat", json={
-            "user_id": USER,
-            "agent": "orchestrator",
+        r = c.post("/api/agents/orchestrator/chat", json={
             "message": (
                 "I need a blog post about why startups should invest in "
                 "developer experience. Delegate this to the content agent."
@@ -512,7 +504,7 @@ def run_integration_tests():
         })
         assert r.status_code == 200
         data = r.json()
-        content = data.get("response", data.get("content", ""))
+        content = data.get("reply") or data.get("response") or data.get("content", "")
         assert len(content) > 100
         ok("Orchestrator → Content delegation", f"{len(content)} chars")
     except Exception as e:

@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Founder OS</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only],
+.vscode-high-contrast:not(.vscode-high-contrast-light) img[src$=\#gh-light-mode-only],
+.vscode-high-contrast-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <span id="markdown-mermaid" aria-hidden="true" data-config="{&quot;darkModeTheme&quot;:&quot;vscode&quot;,&quot;lightModeTheme&quot;:&quot;vscode&quot;,&quot;maxTextSize&quot;:50000,&quot;clickDrag&quot;:&quot;alt&quot;,&quot;showControls&quot;:&quot;onHoverOrFocus&quot;,&quot;resizable&quot;:true,&quot;maxHeight&quot;:&quot;&quot;}"></span>
+				<h1 id="founder-os">Founder OS</h1>
+<p><strong>An autonomous AI operating system that runs your startup.</strong></p>
+<p>Founder OS is a multi-agent backend that acts as a tireless co-founder — it plans your week, writes your content, researches your market, monitors your operations, manages your product roadmap, and handles customer support. You talk to it; it talks to itself; work gets done.</p>
+<p>No workflow builders. No drag-and-drop. No manual automation setup. Founder OS <strong>automatically generates and evolves custom workflows</strong> tailored to your company — and scales them as you grow.</p>
+<p>Built for solo founders and tiny teams who need the output of a 10-person ops team but can't afford one.</p>
+<hr>
+<h2 id="the-problem">The Problem</h2>
+<p>Running a startup solo means you're the CEO, marketer, researcher, PM, support rep, and ops manager — all at once. You context-switch dozens of times a day. Important things fall through cracks. You spend more time <em>managing</em> work than <em>doing</em> work.</p>
+<p>Existing AI tools help with isolated tasks (write a blog post, summarise a doc), but they don't understand your business holistically. They don't remember what you told them last week. They can't coordinate across domains. They're co-pilots — not co-founders.</p>
+<p>And workflow tools like n8n, Zapier, or Make? They require <em>you</em> to design every automation by hand. You have to know what to automate, wire up every trigger and step, and rebuild flows as your company changes. That's more busywork, not less.</p>
+<h2 id="the-vision">The Vision</h2>
+<p>Founder OS is not a chatbot. It's an <strong>operating system</strong> for your startup — a persistent, memory-rich, multi-agent system that:</p>
+<ul>
+<li><strong>Knows your business</strong> — ingests your docs, metrics, integrations, and context into a vector knowledge base (pgvector) so every agent grounds its work in <em>your</em> reality</li>
+<li><strong>One entry point, zero routing</strong> — you talk to the <strong>Orchestrator</strong> (inspired by <a href="https://arxiv.org/abs/2402.15678">Stripe's Minions</a>). It analyses your request, decomposes it into subtasks, delegates to the right specialist agents, and synthesises one coherent answer. You never pick an agent.</li>
+<li><strong>Auto-generated workflows</strong> — no drag-and-drop, no manual automation. The Orchestrator creates <strong>custom multi-agent workflows on the fly</strong> based on what your company actually needs. As your startup grows — new integrations, more data, bigger team — workflows evolve automatically. What n8n/Zapier/Make require you to build by hand, Founder OS figures out and runs for you.</li>
+<li><strong>Delegates internally</strong> — agents talk to each other (Agent-to-Agent protocol) without you orchestrating every step. Ask for a product launch plan and the Orchestrator coordinates Research, Content, Product, and Ops agents behind the scenes</li>
+<li><strong>Remembers everything</strong> — 4-layer agent memory + temporal knowledge graph with composite scoring, spaced-repetition review, entity linking, and typed relationships</li>
+<li><strong>Plans your week</strong> — automated weekly planner with Google Calendar integration, ICE-scored priorities, and Monday-morning auto-generation via APScheduler</li>
+<li><strong>Human-in-the-loop</strong> — approval system with 3-tier risk classification (LOW / MEDIUM / HIGH), per-user preferences, and mandatory gating for irreversible actions</li>
+<li><strong>Uses your tools</strong> — MCP (Model Context Protocol) lets agents connect to external tool servers (GitHub, Slack, Notion, Linear, analytics platforms) as first-class capabilities</li>
+<li><strong>Runs in the background</strong> — Celery task queue for long-running orchestrations with status polling, cancellation, and per-user task history</li>
+<li><strong>Scales with you</strong> — Day 1 you're a solo founder and the system runs simple single-agent tasks. Month 6 you have a team, 10 integrations, and complex cross-functional processes — the same system handles it, automatically composing more sophisticated agent workflows as your context grows</li>
+<li><strong>Runs on your terms</strong> — OSS-first, local-first. Default LLM is Ollama (free, runs on your machine). Swap to Anthropic, Gemini, or any OpenAI-compatible API when you need more power. No vendor lock-in.</li>
+</ul>
+<p>The end state: you wake up, open Founder OS, and your AI team has already triaged support tickets, drafted this week's newsletter, flagged a competitor move, updated the roadmap, and prepared a prioritised task list for your day. No workflow was manually configured — the system figured out what to do based on your goals, data, and history.</p>
+<hr>
+<h2 id="architecture">Architecture</h2>
+<pre><code>                        ┌──────────────────┐
+                        │   User Message   │
+                        └────────┬─────────┘
+                                 ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                         Founder OS                              │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │              ORCHESTRATOR (Stripe Minions)               │   │
+│  │                                                         │   │
+│  │  Analyse → Plan → Delegate → Synthesise                 │   │
+│  │  Agents-as-tools: the LLM decides the workflow          │   │
+│  └───┬──────────┬──────────┬──────────┬──────────┬────────┘   │
+│      ▼          ▼          ▼          ▼          ▼             │
+│  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐      │
+│  │Planner │ │Content │ │Research│ │  Ops   │ │Product │      │
+│  │ Agent  │ │ Agent  │ │ Agent  │ │ Agent  │ │ Agent  │      │
+│  └────────┘ └────────┘ └────────┘ └────────┘ └────────┘      │
+│                              ┌────────┐                       │
+│                              │Support │  ... + custom agents  │
+│                              │ Agent  │                       │
+│                              └────────┘                       │
+│                                                                 │
+│  ─────────────────────────────────────────────────────────────  │
+│  │ Approval Gate │ A2A Router │ Event Bus │ Shared Memory   │  │
+│  ─────────────────────────────────────────────────────────────  │
+│                                                                 │
+│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐   │
+│  │ Execution Eng  │  │ Celery Queue   │  │ APScheduler    │   │
+│  │ LLM→tools→loop │  │ async bg tasks │  │ weekly planner │   │
+│  └────────────────┘  └────────────────┘  └────────────────┘   │
+│                                                                 │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
+│  │ LLM Provider │  │ Tool Registry│  │   Memory System      │  │
+│  │              │  │              │  │                      │  │
+│  │ • Ollama     │  │ • Local tools│  │  4-Layer Agent Mem   │  │
+│  │ • Anthropic  │  │ • MCP stdio  │  │ • Conversation       │  │
+│  │ • Gemini     │  │ • MCP SSE    │  │ • Working (Redis)    │  │
+│  │ • OpenAI-    │  │ • Closures   │  │ • Shared (Redis)     │  │
+│  │   compatible │  │              │  │ • Long-term (pgvec)  │  │
+│  │              │  │              │  │                      │  │
+│  │ 3-tier       │  │              │  │  Temporal Knowledge  │  │
+│  │ fallback     │  │              │  │  Graph (memory_pages │  │
+│  │              │  │              │  │  + memory_links)     │  │
+│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  PostgreSQL 16 + pgvector · Redis 7 · Google Calendar   │   │
+│  │  28 tables · 3 views · 30+ indexes · 4 seed workflows   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+</code></pre>
+<h3 id="how-auto-workflows-work-vs-n8n--zapier--make">How Auto-Workflows Work (vs. n8n / Zapier / Make)</h3>
+<p>Traditional workflow tools require you to <strong>design every automation by hand</strong>:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>n8n / Zapier / Make</th>
+<th>Founder OS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Workflow creation</td>
+<td>Manual drag-and-drop</td>
+<td><strong>Auto-generated by the Orchestrator</strong></td>
+</tr>
+<tr>
+<td>Knows your business</td>
+<td>No</td>
+<td>Yes — pgvector knowledge base + metrics + history</td>
+</tr>
+<tr>
+<td>Adapts as you grow</td>
+<td>You rebuild flows</td>
+<td><strong>Workflows evolve automatically</strong></td>
+</tr>
+<tr>
+<td>Cross-domain coordination</td>
+<td>You wire each connection</td>
+<td><strong>Agents coordinate via A2A protocol</strong></td>
+</tr>
+<tr>
+<td>Requires expertise</td>
+<td>Yes — you design the logic</td>
+<td><strong>Just describe what you need</strong></td>
+</tr>
+</tbody>
+</table>
+<p>When you say <em>&quot;prepare for our Series A&quot;</em>, the Orchestrator doesn't look up a pre-built workflow. It <strong>creates one on the fly</strong>:</p>
+<ol>
+<li>Delegates to <strong>Research Agent</strong> → competitor landscape, market sizing</li>
+<li>Delegates to <strong>Product Agent</strong> → traction metrics, roadmap summary</li>
+<li>Delegates to <strong>Content Agent</strong> → pitch deck narrative, investor FAQ</li>
+<li>Delegates to <strong>Ops Agent</strong> → due diligence checklist, data room prep</li>
+<li><strong>Synthesises</strong> everything into a cohesive action plan</li>
+</ol>
+<p>Next month, when you say the same thing, the workflow will be <strong>different</strong> — because your metrics changed, you have new integrations, and the agents have learned from your feedback. No manual rewiring needed.</p>
+<h3 id="core-design-principles">Core Design Principles</h3>
+<ol>
+<li>
+<p><strong>No frameworks</strong> — No LangChain, no CrewAI, no LlamaIndex. Every component (BaseAgent, ToolRegistry, Router, ExecutionEngine, Memory) is built from scratch. We use direct SDK calls and raw async Python. This means we understand every line, can debug anything, and aren't locked into someone else's abstractions.</p>
+</li>
+<li>
+<p><strong>OSS-first</strong> — Default LLM is Ollama running locally (free). PostgreSQL, Redis, FastAPI — all open source. You can run the entire system on a laptop with zero API costs.</p>
+</li>
+<li>
+<p><strong>Backend-native</strong> — This is a real backend system, not a notebook experiment. Async everywhere, proper database schema with migrations, JWT auth, structured API routes, Docker infrastructure.</p>
+</li>
+<li>
+<p><strong>Composition over inheritance</strong> — Agents are assembled from independent components (LLM + Tools + Memory + Router + EventBus) via the registry. Swap any piece without touching the others.</p>
+</li>
+</ol>
+<hr>
+<h2 id="whats-built">What's Built</h2>
+<h3 id="infrastructure">Infrastructure</h3>
+<ul>
+<li><strong>FastAPI</strong> async API with lifespan management — <strong>64 endpoints</strong> across 9 route groups</li>
+<li><strong>PostgreSQL 16 + pgvector</strong> — 24-table core schema + 4 planner/memory tables (28 total), 3 views, 30+ indexes, seed data for agents, workflows, and subscription plans</li>
+<li><strong>Redis 7</strong> — caching, working memory, shared memory, pub/sub event bus, approval queue, Celery broker</li>
+<li><strong>Alembic</strong> migrations</li>
+<li><strong>Clerk JWT auth</strong> (RS256 / JWKS verification)</li>
+<li><strong>Docker Compose</strong> — PostgreSQL (pgvector/pgvector:pg16) + Redis (redis:7-alpine) with health checks and named volumes</li>
+<li><strong>Celery task queue</strong> — Redis-backed async worker with 3 queues (default, agents, orchestrator), 5-minute soft timeout, auto-retry, JSON serialization</li>
+<li><strong>APScheduler</strong> — cron-based background scheduler for automated weekly plan generation (Monday 08:00 IST)</li>
+</ul>
+<h3 id="agent-system">Agent System</h3>
+<ul>
+<li><strong>Orchestrator</strong> — top-level manager agent (Stripe Minions pattern). Analyses any request, decomposes into subtasks, delegates to specialists via <code>delegate_task</code> tool, synthesises the response. The LLM decides the workflow — no hardcoded routing</li>
+<li><strong>BaseAgent</strong> — composable agent core with system prompts, tool use loops, memory, delegation, and event emission</li>
+<li><strong>7 Agents</strong> — Orchestrator + 6 Specialists (Planner, Content, Research, Ops, Product, Support) — each with distinct capabilities, tools, and system prompts</li>
+<li><strong>Agents-as-tools</strong> — specialist agents are exposed to the Orchestrator as callable tools. The <code>delegate_task</code> tool is bound at runtime via closure injection — the Orchestrator's LLM sees it as a regular tool, but it spawns a full agent under the hood</li>
+<li><strong>LLM Provider abstraction</strong> — 6 provider classes, 4 selectable via factory:
+<ul>
+<li><em>Ollama</em> — free/local, no API key required</li>
+<li><em>Anthropic</em> — Claude (official SDK, full tool-use support)</li>
+<li><em>OpenAI-compatible</em> — vLLM, Together AI, Groq, LM Studio, LocalAI</li>
+<li><em>Gemini</em> — OpenAI-compatible endpoint + native REST API + <strong>3-tier fallback</strong> (Gemini OpenAI-compat → Gemini Native REST → OpenAI) for maximum reliability</li>
+</ul>
+</li>
+<li><strong>Tool Protocol (MCP-compatible)</strong> — <code>ToolProvider</code> interface, <code>LocalToolProvider</code> for built-in tools, <code>ToolRegistry</code> for multi-provider aggregation, parallel tool execution, runtime closure overrides</li>
+<li><strong>MCP Adapter</strong> — stdio and SSE transport clients for connecting to external MCP tool servers (JSON-RPC 2.0)</li>
+<li><strong>A2A Router</strong> — Agent-to-Agent capability-based routing and delegation. Agents declare capabilities via <code>AgentCard</code>; the router scores and dispatches tasks to the best-fit agent</li>
+<li><strong>Execution Engine</strong> — step-based agentic loop with parallel tool calls, cost tracking, token accounting, and configurable max rounds</li>
+<li><strong>Event Bus</strong> — Redis pub/sub for async inter-agent communication (agent.started, orchestration.started, delegation.requested, etc.)</li>
+<li><strong>12 Built-in Tools</strong> — delegate_task, search_knowledge, web_search, get_business_metrics, create_task, list_tasks, update_task_status, save_draft, get_integrations, get_writing_style, get_current_datetime, store_working_memory</li>
+</ul>
+<h3 id="memory-system-dual-architecture">Memory System (Dual Architecture)</h3>
+<p><strong>4-Layer Agent Memory</strong> — composed via <code>AgentMemory</code>, assembled into context at runtime:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Backend</th>
+<th>Scope</th>
+<th>TTL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Conversation</td>
+<td>In-process (list)</td>
+<td>Single agent run</td>
+<td>Session (rolling 50 messages)</td>
+</tr>
+<tr>
+<td>Working</td>
+<td>Redis</td>
+<td>Per-user, per-agent, per-session</td>
+<td>4 hours</td>
+</tr>
+<tr>
+<td>Shared</td>
+<td>Redis</td>
+<td>Cross-agent scratch-pad</td>
+<td>8 hours</td>
+</tr>
+<tr>
+<td>Long-term</td>
+<td>PostgreSQL + pgvector</td>
+<td>Per-user, permanent</td>
+<td>∞ (cosine similarity, min 0.70)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Temporal Knowledge Graph</strong> — a second memory system (<code>memory_pages</code> + <code>memory_links</code>) with:</p>
+<ul>
+<li><strong>Composite scoring</strong>: <code>(semantic_sim × w₁) + (temporal_relevance × w₂) + (importance × w₃) + (access_freq × w₄)</code></li>
+<li><strong>Spaced-repetition review</strong> — memories are surfaced for review on schedule, strengthening recall</li>
+<li><strong>Entity extraction</strong> — memories tagged with entities (people, companies, tools) for entity-based search</li>
+<li><strong>Chapters</strong> — memories are organized into named chapters for browsable context</li>
+<li><strong>Typed links</strong> — relationships between memories: <code>related</code>, <code>caused_by</code>, <code>led_to</code>, <code>contradicts</code>, <code>updates</code>, <code>supersedes</code>, <code>part_of</code> (with strength 0–1)</li>
+<li><strong>Decay + pinning</strong> — unpinned memories decay over time; pinned memories persist indefinitely</li>
+</ul>
+<h3 id="approval-system-human-in-the-loop">Approval System (Human-in-the-Loop)</h3>
+<p>Every tool call flows through <code>ApprovalGate</code> before execution:</p>
+<table>
+<thead>
+<tr>
+<th>Risk Level</th>
+<th>Behavior</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LOW</strong></td>
+<td>Auto-approved by default</td>
+<td>search, list, get operations</td>
+</tr>
+<tr>
+<td><strong>MEDIUM</strong></td>
+<td>Follows user preference</td>
+<td>create_task, save_draft</td>
+</tr>
+<tr>
+<td><strong>HIGH</strong></td>
+<td><strong>Always requires explicit approval</strong> — cannot be bypassed</td>
+<td>git push, post tweet, send email, deploy, payments (30 high-risk tools mapped)</td>
+</tr>
+</tbody>
+</table>
+<p>Per-user preferences stored in Redis: <code>always_allow</code> / <code>always_deny</code> / <code>ask</code>. HIGH-risk tools cannot be set to <code>always_allow</code>. Pending approvals expire after 1 hour.</p>
+<h3 id="weekly-planner">Weekly Planner</h3>
+<p>Full weekly planning pipeline with Google Calendar integration:</p>
+<ul>
+<li><strong>Onboarding</strong> — business profile intake (name, type, stage, industry, goals, team size)</li>
+<li><strong>Plan generation</strong> — LLM-powered structured weekly plans with ICE scoring (Impact × Confidence × Ease), daily schedules, task assignments, delegations, risks, and success criteria</li>
+<li><strong>Google Calendar sync</strong> — OAuth2 flow, token management, push plans as calendar events, CRUD individual events</li>
+<li><strong>ICS export</strong> — download plans as <code>.ics</code> files</li>
+<li><strong>Automated scheduling</strong> — APScheduler cron job generates plans every Monday at 08:00 AM IST for all connected users</li>
+<li><strong>Plan history</strong> — all past plans stored with stats (task count, events created, duration)</li>
+<li><strong>Smart prompt endpoint</strong> — natural language interface that understands intent, pulls memory, creates events, updates context, and/or replans the week</li>
+</ul>
+<h3 id="knowledge-base">Knowledge Base</h3>
+<p>Full knowledge ingestion and retrieval system:</p>
+<ul>
+<li><strong>Ingest</strong> — plain text, URLs, structured JSON, or batch (up to 50 documents)</li>
+<li><strong>Search</strong> — hybrid/semantic/fulltext search across the knowledge base</li>
+<li><strong>CRUD</strong> — list, get, delete individual items or bulk delete by category</li>
+<li><strong>Stats</strong> — knowledge base statistics including embedding coverage</li>
+</ul>
+<h3 id="background-queue">Background Queue</h3>
+<p>Celery-powered async execution:</p>
+<ul>
+<li><strong>Submit</strong> — queue agent runs or orchestrations for background execution</li>
+<li><strong>Poll</strong> — check task status and retrieve results</li>
+<li><strong>History</strong> — list recent background tasks per user</li>
+<li><strong>Cancel</strong> — cancel pending or running tasks</li>
+<li><strong>Config</strong> — 3 dedicated queues, 5-min soft limit, 6-min hard kill, auto-retry with exponential backoff</li>
+</ul>
+<h3 id="api-64-endpoints">API (64 Endpoints)</h3>
+<h4 id="core">Core</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/</code></td>
+<td>API running check</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/health</code></td>
+<td>Health check (API + Postgres + Redis)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/me</code></td>
+<td>Authenticated user identity</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/greet</code></td>
+<td>Public greeting (optional auth)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="agents">Agents</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/agents/orchestrate</code></td>
+<td><strong>Primary entry point</strong> — send any message, Orchestrator handles everything</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/agents/</code></td>
+<td>List available agents</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/agents/system</code></td>
+<td>Agent system config (LLM provider, model, registered agents, event bus status)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/agents/{name}/run</code></td>
+<td>Send a message directly to a specific agent</td>
+</tr>
+</tbody>
+</table>
+<h4 id="approvals">Approvals</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/approvals/pending</code></td>
+<td>List pending approvals</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/approvals/{id}/approve</code></td>
+<td>Approve a pending action</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/approvals/{id}/reject</code></td>
+<td>Reject a pending action</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/approvals/preferences</code></td>
+<td>Get approval preferences</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/approvals/preferences</code></td>
+<td>Set tool preference (always_allow / always_deny / ask)</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/approvals/preferences/{tool}</code></td>
+<td>Clear a tool preference</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/approvals/risk-info</code></td>
+<td>Risk classification for all tools</td>
+</tr>
+</tbody>
+</table>
+<h4 id="background-queue-1">Background Queue</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/queue/agents/{name}/run</code></td>
+<td>Submit agent run to background queue</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/queue/orchestrate</code></td>
+<td>Submit orchestration to background queue</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/queue/tasks/{id}</code></td>
+<td>Poll background task status/result</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/queue/tasks</code></td>
+<td>List user's recent background tasks</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/queue/tasks/{id}/cancel</code></td>
+<td>Cancel a background task</td>
+</tr>
+</tbody>
+</table>
+<h4 id="knowledge-base-1">Knowledge Base</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/knowledge/ingest/text</code></td>
+<td>Ingest plain text</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/knowledge/ingest/url</code></td>
+<td>Ingest from URL</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/knowledge/ingest/json</code></td>
+<td>Ingest structured JSON</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/knowledge/ingest/batch</code></td>
+<td>Batch ingest (max 50)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/knowledge/search</code></td>
+<td>Search knowledge base</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/knowledge/stats</code></td>
+<td>Knowledge base statistics</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/knowledge/items</code></td>
+<td>List knowledge items</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/knowledge/items/{id}</code></td>
+<td>Get single item</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/knowledge/items/{id}</code></td>
+<td>Delete single item</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/knowledge/items</code></td>
+<td>Bulk delete (optionally by category)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="weekly-planner-1">Weekly Planner</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/planner/onboard</code></td>
+<td>Business profile onboarding</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/planner/connect</code></td>
+<td>Start Google Calendar OAuth2 flow</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/planner/connect/callback</code></td>
+<td>OAuth2 callback</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/planner/update</code></td>
+<td>Update business context</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/planner/generate</code></td>
+<td>Force immediate plan generation + GCal push</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/planner/status</code></td>
+<td>Planner status (connection, last plan, goals)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/planner/history</code></td>
+<td>Past plan summaries</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/planner/prompt</code></td>
+<td><strong>Smart NL endpoint</strong> — send any prompt, system plans accordingly</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/planner/calendar</code></td>
+<td>View upcoming calendar events</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/planner/calendar/event/{id}</code></td>
+<td>Get single event</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/planner/calendar/event</code></td>
+<td>Create calendar event directly</td>
+</tr>
+<tr>
+<td><code>PATCH</code></td>
+<td><code>/api/planner/calendar/event/{id}</code></td>
+<td>Update calendar event</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/planner/calendar/event/{id}</code></td>
+<td>Delete calendar event</td>
+</tr>
+</tbody>
+</table>
+<h4 id="memory-temporal-knowledge-graph">Memory (Temporal Knowledge Graph)</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/memory/store</code></td>
+<td>Store a memory page</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/memory/recall</code></td>
+<td>Recall memories (composite scoring)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/memory/reviews</code></td>
+<td>Memories due for spaced-repetition review</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/memory/review/{id}</code></td>
+<td>Mark memory as reviewed</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/memory/chapters</code></td>
+<td>List memory chapters</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/memory/chapter/{chapter}</code></td>
+<td>Browse chapter memories</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/memory/search/entity</code></td>
+<td>Entity-based memory search</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/memory/link</code></td>
+<td>Create typed link between memories</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/memory/links/{id}</code></td>
+<td>Get linked memories</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/memory/stats</code></td>
+<td>Memory system statistics</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/memory/pin/{id}</code></td>
+<td>Pin/unpin a memory</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/memory/{id}</code></td>
+<td>Soft-delete a memory</td>
+</tr>
+</tbody>
+</table>
+<h4 id="test--dev-dev-only">Test / Dev (dev-only)</h4>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/test/chat</code></td>
+<td>Direct LLM chat (no auth)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/test/provider</code></td>
+<td>LLM provider health check</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/test/weekly-context</code></td>
+<td>Set test business context</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/test/weekly-context</code></td>
+<td>Get current context</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api/test/weekly-context</code></td>
+<td>Reset to mock data</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/test/plan</code></td>
+<td>Generate test plan</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/test/plan/ical</code></td>
+<td>Download plan as .ics</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/test/plan/gcal/auth</code></td>
+<td>Google Calendar OAuth (dev)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api/test/plan/gcal/callback</code></td>
+<td>OAuth callback (dev)</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api/test/plan/gcal/push</code></td>
+<td>Push plan to Google Calendar (dev)</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="where-its-going">Where It's Going</h2>
+<h3 id="near-term">Near-term</h3>
+<ul class="contains-task-list">
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Embedding pipeline</strong> — auto-generate vector embeddings on knowledge ingestion (Ollama <code>nomic-embed-text</code> / OpenAI <code>text-embedding-3-small</code>) so RAG activates at query time (knowledge ingestion and search endpoints are built; embedding generation needs wiring)</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>MCP server connections</strong> — wire MCP adapter into config so agents can connect to GitHub, Slack, Linear, Notion tool servers out of the box (adapter is built; config-driven connection layer needed)</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Workflow persistence</strong> — save orchestrator-generated workflows as reusable templates; the system learns which patterns work for your company and reuses them</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Real tool implementations</strong> — replace placeholder/mock tools with actual DB queries, API calls, and integrations (knowledge search and task tools are wired; web_search, metrics, integrations still use mock data)</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Streaming responses</strong> — SSE streaming from agents to the frontend</li>
+</ul>
+<h3 id="mid-term">Mid-term</h3>
+<ul class="contains-task-list">
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Web dashboard</strong> (Next.js <code>web</code> app) — chat interface, task boards, knowledge base management, agent configuration, metrics dashboards</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Integration connectors</strong> — Stripe, GitHub, Slack, Notion, Linear, Google Analytics, Twitter/X, email (IMAP/SMTP) (Google Calendar is fully integrated)</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Scheduled orchestrations</strong> — configurable cron triggers beyond the Monday weekly plan (&quot;every morning, Ops standup + metrics check&quot;) (APScheduler is in place; needs UI-driven schedule management)</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Workflow evolution</strong> — as new integrations and data sources connect, the orchestrator automatically incorporates them into workflows without reconfiguration</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Learning loop</strong> — agents improve from feedback; <code>TaskFeedback</code> and <code>LearningInsight</code> tables are ready. Workflows that produce good results get reinforced; poor ones get adapted</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Multi-user / team support</strong> — role-based access, shared workspaces, per-team agent configurations</li>
+</ul>
+<h3 id="long-term-vision">Long-term Vision</h3>
+<ul class="contains-task-list">
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Fully autonomous operations</strong> — agents trigger each other without human input. A support ticket → Support Agent responds → Product Agent logs a bug → Ops Agent updates the sprint → Content Agent drafts a changelog. All auto-orchestrated.</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Company-aware workflow generation</strong> — the system uses your business stage (pre-seed, seed, Series A, growth), team size, industry, and integrations to generate completely different workflow strategies. A 2-person SaaS startup gets different automation than a 20-person e-commerce company.</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Voice interface</strong> — talk to Founder OS like a co-founder</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Mobile app</strong> — Founder OS in your pocket, push notifications for critical alerts</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Marketplace</strong> — community-built agents, tools, and workflow templates</li>
+<li class="task-list-item enabled"><input class="task-list-item-checkbox"type="checkbox"> <strong>Self-improving system</strong> — agents analyse their own performance, identify failure modes, and refine prompts + workflows automatically</li>
+</ul>
+<hr>
+<h2 id="tech-stack">Tech Stack</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>API</td>
+<td>FastAPI (Python 3.14, async)</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>PostgreSQL 16 + pgvector (28 tables)</td>
+</tr>
+<tr>
+<td>Cache / Memory / Events</td>
+<td>Redis 7</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>Clerk (JWT / JWKS)</td>
+</tr>
+<tr>
+<td>Task Queue</td>
+<td>Celery (Redis broker, 3 queues)</td>
+</tr>
+<tr>
+<td>Scheduler</td>
+<td>APScheduler (cron-based)</td>
+</tr>
+<tr>
+<td>LLM (default)</td>
+<td>Ollama (local, free)</td>
+</tr>
+<tr>
+<td>LLM (optional)</td>
+<td>Anthropic Claude, Google Gemini (with 3-tier fallback), OpenAI-compatible APIs</td>
+</tr>
+<tr>
+<td>Calendar</td>
+<td>Google Calendar API (OAuth2)</td>
+</tr>
+<tr>
+<td>Migrations</td>
+<td>Alembic</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>Next.js (Turborepo monorepo)</td>
+</tr>
+<tr>
+<td>Infrastructure</td>
+<td>Docker Compose</td>
+</tr>
+</tbody>
+</table>
+<h2 id="project-structure">Project Structure</h2>
+<pre><code>founder-os/
+├── apps/
+│   ├── api/                    # Python backend (FastAPI)
+│   │   ├── app/
+│   │   │   ├── main.py         # FastAPI app + lifespan (scheduler, Redis, DB)
+│   │   │   ├── config.py       # Settings (pydantic-settings)
+│   │   │   ├── database.py     # Async SQLAlchemy engine
+│   │   │   ├── redis.py        # Async Redis client
+│   │   │   ├── auth.py         # Clerk JWT verification
+│   │   │   ├── models.py       # 24-table ORM (pgvector)
+│   │   │   ├── planner_models_db.py  # 4 planner/memory tables
+│   │   │   ├── scheduler.py    # APScheduler (weekly plan cron)
+│   │   │   ├── celery_app.py   # Celery config + queues
+│   │   │   ├── user_store.py   # PostgreSQL-backed user profile store
+│   │   │   ├── api/
+│   │   │   │   ├── routes.py          # Health + auth routes
+│   │   │   │   ├── agent_routes.py    # Agent + orchestration endpoints
+│   │   │   │   ├── approval_routes.py # Human-in-the-loop approval API
+│   │   │   │   ├── queue_routes.py    # Background task queue API
+│   │   │   │   ├── knowledge_routes.py # Knowledge base CRUD + search
+│   │   │   │   ├── planner_routes.py  # Weekly planner + Google Calendar
+│   │   │   │   ├── memory_routes.py   # Temporal knowledge graph API
+│   │   │   │   └── test_routes.py     # Dev/test endpoints
+│   │   │   ├── agents/
+│   │   │   │   ├── orchestrator.py    # Top-level Orchestrator (Stripe Minions)
+│   │   │   │   ├── base.py           # BaseAgent (core)
+│   │   │   │   ├── agents.py         # 6 specialist agents + registry
+│   │   │   │   ├── llm.py            # LLM provider abstraction (6 providers)
+│   │   │   │   ├── tool_protocol.py  # MCP-compatible tool registry + closures
+│   │   │   │   ├── mcp_adapter.py    # MCP stdio/SSE clients
+│   │   │   │   ├── tools.py          # @tool decorator + catalog
+│   │   │   │   ├── builtin_tools.py  # 12 built-in tools (incl. delegate_task)
+│   │   │   │   ├── memory.py         # 4-layer memory system
+│   │   │   │   ├── approval.py       # Approval gate (3-tier risk classification)
+│   │   │   │   ├── planner_models.py # Structured plan models + ICE scoring
+│   │   │   │   ├── router.py         # A2A agent router
+│   │   │   │   ├── execution.py      # Step-based execution engine
+│   │   │   │   ├── event_bus.py      # Redis pub/sub event bus
+│   │   │   │   ├── registry.py       # Agent factory + orchestrator wiring
+│   │   │   │   ├── api_client.py     # External API client utilities
+│   │   │   │   └── mock_data.py      # Mock data factories for dev/testing
+│   │   │   └── integrations/
+│   │   │       └── calendar_integration.py  # Google Calendar OAuth + CRUD
+│   │   ├── schema.sql               # Full DDL (24 tables + views + indexes + seeds)
+│   │   ├── migrations/              # SQL migration files
+│   │   ├── alembic/                 # Alembic DB migrations
+│   │   └── requirements.txt
+│   ├── web/                    # Next.js frontend (dashboard — WIP)
+│   └── docs/                   # Next.js docs site (WIP)
+├── packages/
+│   ├── ui/                     # Shared React components
+│   ├── eslint-config/          # Shared ESLint config
+│   └── typescript-config/      # Shared TS config
+├── docker-compose.yml          # PostgreSQL + Redis
+├── start.sh                    # Quick start script
+└── turbo.json                  # Turborepo config
+</code></pre>
+<h2 id="quick-start">Quick Start</h2>
+<pre><code class="language-bash"><span class="hljs-comment"># 1. Start infrastructure</span>
+docker compose up -d   <span class="hljs-comment"># PostgreSQL + Redis</span>
+
+<span class="hljs-comment"># 2. Set up the API</span>
+<span class="hljs-built_in">cd</span> apps/api
+python -m venv .venv &amp;&amp; <span class="hljs-built_in">source</span> .venv/bin/activate
+pip install -r requirements.txt
+
+<span class="hljs-comment"># 3. Configure</span>
+<span class="hljs-built_in">cp</span> .env.example .<span class="hljs-built_in">env</span>   <span class="hljs-comment"># Edit with your settings</span>
+<span class="hljs-comment"># Default LLM is Ollama — install it: https://ollama.com</span>
+ollama pull llama3.1:8b
+
+<span class="hljs-comment"># 4. Run migrations</span>
+alembic upgrade <span class="hljs-built_in">head</span>
+
+<span class="hljs-comment"># 5. Start the server</span>
+uvicorn app.main:app --reload --port 8000
+
+<span class="hljs-comment"># 6. (Optional) Start Celery worker for background tasks</span>
+celery -A app.celery_app worker --loglevel=info -Q default,agents,orchestrator
+
+<span class="hljs-comment"># 7. Check health</span>
+curl http://localhost:8000/api/health
+
+<span class="hljs-comment"># 8. Talk to the Orchestrator</span>
+curl -X POST http://localhost:8000/api/agents/orchestrate \
+  -H <span class="hljs-string">&quot;Content-Type: application/json&quot;</span> \
+  -d <span class="hljs-string">&#x27;{&quot;message&quot;: &quot;Plan my week — I need to ship v2.0, write a blog post, and prep for investor calls&quot;}&#x27;</span>
+</code></pre>
+<h3 id="google-calendar-setup-optional">Google Calendar Setup (Optional)</h3>
+<p>To enable weekly plan → Google Calendar sync:</p>
+<ol>
+<li>Create a Google Cloud project with Calendar API enabled</li>
+<li>Set <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code> in <code>.env</code></li>
+<li>Connect via <code>POST /api/planner/connect</code> (OAuth2 flow)</li>
+<li>Plans will auto-sync every Monday at 08:00 AM IST</li>
+</ol>
+<hr>
+<h2 id="philosophy">Philosophy</h2>
+<blockquote>
+<p>&quot;The best startup tool is one that does the work, not one that helps you do the work.&quot;</p>
+</blockquote>
+<p>Founder OS exists because we believe:</p>
+<ol>
+<li><strong>AI agents should be systems, not features.</strong> Not a chat widget bolted onto a dashboard — a persistent, intelligent backend that operates your business around the clock.</li>
+<li><strong>Workflows should generate themselves.</strong> If you have to design an automation by hand, the tool has already failed. The system should observe your business, understand what needs doing, and compose the right agent workflow automatically.</li>
+<li><strong>Automation should scale with you.</strong> Day 1: simple single-agent tasks. Month 6: complex cross-functional orchestrations. The system grows because it learns — not because you wired up more nodes in a graph editor.</li>
+</ol>
+<p>Every design decision flows from one question: <em>what would a tireless, infinitely patient, always-available co-founder do?</em></p>
+<hr>
+<h2 id="license">License</h2>
+<p>MIT</p>
+
+            
+            
+        </body>
+        </html>

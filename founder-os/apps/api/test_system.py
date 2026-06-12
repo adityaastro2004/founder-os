@@ -63,7 +63,9 @@ def warn(name: str, detail: str = ""):
     print(f"  [WARN] {name}" + (f" — {detail}" if detail else ""))
 
 
-c = httpx.Client(base_url=BASE, timeout=120)
+# x-test-user: dev-only auth identity (APP_ENV=development bypass in app/auth.py)
+# 300s: local Ollama models need longer than hosted APIs for multi-call plan generation
+c = httpx.Client(base_url=BASE, timeout=300, headers={"x-test-user": USER})
 
 # ───────────────────────────────────────────────────────────────
 # 1. HEALTH & BASELINE
@@ -649,13 +651,12 @@ except Exception as e:
 # Ingest a text document
 try:
     r = c.post("/api/knowledge/ingest/text", json={
-        "text": "Founder OS is an autonomous AI operating system for startup founders.",
-        "source": "integration-test",
-        "metadata": {"type": "system-doc", "version": "2.0"},
+        "content": "Founder OS is an autonomous AI operating system for startup founders.",
+        "title": "integration-test doc",
     })
-    if r.status_code == 200:
+    if r.status_code in (200, 201):
         d = r.json()
-        ok("Knowledge ingest", f"items={d.get('items_created', d.get('count', '?'))}")
+        ok("Knowledge ingest", f"chunks={d.get('chunks_created', '?')}")
     elif r.status_code == 401:
         ok("Knowledge ingest (auth-gated)", "Returns 401 — requires Clerk JWT token")
     else:

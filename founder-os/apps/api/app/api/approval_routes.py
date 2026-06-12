@@ -85,8 +85,20 @@ class ToolRiskInfo(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────
 
-def _get_user_id(user: ClerkUser) -> str:
-    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}"))
+async def _get_user_id(user: ClerkUser) -> str:
+    """Resolve the REAL users.id (as a string — approvals are keyed in Redis).
+
+    Must match the id agents run under (the registry builds agents with the real
+    users.id), else pending approvals created during a run are invisible here.
+    Opens its own short-lived session since these endpoints are Redis-only.
+    """
+    from app.database import async_session
+    from app.users import get_or_create_user_id
+
+    async with async_session() as session:
+        uid = await get_or_create_user_id(user.user_id, session, email=user.email)
+        await session.commit()
+    return str(uid)
 
 
 # ── Routes ────────────────────────────────────────────────
@@ -98,7 +110,7 @@ async def list_pending_approvals(
     """List all pending approvals for the current user."""
     redis = get_redis()
     gate = ApprovalGate(redis)
-    user_id = _get_user_id(user)
+    user_id = await _get_user_id(user)
 
     pending = await gate.list_pending(user_id)
 
@@ -135,7 +147,7 @@ async def approve_action(
     """
     redis = get_redis()
     gate = ApprovalGate(redis)
-    user_id = _get_user_id(user)
+    user_id = await _get_user_id(user)
 
     # Verify the approval belongs to this user
     approval = await gate.preferences.get_pending(approval_id)
@@ -169,7 +181,7 @@ async def reject_action(
     """Reject a pending action. The tool call will not be executed."""
     redis = get_redis()
     gate = ApprovalGate(redis)
-    user_id = _get_user_id(user)
+    user_id = await _get_user_id(user)
 
     approval = await gate.preferences.get_pending(approval_id)
     if not approval or approval.user_id != user_id:
@@ -200,7 +212,7 @@ async def get_preferences(
     """Get all approval preferences for the current user."""
     redis = get_redis()
     prefs = ApprovalPreferences(redis)
-    user_id = _get_user_id(user)
+    user_id = await _get_user_id(user)
 
     all_prefs = await prefs.get_all_preferences(user_id)
 
@@ -233,7 +245,7 @@ async def set_preference(
     """
     redis = get_redis()
     prefs = ApprovalPreferences(redis)
-    user_id = _get_user_id(user)
+    user_id = await _get_user_id(user)
 
     risk = classify_tool_risk(body.tool_name)
     is_high = body.tool_name in HIGH_RISK_TOOLS
@@ -267,7 +279,7 @@ async def clear_preference(
     """Clear a tool preference (reverts to 'ask')."""
     redis = get_redis()
     prefs = ApprovalPreferences(redis)
-    user_id = _get_user_id(user)
+    user_id = await _get_user_id(user)
 
     await prefs.clear_preference(user_id, tool_name)
     return {"cleared": tool_name}
@@ -286,7 +298,7 @@ async def get_risk_info(
     """
     redis = get_redis()
     prefs = ApprovalPreferences(redis)
-    user_id = _get_user_id(user)
+    user_id = await _get_user_id(user)
 
     user_prefs = await prefs.get_all_preferences(user_id)
 

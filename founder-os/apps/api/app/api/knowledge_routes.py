@@ -18,11 +18,22 @@ Routes:
 
 from __future__ import annotations
 
+import asyncio
+import json
+import logging
 import uuid
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    UploadFile,
+    File,
+    Form,
+)
 from pydantic import BaseModel, Field
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +41,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import ClerkUser, require_auth
 from app.config import get_settings
 from app.database import get_db
-from app.models import KnowledgeItem
+from app.models import FounderProfile, KnowledgeItem
+
+logger = logging.getLogger(__name__)
 from app.redis import get_redis
 from app.retrieval.embeddings import create_embedding_provider
 from app.retrieval.vector_store import VectorStore
@@ -80,8 +93,80 @@ def _get_embedder(settings=None):
         return create_embedding_provider(provider="ollama", redis=redis)
 
 
-def _user_uuid(user: ClerkUser) -> uuid.UUID:
-    return uuid.uuid5(uuid.NAMESPACE_URL, f"clerk:{user.user_id}")
+async def _user_uuid(user: ClerkUser, db) -> uuid.UUID:
+    """Resolve the REAL users.id (creating the row if needed).
+
+    Previously a synthetic uuid5 that was never inserted into users — every
+    knowledge_items INSERT for a non-onboarded user hit the FK and 500'd.
+    """
+    from app.users import get_or_create_user_id
+    return await get_or_create_user_id(user.user_id, db, email=user.email)
+
+
+# ── Primary-goal auto-fill (task 009) ─────────────────────────
+
+_GOAL_SYSTEM = (
+    "You read a company document and extract the company's PRIMARY GOAL — the one "
+    "overarching objective it is working toward (e.g. 'Reach $1M ARR by 2027', "
+    "'Launch v2 to 10k users'). Only extract a goal that is clearly stated or very "
+    "strongly implied; do NOT invent one. Respond with STRICT JSON and nothing else:\n"
+    '{"goal": "<the goal in <=90 chars, or empty string if the document does not '
+    'clearly indicate one>", "evidence": "<short quote/justification>"}'
+)
+
+
+# Strong refs so fire-and-forget autofill tasks aren't garbage-collected mid-run.
+_autofill_tasks: set = set()
+
+
+async def _maybe_autofill_primary_goal(user_id: uuid.UUID, doc_title: str, text: str) -> None:
+    """After a document ingestion: fill FounderProfile.primary_goal from the doc —
+    ONLY when the field is blank. A user-set goal is NEVER touched.
+
+    Detached task with its own session. Takes the ALREADY-RESOLVED users.id — it
+    must not resolve identity itself: a users-table write here lock-waits on the
+    request's uncommitted insert (FastAPI commits the request session only after
+    background work), which cancelled the task and rolled back the whole request.
+    Zero LLM cost when the goal is already filled — blank-check happens first.
+    Best-effort: failures log, never affect the ingestion result.
+    """
+    from app.api.profile_routes import _get_llm_generate
+    from app.database import async_session
+
+    try:
+        async with async_session() as session:
+            result = await session.execute(
+                select(FounderProfile).where(FounderProfile.user_id == user_id)
+            )
+            profile = result.scalar_one_or_none()
+            # No profile yet (onboarding owns creation) or goal already set → never touch.
+            if profile is None or (profile.primary_goal or "").strip():
+                return
+
+            llm_gen = await _get_llm_generate(session)
+            raw = await llm_gen(_GOAL_SYSTEM, f"DOCUMENT ({doc_title}):\n{text[:6000]}")
+
+            start, end = raw.find("{"), raw.rfind("}")
+            if start == -1 or end <= start:
+                return
+            try:
+                data = json.loads(raw[start : end + 1])
+            except (json.JSONDecodeError, ValueError):
+                return
+            goal = str(data.get("goal", "")).strip()
+            if not goal:  # the document didn't give a clear goal — don't guess
+                return
+
+            profile.primary_goal = goal[:100]  # column limit
+            note = f"(auto-inferred from uploaded document '{doc_title}' — edit anytime)"
+            if not (profile.primary_goal_description or "").strip():
+                profile.primary_goal_description = note
+            await session.commit()
+            logger.info(
+                "primary_goal auto-filled from '%s' for user %s", doc_title, user_id
+            )
+    except Exception:  # background work must never crash or surface to the request
+        logger.exception("primary_goal auto-fill failed for user %s", user_id)
 
 
 # ── Request / Response Models ─────────────────────────────────
@@ -190,7 +275,7 @@ async def ingest_text(
 
     try:
         result = await ingester.ingest_text(
-            user_id=_user_uuid(user),
+            user_id=await _user_uuid(user, db),
             content=body.content,
             title=body.title,
             category=body.category,
@@ -225,7 +310,7 @@ async def ingest_url(
 
     try:
         result = await ingester.ingest_url(
-            user_id=_user_uuid(user),
+            user_id=await _user_uuid(user, db),
             url=body.url,
             title=body.title,
             category=body.category,
@@ -263,7 +348,7 @@ async def ingest_json(
 
     try:
         result = await ingester.ingest_json(
-            user_id=_user_uuid(user),
+            user_id=await _user_uuid(user, db),
             data=body.data,
             title=body.title,
             category=body.category,
@@ -297,7 +382,7 @@ async def ingest_batch(
 
     try:
         results = await ingester.ingest_batch(
-            user_id=_user_uuid(user),
+            user_id=await _user_uuid(user, db),
             documents=body.documents,
         )
     finally:
@@ -410,9 +495,10 @@ async def ingest_file(
     chunker = TextChunker(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     ingester = Ingester(vector_store=store, embedder=embedder, chunker=chunker)
 
+    uid = await _user_uuid(user, db)
     try:
         result = await ingester.ingest_text(
-            user_id=_user_uuid(user),
+            user_id=uid,
             content=text,
             title=title or filename,
             category=category,
@@ -421,6 +507,16 @@ async def ingest_file(
         )
     finally:
         await embedder.close()
+
+    # If the founder's primary_goal is still blank, try to infer it from this
+    # document (never overwrites a user-set goal — task 009). Detached task, NOT
+    # BackgroundTasks: FastAPI commits the request session only after background
+    # tasks finish, so a slow/locking task there can cancel + roll back the request.
+    task = asyncio.get_running_loop().create_task(
+        _maybe_autofill_primary_goal(uid, title or filename, text)
+    )
+    _autofill_tasks.add(task)
+    task.add_done_callback(_autofill_tasks.discard)
 
     return IngestionResponse(
         document_id=result.document_id,
@@ -447,7 +543,7 @@ async def search_knowledge(
     using Reciprocal Rank Fusion for the best results.
     """
     embedder = _get_embedder()
-    retriever = ContextRetriever(db=db, embedder=embedder, user_id=_user_uuid(user))
+    retriever = ContextRetriever(db=db, embedder=embedder, user_id=await _user_uuid(user, db))
 
     try:
         results = await retriever.search(
@@ -487,7 +583,7 @@ async def knowledge_stats(
 ):
     """Get knowledge base statistics for the authenticated user."""
     embedder = _get_embedder()
-    retriever = ContextRetriever(db=db, embedder=embedder, user_id=_user_uuid(user))
+    retriever = ContextRetriever(db=db, embedder=embedder, user_id=await _user_uuid(user, db))
 
     try:
         stats = await retriever.get_stats()
@@ -506,7 +602,7 @@ async def list_knowledge_items(
     db: AsyncSession = Depends(get_db),
 ):
     """List knowledge items for the authenticated user."""
-    uid = _user_uuid(user)
+    uid = await _user_uuid(user, db)
     stmt = (
         select(KnowledgeItem)
         .where(KnowledgeItem.user_id == uid, KnowledgeItem.is_active == True)
@@ -545,7 +641,7 @@ async def get_knowledge_item(
     db: AsyncSession = Depends(get_db),
 ):
     """Get a single knowledge item."""
-    uid = _user_uuid(user)
+    uid = await _user_uuid(user, db)
     item = await db.get(KnowledgeItem, item_id)
 
     if not item or item.user_id != uid:
@@ -573,7 +669,7 @@ async def delete_knowledge_item(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete a single knowledge item."""
-    uid = _user_uuid(user)
+    uid = await _user_uuid(user, db)
     store = VectorStore(db)
 
     item = await db.get(KnowledgeItem, item_id)
@@ -590,7 +686,7 @@ async def delete_knowledge_items(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete all knowledge items for the user (optionally filtered by category)."""
-    uid = _user_uuid(user)
+    uid = await _user_uuid(user, db)
     store = VectorStore(db)
     count = await store.delete_by_user(uid, category=category)
     return {"deleted": count, "category": category}

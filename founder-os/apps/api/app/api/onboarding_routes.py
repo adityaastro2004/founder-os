@@ -6,9 +6,11 @@ Handles founder profile creation during the onboarding flow.
 
 from __future__ import annotations
 
+import logging
+import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +19,35 @@ from app.auth import ClerkUser, require_auth
 from app.database import get_db
 from app.models import FounderProfile, User
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/onboarding", tags=["onboarding"])
+
+
+async def _evolve_in_background(user_id: uuid.UUID, clerk_user_id: str) -> None:
+    """After onboarding, run the Agent Evolution Engine (non-blocking): build the
+    founder context model and stage regenerated agent-definition proposals.
+
+    Opens its own DB session (the request session is already closed). Proposals are
+    staged as ``proposed`` ``agent_definitions`` rows — nothing goes live without the
+    founder approving via /api/agents/evolve. See ADR-006. (This is the deeper
+    successor to task 001's overlay path; the /api/agents/specialize endpoints remain
+    available for manual per-agent tweaks.)
+    """
+    from app.agents.context_model import FounderContextModelBuilder
+    from app.agents.generator import AgentGenerator
+    from app.api.profile_routes import _get_llm_generate
+    from app.database import async_session
+
+    try:
+        async with async_session() as session:
+            llm_gen = await _get_llm_generate(session)
+            ctx = await FounderContextModelBuilder(session, llm_gen).build(user_id, clerk_user_id)
+            if ctx is not None:
+                await AgentGenerator(session, llm_gen).generate(user_id, ctx.model, ctx.version)
+            await session.commit()
+    except Exception:  # background work must never crash the request path
+        logger.exception("Background agent evolution failed for user %s", user_id)
 
 
 # ── Request / Response Schemas ───────────────────────────
@@ -130,6 +160,7 @@ async def onboarding_status(
 @router.post("/profile", response_model=FounderProfileResponse)
 async def create_founder_profile(
     payload: FounderProfileCreate,
+    background_tasks: BackgroundTasks,
     clerk_user: ClerkUser = Depends(require_auth),
     db: AsyncSession = Depends(get_db),
 ):
@@ -155,6 +186,11 @@ async def create_founder_profile(
         db.add(profile)
 
     await db.flush()
+
+    # Run the Agent Evolution Engine (non-blocking; ADR-006): build the context model
+    # and stage regenerated agent-definition proposals. Runs after the response is sent
+    # and the request session has committed.
+    background_tasks.add_task(_evolve_in_background, user.id, clerk_user.user_id)
 
     return FounderProfileResponse(
         id=str(profile.id),

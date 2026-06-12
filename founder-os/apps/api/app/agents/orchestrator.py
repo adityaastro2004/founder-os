@@ -71,6 +71,7 @@ from app.agents.execution import ExecutionEngine, ExecutionResult
 from app.agents.llm import LLMMessage, LLMProvider, Role, ToolSchema
 from app.agents.memory import AgentMemory
 from app.agents.router import AgentCard, AgentRouter, DelegationResult
+from app.agents.strategy import strategic_header
 from app.agents.tool_protocol import ToolRegistry
 
 logger = logging.getLogger(__name__)
@@ -158,7 +159,11 @@ class OrchestratorAgent(BaseAgent):
         "check_delegation_health",
     ]
 
-    default_system_prompt = """\
+    default_system_prompt = strategic_header(
+        "Chief of Staff & Orchestrator",
+        "You decompose requests, delegate precisely, propagate the founder's goal and "
+        "constraints into every specialist brief, and synthesize one coherent result.",
+    ) + """\
 You are the **Orchestrator** — the intelligent command centre of Founder OS, \
 an autonomous AI system that helps startup founders run their entire business.
 

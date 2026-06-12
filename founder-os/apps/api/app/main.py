@@ -19,6 +19,8 @@ from app.api.history_routes import router as history_router
 from app.api.profile_routes import router as profile_router
 from app.api.settings_routes import router as settings_router
 from app.api.crawler_routes import router as crawler_router
+from app.api.specialization_routes import router as specialization_router
+from app.api.evolution_routes import router as evolution_router
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.redis import init_redis, close_redis
@@ -36,10 +38,28 @@ import app.models  # noqa: F401
 import app.planner_models_db  # noqa: F401
 
 
+async def _sync_agent_definitions() -> None:
+    """Sync canonical agent prompts/capabilities from code → DB at startup (ADR-004).
+
+    Best-effort: a failure here must not block startup (agents fall back to whatever
+    is already in the DB).
+    """
+    from app.agents.registry import sync_agents_to_db
+    from app.database import async_session
+
+    try:
+        async with async_session() as session:
+            await sync_agents_to_db(session)
+            await session.commit()
+    except Exception:
+        logging.getLogger(__name__).exception("Agent definition sync failed at startup")
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     # ── Startup ──
     await init_db()
+    await _sync_agent_definitions()
     await init_redis()
     start_scheduler()
     yield
@@ -75,6 +95,8 @@ app.include_router(history_router)
 app.include_router(profile_router)
 app.include_router(settings_router)
 app.include_router(crawler_router)
+app.include_router(specialization_router)
+app.include_router(evolution_router)
 
 # Dev-only test routes (no auth required)
 if settings.APP_ENV == "development":

@@ -745,3 +745,40 @@ INSERT INTO subscription_plans (name, display_name, description, price_monthly_u
  '["all_agents", "custom_workflows", "advanced_integrations", "priority_support", "api_access"]'::jsonb),
 ('enterprise', 'Enterprise', 'Custom solution for larger teams', 999, 9999, 999999, 999, 999, 9999, 50,
  '["all_agents", "custom_workflows", "all_integrations", "dedicated_support", "api_access", "white_label", "sla"]'::jsonb);
+
+
+-- ============================================================================
+-- AGENT EVOLUTION ENGINE (task 003)
+-- ============================================================================
+
+-- Structured, versioned model of the founder's business (distilled from
+-- founder_profiles + user_profiles_intel) that drives agent regeneration.
+CREATE TABLE IF NOT EXISTS founder_context_models (
+    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    version      INTEGER NOT NULL DEFAULT 1,
+    model        JSONB NOT NULL,
+    source_hash  VARCHAR(64) NOT NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_founder_context_models_user ON founder_context_models(user_id);
+
+-- Versioned, per-founder regeneration of an agent's full definition. Staged as
+-- 'proposed'; founder approval makes it 'active'; the registry prefers the active
+-- row over the global agents row.
+CREATE TABLE IF NOT EXISTS agent_definitions (
+    id                     UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id                UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    agent_name             VARCHAR(100) NOT NULL,
+    version                INTEGER NOT NULL DEFAULT 1,
+    system_prompt          TEXT NOT NULL,
+    decision_framework     TEXT,
+    selected_tools         JSONB,
+    status                 VARCHAR(20) NOT NULL DEFAULT 'proposed',  -- proposed|active|superseded
+    context_model_version  INTEGER,
+    created_at             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    approved_at            TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS ix_agent_definitions_user ON agent_definitions(user_id);
+CREATE INDEX IF NOT EXISTS ix_agent_definitions_user_agent_status
+    ON agent_definitions(user_id, agent_name, status);
