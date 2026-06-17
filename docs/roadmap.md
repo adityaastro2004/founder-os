@@ -68,6 +68,7 @@
 | 2026-06-11 | Agent Evolution Engine — per-founder definition regeneration (Context Model + Generator) | [tasks/completed/003](../tasks/completed/003-agent-evolution-engine.md) |
 | 2026-06-11 | Production hardening — 10 bug classes fixed; agents+RAG+A2A proven live (RAG 16/16, A2A delegation, memory ALL, units 120/120) | [tasks/completed/008](../tasks/completed/008-prod-hardening-core.md) |
 | 2026-06-12 | PDF → RAG ingestion + blank-only primary_goal auto-fill (live-verified; + fixed a BackgroundTasks request-rollback bug) | [tasks/completed/009](../tasks/completed/009-pdf-rag-goal-autofill.md) |
+| 2026-06-12 | Knowledge tab File/PDF upload UI (+ apiFetch FormData fix) | [tasks/completed/010](../tasks/completed/010-knowledge-tab-file-upload.md) |
 
 > Known technical-debt items live alongside the roadmap so prioritization sees the
 > full picture. Significant architectural choices are recorded in

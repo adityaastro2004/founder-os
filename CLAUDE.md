@@ -133,23 +133,34 @@ Tailwind CSS 4, Clerk (`@clerk/nextjs`), lucide-react.
 ## 6. Canonical commands
 
 ```bash
-# Infra (Postgres + Redis) — from founder-os/founder-os/
-docker compose up -d
+# One-command stack — from founder-os/founder-os/ (PREFERRED)
+./start.sh          # Docker (Postgres+Redis) → Ollama check/pull → alembic upgrade →
+                    #   uvicorn :8000 + celery worker + web :3000. Logs in logs/.
+./start.sh --stop   # tear everything down
+# Tail: tail -f logs/api.log logs/web.log logs/celery.log
 
-# Backend — from founder-os/founder-os/apps/api/
-source .venv/bin/activate
-alembic upgrade head
+# First-time setup (start.sh errors if the venv is missing)
+cd founder-os/apps/api && python3 -m venv .venv && source .venv/bin/activate \
+  && pip install -r requirements.txt
+cp .env.example .env   # then fill in Clerk + LLM/provider keys (see §4)
+
+# Run services manually instead of start.sh
+docker compose up -d                                   # from founder-os/founder-os/
+source .venv/bin/activate && alembic upgrade head      # from apps/api/
 uvicorn app.main:app --reload --port 8000
 celery -A app.celery_app worker --loglevel=info -Q default,agents,orchestrator
 
 # Frontend — from founder-os/founder-os/
 turbo dev --filter=web        # Next.js on :3000
 turbo build                   # build all
-turbo lint                    # ESLint
-turbo check-types             # tsc --noEmit
+turbo lint                    # ESLint (web: eslint --max-warnings 0)
+turbo check-types             # next typegen && tsc --noEmit
 
-# Backend tests (standalone scripts — no framework yet; see standards/testing.md)
-cd founder-os/apps/api && python test_e2e_pipeline.py
+# Backend tests — integration scripts that hit a LIVE server on :8000.
+# Start the stack first (./start.sh), then run a single suite directly:
+cd founder-os/apps/api && source .venv/bin/activate && python3 test_system.py
+# Most test_*.py are standalone (httpx → localhost:8000); test_content_agent.py
+# uses pytest. There is no repo-wide test runner yet — see standards/testing.md.
 ```
 
 ---
