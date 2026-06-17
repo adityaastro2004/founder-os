@@ -15,6 +15,7 @@ import {
   Blocks,
   Lightbulb,
   CalendarDays,
+  CreditCard,
   X,
 } from "lucide-react";
 
@@ -32,6 +33,7 @@ const navigation = [
 ];
 
 const bottomNav = [
+  { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 

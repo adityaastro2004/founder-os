@@ -21,6 +21,7 @@ from app.api.settings_routes import router as settings_router
 from app.api.crawler_routes import router as crawler_router
 from app.api.specialization_routes import router as specialization_router
 from app.api.evolution_routes import router as evolution_router
+from app.api.billing_routes import router as billing_router
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.redis import init_redis, close_redis
@@ -97,6 +98,7 @@ app.include_router(settings_router)
 app.include_router(crawler_router)
 app.include_router(specialization_router)
 app.include_router(evolution_router)
+app.include_router(billing_router)
 
 # Dev-only test routes (no auth required)
 if settings.APP_ENV == "development":

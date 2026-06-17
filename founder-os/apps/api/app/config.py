@@ -46,6 +46,14 @@ class Settings(BaseSettings):
     EMBEDDING_BASE_URL: str = ""  # Falls back to OLLAMA_BASE_URL or OpenAI default
     EMBEDDING_DIMENSIONS: int = 1536  # Padded/truncated to match pgvector column
 
+    # ── Stripe Payments ──
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_STARTER_PRICE_ID: str = ""   # Monthly price ID from Stripe Dashboard
+    STRIPE_PRO_PRICE_ID: str = ""
+    STRIPE_ENTERPRISE_PRICE_ID: str = ""
+
     # App
     APP_ENV: str = "development"
     DEBUG: bool = False

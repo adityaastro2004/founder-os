@@ -44,11 +44,16 @@ export async function apiFetch(
   }
 
   try {
+    // FormData bodies must NOT get a manual Content-Type — the browser sets
+    // multipart/form-data with the correct boundary (forcing JSON breaks uploads).
+    const isFormData =
+      typeof FormData !== "undefined" && rest.body instanceof FormData;
+
     const res = await fetch(`${base}${path}`, {
       ...rest,
       signal: controller?.signal ?? rest.signal ?? undefined,
       headers: {
-        "Content-Type": "application/json",
+        ...(isFormData ? {} : { "Content-Type": "application/json" }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
