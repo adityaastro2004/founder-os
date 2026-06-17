@@ -497,7 +497,7 @@ function TaskDetailPanel({
                 <StarRating value={latestOutput.user_rating} readonly />
                 {latestOutput.user_feedback && (
                   <span className="text-xs text-[var(--color-text-secondary)] italic">
-                    "{latestOutput.user_feedback}"
+                    &quot;{latestOutput.user_feedback}&quot;
                   </span>
                 )}
               </div>

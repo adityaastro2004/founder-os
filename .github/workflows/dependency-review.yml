@@ -1,0 +1,28 @@
+name: Dependency Review
+
+# On every PR, diff the dependency manifests (package-lock.json, requirements.txt)
+# and fail if a newly introduced dependency has a known vulnerability or a
+# disallowed license. Posts a summary comment on the PR.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: Dependency review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Review dependencies
+        uses: actions/dependency-review-action@v4
+        with:
+          # Block PRs that add deps with a vulnerability at or above this level.
+          fail-on-severity: high
+          comment-summary-in-pr: always

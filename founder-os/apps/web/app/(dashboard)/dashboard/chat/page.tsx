@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, FormEvent, useCallback } from "react";
+import { useState, useRef, useEffect, FormEvent } from "react";
 import { useApi } from "@/lib/use-api";
 import { useAuth } from "@clerk/nextjs";
 import { DIRECT_API_URL } from "@/lib/api";
@@ -15,7 +15,6 @@ import {
   Zap,
   GitBranch,
   AlertCircle,
-  RotateCcw,
   Wrench,
 } from "lucide-react";
 import { clsx } from "clsx";
