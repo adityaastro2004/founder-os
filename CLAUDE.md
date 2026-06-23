@@ -29,7 +29,7 @@ was missing as a skill, an agent, a workflow, an ADR, or a roadmap item.
 **Founder OS** is an autonomous AI operating system for solo founders and tiny
 teams — a multi-agent backend that acts as a tireless co-founder. You talk to one
 **Orchestrator**; it decomposes the request, delegates to specialist agents
-(Planner, Content, Research, Ops, Product, Support), and synthesises one answer.
+(Planner, Content, Research, Support), and synthesises one answer.
 It auto-generates workflows (no n8n/Zapier drag-and-drop), remembers everything
 (4-layer memory + temporal knowledge graph), and runs OSS-first / local-first
 (Ollama by default, swap to Anthropic/Gemini/OpenAI-compatible).
@@ -42,9 +42,9 @@ Full vision: [docs/vision.md](docs/vision.md).
 
 | | **Product runtime agents** | **Engineering agents (this meta-layer)** |
 |---|---|---|
-| Where | `founder-os/apps/api/app/agents/` | [agents/](agents/) + `.claude/agents/eng-*.md` |
+| Where | `founder-os/apps/api/app/agents/` | `.claude/agents/eng-*.md` (native subagents) |
 | What | Code that runs *inside the product* (Orchestrator, Planner, Content…) | Roles *you* adopt to build/maintain the codebase |
-| Names | Orchestrator, Planner, Content, Research, Ops, Product, Support | `eng-product`, `eng-planner`, `eng-architect`, `eng-executor`, `eng-reviewer`, `eng-qa`, `eng-security` |
+| Names | Orchestrator, Planner, Content, Research, Support | `eng-product`, `eng-planner`, `eng-architect`, `eng-executor`, `eng-reviewer`, `eng-qa`, `eng-security` |
 
 When this doc says "the Planner agent" with an `eng-` prefix it means the
 **engineering** role. Unprefixed "Planner/Content/etc." means the **product** agent.
@@ -61,7 +61,6 @@ founder-os/                          ← git root, this CLAUDE.md, meta-layer
 ├── CLAUDE.md            ← constitution (this file)
 ├── docs/               ← vision · roadmap · requirements · architecture · decisions(ADRs)
 ├── standards/          ← coding · api · testing · security · ux
-├── agents/             ← eng roles: product planner architect executor reviewer qa security
 ├── skills/             ← analyze · debug · refactor · optimize · security_audit
 ├── workflows/          ← new_feature · bug_fix · refactor · release
 ├── meta/               ← scaffold-{skill,trio,orchestration} + run-* orchestration runbooks
@@ -170,13 +169,13 @@ cd founder-os/apps/api && source .venv/bin/activate && python3 test_system.py
 **No code may be written before planning.** Every non-trivial request follows these
 8 steps — never skip a step (see [workflows/new_feature.md](workflows/new_feature.md)):
 
-1. **Analyze** — understand the need + define success → **[eng-product](agents/product.md)**: user stories, acceptance criteria, success metrics. *No code.*
-2. **Plan** — **[eng-planner](agents/planner.md)**: requirements, milestones, task file. *No code.*
-3. **Architect** — **[eng-architect](agents/architect.md)**: DB/API/folders; an ADR in [decisions.md](docs/decisions.md) if significant. *No features.*
-4. **Execute** — **[eng-executor](agents/executor.md)**: implement the approved design + tests. *No redesign.*
-5. **Review** — **[eng-reviewer](agents/reviewer.md)**: review the diff. *Reports, doesn't rewrite.*
-6. **QA** — **[eng-qa](agents/qa.md)**: validate vs acceptance criteria, Pass/Fail with output. *No code changes.*
-   - **Security** — **[eng-security](agents/security.md)**: mandatory when the change touches auth, secrets, permissions, the approval gate, or external input.
+1. **Analyze** — understand the need + define success → **[eng-product](.claude/agents/eng-product.md)**: user stories, acceptance criteria, success metrics. *No code.*
+2. **Plan** — **[eng-planner](.claude/agents/eng-planner.md)**: requirements, milestones, task file. *No code.*
+3. **Architect** — **[eng-architect](.claude/agents/eng-architect.md)**: DB/API/folders; an ADR in [decisions.md](docs/decisions.md) if significant. *No features.*
+4. **Execute** — **[eng-executor](.claude/agents/eng-executor.md)**: implement the approved design + tests. *No redesign.*
+5. **Review** — **[eng-reviewer](.claude/agents/eng-reviewer.md)**: review the diff. *Reports, doesn't rewrite.*
+6. **QA** — **[eng-qa](.claude/agents/eng-qa.md)**: validate vs acceptance criteria, Pass/Fail with output. *No code changes.*
+   - **Security** — **[eng-security](.claude/agents/eng-security.md)**: mandatory when the change touches auth, secrets, permissions, the approval gate, or external input.
 7. **Document** — update `docs/` + code comments.
 8. **Update roadmap** — move the task to `tasks/completed/`, update [roadmap.md](docs/roadmap.md), then run §9.
 
@@ -184,8 +183,8 @@ Bug fixes use the lighter [workflows/bug_fix.md](workflows/bug_fix.md); behavior
 preserving cleanups use [workflows/refactor.md](workflows/refactor.md); shipping uses
 [workflows/release.md](workflows/release.md). Reach for a [skill](skills/)
 (`analyze`, `debug`, `refactor`, `optimize`, `security_audit`) when the work matches
-its trigger. Each stage = a fresh specialist session (native `eng-*` subagent, or
-"Read `agents/<role>.md` and execute this stage").
+its trigger. Each stage = a fresh specialist session: dispatch the native
+`eng-<role>` subagent (defined in `.claude/agents/`).
 
 ---
 
@@ -224,7 +223,7 @@ Capture the answer as a concrete artifact (a new `skills/*.md` via
 
 - **docs/** — [vision](docs/vision.md) · [roadmap](docs/roadmap.md) · [requirements](docs/requirements.md) · [architecture](docs/architecture.md) · [decisions](docs/decisions.md)
 - **standards/** — [coding](standards/coding.md) · [api](standards/api.md) · [testing](standards/testing.md) · [security](standards/security.md) · [ux](standards/ux.md)
-- **agents/** — [product](agents/product.md) · [planner](agents/planner.md) · [architect](agents/architect.md) · [executor](agents/executor.md) · [reviewer](agents/reviewer.md) · [qa](agents/qa.md) · [security](agents/security.md)
+- **.claude/agents/** (eng roles) — [eng-product](.claude/agents/eng-product.md) · [eng-planner](.claude/agents/eng-planner.md) · [eng-architect](.claude/agents/eng-architect.md) · [eng-executor](.claude/agents/eng-executor.md) · [eng-reviewer](.claude/agents/eng-reviewer.md) · [eng-qa](.claude/agents/eng-qa.md) · [eng-security](.claude/agents/eng-security.md)
 - **skills/** — [analyze](skills/analyze.md) · [debug](skills/debug.md) · [refactor](skills/refactor.md) · [optimize](skills/optimize.md) · [security_audit](skills/security_audit.md)
 - **workflows/** — [new_feature](workflows/new_feature.md) · [bug_fix](workflows/bug_fix.md) · [refactor](workflows/refactor.md) · [release](workflows/release.md)
 - **meta/** — [scaffold-skill](meta/scaffold-skill.md) · [scaffold-trio](meta/scaffold-trio.md) · [scaffold-orchestration](meta/scaffold-orchestration.md)

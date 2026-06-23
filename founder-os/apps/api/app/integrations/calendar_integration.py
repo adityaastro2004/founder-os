@@ -618,8 +618,6 @@ def _build_gcal_event(
         "planner": "5",    # banana (yellow)
         "content": "3",    # grape (purple)
         "research": "9",   # blueberry (blue)
-        "ops": "6",        # tangerine (orange)
-        "product": "11",   # tomato (red)
         "support": "2",    # sage (green)
     }
 

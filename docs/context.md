@@ -1,6 +1,6 @@
 # Project context (auto)
 
-Generated: 2026-06-17T02:51:02.979Z
+Generated: 2026-06-18T14:47:12.440Z
 
 ## Detected stack
 
@@ -9,10 +9,13 @@ Generated: 2026-06-17T02:51:02.979Z
 ## Git
 
 - Branch: `ci/github-actions`
-- HEAD: `af2a110`
+- HEAD: `3ce6a61`
 
 ## Recent commits
 
+- `3ce6a61` update _(Aditya Jain, 2026-06-17)_
+- `7834da6` CI updates _(Aditya Jain, 2026-06-17)_
+- `4db8fd6` ci: add GitHub Actions CI + security scanning _(Aditya Jain, 2026-06-17)_
 - `af2a110` added other agents and pdf rag for knowledge _(Aditya Jain, 2026-06-12)_
 - `b3caad9` chore: merge remote changes, keep .env.example template _(Aditya Jain, 2026-05-19)_
 - `bb2912f` chore: remove tracked caches, logs, backups; add root .gitignore _(Aditya Jain, 2026-05-19)_
@@ -30,9 +33,6 @@ Generated: 2026-06-17T02:51:02.979Z
 - `c2bf276` Checkpoint from VS Code for cloud agent session _(Aditya Jain, 2026-03-19)_
 - `baf504e` Add settings API, founder profile and agent fixes _(Aditya Jain, 2026-03-09)_
 - `a798b59` api key update _(Aditya Jain, 2026-03-09)_
-- `2743cc1` Add MMR retriever and session history _(Aditya Jain, 2026-03-09)_
-- `9bdcb07` Add profile intelligence and social media batches _(Aditya Jain, 2026-03-09)_
-- `6a81a68` Add agent chat, calendar delete options, tests _(Aditya Jain, 2026-03-08)_
 
 ## Inferred recent decisions
 
@@ -41,16 +41,16 @@ Generated: 2026-06-17T02:51:02.979Z
 
 ## Hotspots
 
-- 6x — `founder-os/logs/api.log`
-- 5x — `founder-os/logs/celery.log`
-- 5x — `founder-os/logs/web.log`
-- 4x — `founder-os/apps/api/app/agents/registry.py`
-- 4x — `founder-os/apps/api/.env.example`
-- 4x — `founder-os/apps/api/app/config.py`
-- 3x — `founder-os/apps/api/app/agents/agents.py`
+- 5x — `founder-os/apps/api/.env.example`
+- 5x — `founder-os/apps/api/app/config.py`
+- 3x — `founder-os/apps/api/app/main.py`
+- 3x — `founder-os/apps/api/requirements.txt`
+- 3x — `founder-os/apps/web/app/(dashboard)/dashboard/memory/page.tsx`
 - 3x — `founder-os/apps/api/app/agents/execution.py`
+- 3x — `founder-os/apps/api/app/agents/registry.py`
 - 3x — `founder-os/apps/api/app/__pycache__/config.cpython-314.pyc`
 - 3x — `founder-os/apps/api/app/agents/__pycache__/agents.cpython-314.pyc`
+- 3x — `founder-os/apps/api/app/agents/__pycache__/registry.cpython-314.pyc`
 
 ## Top-level tree
 
@@ -73,6 +73,8 @@ Generated: 2026-06-17T02:51:02.979Z
 .claude/skills/refactor/
 .claude/skills/security_audit/
 .claude/worktrees/
+.claude/worktrees/agent-a29d69a01b831fc82/
+.claude/worktrees/agent-af979e2410f142f1a/
 .claude/worktrees/compassionate-nobel/
 .claude/worktrees/heuristic-northcutt/
 .vscode/
@@ -91,6 +93,7 @@ agents/security.md
 docs/
 docs/agent-evolution.md
 docs/architecture.md
+docs/context.md
 docs/decisions.md
 docs/requirements.md
 docs/roadmap.md
@@ -144,6 +147,7 @@ tasks/README.md
 tasks/TEMPLATE.md
 tasks/active/
 tasks/backlog/
+tasks/backlog/004-n8n-workflow-engine.md
 tasks/backlog/004-workflow-execution-engine.md
 tasks/backlog/005-temporal-memory-injection.md
 tasks/backlog/006-reasoning-scaffolding.md

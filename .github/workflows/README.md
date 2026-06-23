@@ -11,6 +11,7 @@ that (frontend → `founder-os/`, backend → `founder-os/apps/api`).
 | [`ci.yml`](ci.yml) | push/PR to `main`, manual | The main gate (below). |
 | [`codeql.yml`](codeql.yml) | push/PR to `main`, weekly cron | CodeQL static security analysis for Python + JS/TS (`security-and-quality` query suite). |
 | [`dependency-review.yml`](dependency-review.yml) | PR to `main` | Fails a PR that introduces a dependency with a **high+** known vulnerability; comments a summary. |
+| [`deploy.yml`](deploy.yml) | after **CI** passes on `main`, manual | SSHes into the VPS/EC2 host and runs `docker compose -f docker-compose.prod.yml up -d --build`. Needs `DEPLOY_*` secrets (see [`../../DEPLOY.md`](../../DEPLOY.md) Part 4). Frontend deploys on Vercel separately. |
 
 ## `ci.yml` jobs
 

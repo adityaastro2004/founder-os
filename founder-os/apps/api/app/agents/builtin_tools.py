@@ -726,8 +726,6 @@ async def list_available_agents() -> str:
             {"name": "planner", "best_for": "Planning, scheduling, calendar, tasks", "has_calendar": True},
             {"name": "content", "best_for": "Writing, blog posts, emails, social media", "has_calendar": False},
             {"name": "research", "best_for": "Market research, competitor analysis", "has_calendar": False},
-            {"name": "ops", "best_for": "Operations, metrics, integrations", "has_calendar": True},
-            {"name": "product", "best_for": "PRDs, features, roadmap, user stories", "has_calendar": False},
             {"name": "support", "best_for": "Customer emails, FAQs, support playbooks", "has_calendar": False},
         ],
     })

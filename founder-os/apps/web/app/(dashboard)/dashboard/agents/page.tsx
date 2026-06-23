@@ -101,8 +101,6 @@ const agentColors: Record<string, string> = {
   planner: "bg-neutral-800",
   content: "bg-neutral-700",
   research: "bg-neutral-600",
-  ops: "bg-neutral-500",
-  product: "bg-neutral-400",
   support: "bg-neutral-300",
   system: "bg-neutral-200",
 };
@@ -112,8 +110,6 @@ const agentDescriptions: Record<string, string> = {
   planner: "AI-powered scheduling, calendar management, weekly planning",
   content: "Blog posts, social media, marketing copy, newsletters",
   research: "Market research, competitor analysis, trend reports",
-  ops: "DevOps, infrastructure, deployment, monitoring",
-  product: "Product strategy, roadmaps, feature specs, user stories",
   support: "Customer support drafts, FAQ generation, ticket triage",
 };
 
@@ -141,18 +137,6 @@ const agentSuggestions: Record<string, string[]> = {
     "What are the latest trends in SaaS?",
     "Research best pricing strategies for B2B",
     "Find market data on developer tools",
-  ],
-  ops: [
-    "Check system health and status",
-    "What's our current uptime?",
-    "Review deployment pipeline configuration",
-    "Suggest infrastructure improvements",
-  ],
-  product: [
-    "Draft a feature spec for user onboarding",
-    "Create a product roadmap for Q2",
-    "Write user stories for the dashboard",
-    "Analyze our feature prioritization",
   ],
   support: [
     "Draft a response for a billing inquiry",

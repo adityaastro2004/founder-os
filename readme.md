@@ -1,13 +1,15 @@
 # Founder OS
 
-**An autonomous AI operating system that runs your startup.**
+**The autonomous operating system for founders.**
 
-Founder OS is a multi-agent backend that acts as a tireless co-founder — it plans your week, writes your content, researches your market, monitors your operations, manages your product roadmap, and handles customer support. You talk to it; it talks to itself; work gets done.
+Running a company solo means fighting fragmentation. Slack knows the conversation, GitHub knows the code, Stripe knows the revenue, Obsidian/Notion know the docs, Calendar knows the schedule — but **nothing knows the company**. So you app-switch all day, reassembling context by hand.
 
-No workflow builders. No drag-and-drop. No manual automation setup. Founder OS **automatically generates and evolves custom workflows** tailored to your company — and scales them as you grow.
+Founder OS sits *above* the tools you already use. Its core is the **Company State Engine** — a canonical, living model of your company (goals, projects, tasks, decisions, metrics, people, meetings) that **passively observes** your tools and **surfaces the unified picture where you already work** (Obsidian first, Notion next). It runs five loops — **Observe → Remember → Understand → Execute → Learn** — coordinating specialist AI agents to do the heavy lifting in the background.
+
+It talks to itself, generates the right workflow for any request on the fly (no drag-and-drop, no manual automation), and keeps a single source of truth so you stop switching between apps and channels.
 
 Built for solo founders and tiny teams who need the output of a 10-person ops team but can't afford one.
-
+$$
 ---
 
 ## The Problem
@@ -22,9 +24,11 @@ And workflow tools like n8n, Zapier, or Make? They require *you* to design every
 
 Founder OS is not a chatbot. It's an **operating system** for your startup — a persistent, memory-rich, multi-agent system that:
 
-- **Knows your business** — ingests your docs, metrics, integrations, and context into a vector knowledge base (pgvector) so every agent grounds its work in *your* reality
+- **The Company State Engine (the moat)** — a canonical, living model of your company: goals, projects, tasks, decisions, metrics, people, meetings. Every tool you use becomes a *synchronization endpoint*; the engine reconciles them into one source of truth and syncs it back to where you work (Obsidian first, Notion next). No more app-switching to figure out *what's actually going on*.
+- **Five loops of autonomy** — like an OS daemon, it runs continuously: **Observe** (passively monitor your tools) → **Remember** (ingest into the State Engine + memory) → **Understand** (score state against your goals) → **Execute** (generate workflows and act) → **Learn** (compile reusable skills, prune what's stale).
+- **Fed three ways, kept clean** — the engine updates from your tools (`observed`), the docs you hand it (`user_doc`), and what it learns itself (`system`: agent memories + Hermes-style skills). A built-in **hygiene system** (write-gate, dedup, decay, Curator) keeps it genuinely useful and never bloated.
 - **One entry point, zero routing** — you talk to the **Orchestrator** (inspired by [Stripe's Minions](https://arxiv.org/abs/2402.15678)). It analyses your request, decomposes it into subtasks, delegates to the right specialist agents, and synthesises one coherent answer. You never pick an agent.
-- **Auto-generated workflows** — no drag-and-drop, no manual automation. The Orchestrator creates **custom multi-agent workflows on the fly** based on what your company actually needs. As your startup grows — new integrations, more data, bigger team — workflows evolve automatically. What n8n/Zapier/Make require you to build by hand, Founder OS figures out and runs for you.
+- **Auto-generated workflows** — no drag-and-drop, no manual automation. The Orchestrator creates **custom multi-agent workflows on the fly** (dynamic in-process AOV graphs) based on what your company actually needs. *(Self-hosted n8n is an optional, invisible execution backend if you want a visible/editable flow — not the differentiator.)*
 - **Delegates internally** — agents talk to each other (Agent-to-Agent protocol) without you orchestrating every step. Ask for a product launch plan and the Orchestrator coordinates Research, Content, Product, and Ops agents behind the scenes
 - **Remembers everything** — 4-layer agent memory + temporal knowledge graph with composite scoring, spaced-repetition review, entity linking, and typed relationships
 - **Plans your week** — automated weekly planner with Google Calendar integration, ICE-scored priorities, and Monday-morning auto-generation via APScheduler

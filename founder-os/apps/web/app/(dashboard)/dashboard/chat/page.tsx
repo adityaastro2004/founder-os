@@ -165,6 +165,17 @@ export default function ChatPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  // Prefill from an "Add automation" hand-off (Automations tab → Chat).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const pending = sessionStorage.getItem("fos-pending-chat-prompt");
+    if (pending) {
+      sessionStorage.removeItem("fos-pending-chat-prompt");
+      setInput(pending);
+      inputRef.current?.focus();
+    }
+  }, []);
+
   // Load persisted chat messages on mount
   useEffect(() => {
     let cancelled = false;

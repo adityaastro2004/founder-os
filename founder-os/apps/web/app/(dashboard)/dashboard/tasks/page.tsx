@@ -96,8 +96,6 @@ const agentColors: Record<string, string> = {
   planner: "bg-neutral-800 dark:bg-neutral-200",
   content: "bg-neutral-700 dark:bg-neutral-300",
   research: "bg-neutral-600 dark:bg-neutral-400",
-  ops: "bg-neutral-500",
-  product: "bg-neutral-400 dark:bg-neutral-500",
   support: "bg-neutral-300 dark:bg-neutral-600",
   unknown: "bg-neutral-200 dark:bg-neutral-700",
 };

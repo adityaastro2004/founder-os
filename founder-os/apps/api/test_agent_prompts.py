@@ -29,9 +29,7 @@ EXPECTED = {
     "orchestrator": ("Chief of Staff & Orchestrator", "OPERATING PROTOCOL"),
     "planner": ("Chief Strategy Officer", "MISSION"),
     "research": ("Market Intelligence System", "monitor_competitors"),
-    "product": ("Product Strategist & Systems Architect", "RICE"),
     "content": ("Narrative Architecture System", "content strategist"),
-    "ops": ("Startup Operating System Architect", "INTENT DETECTION"),
     "support": ("Customer Intelligence & Support System", "empathetic"),
 }
 

@@ -150,21 +150,21 @@ def get_mock_founder_profile() -> dict[str, Any]:
 
 _MOCK_TASKS = [
     {"id": "t-001", "title": "Ship new onboarding flow", "status": "in_progress",
-     "priority": 1, "agent": "product", "est_hours": 6},
+     "priority": 1, "agent": "planner", "est_hours": 6},
     {"id": "t-002", "title": "Write blog post: Why founders need an OS", "status": "pending",
      "priority": 3, "agent": "content", "est_hours": 2},
     {"id": "t-003", "title": "Analyse competitor pricing pages", "status": "completed",
      "priority": 4, "agent": "research", "est_hours": 1.5},
     {"id": "t-004", "title": "Set up Stripe webhook for churn alerts", "status": "completed",
-     "priority": 2, "agent": "ops", "est_hours": 1},
+     "priority": 2, "agent": "planner", "est_hours": 1},
     {"id": "t-005", "title": "Draft welcome email sequence", "status": "pending",
      "priority": 5, "agent": "content", "est_hours": 2},
     {"id": "t-006", "title": "Prepare sales call deck", "status": "in_progress",
      "priority": 2, "agent": "content", "est_hours": 1.5},
     {"id": "t-007", "title": "Review support ticket trends", "status": "completed",
-     "priority": 6, "agent": "ops", "est_hours": 0.5},
+     "priority": 6, "agent": "support", "est_hours": 0.5},
     {"id": "t-008", "title": "Write changelog for v0.4 release", "status": "pending",
-     "priority": 4, "agent": "product", "est_hours": 1},
+     "priority": 4, "agent": "content", "est_hours": 1},
 ]
 
 

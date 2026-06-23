@@ -454,7 +454,7 @@ def plan_to_ical(plan: WeeklyPlan, calendar_name: str = "Founder OS") -> str:
             # Color-code by agent
             agent_colors = {
                 "planner": "5", "content": "3", "research": "9",
-                "ops": "6", "product": "11", "support": "2",
+                "support": "2",
             }
             color = agent_colors.get(task.owner_agent, "0")
             lines.append(f"COLOR:{color}")

@@ -28,7 +28,7 @@ const navigation = [
   { name: "Memory", href: "/dashboard/memory", icon: Brain },
   { name: "Knowledge", href: "/dashboard/knowledge", icon: BookOpen },
   { name: "Content Ideas", href: "/dashboard/content-ideas", icon: Lightbulb },
-  { name: "Automations", href: "/dashboard/automations", icon: Zap },
+  { name: "Automations", href: "/dashboard/workflows", icon: Zap },
   { name: "Apps", href: "/dashboard/apps", icon: Blocks },
 ];
 

@@ -57,6 +57,46 @@ The heart of the product. Key components:
 `get_integrations`, `get_writing_style`, `get_current_datetime`,
 `store_working_memory`. (* = stub/placeholder — see [requirements.md](requirements.md).)
 
+## Company State Engine — `app/state/` (the moat; see ADR-009)
+
+The canonical, living model of the company and the product's central differentiator. A
+**structured, non-decaying "current truth"** — typed entities (`goal`, `project`, `task`,
+`decision`, `metric`, `person`, `meeting`, `note`) + typed relations + provenance — distinct
+from the *recall* layers below. Founder pain it owns: fragmentation across Slack/GitHub/
+Stripe/Obsidian/Notion, where no system knows the *company*. Each external tool becomes a
+synchronization endpoint reconciled into and out of this model.
+
+Wrapped in the **five loops**: Observe → Remember → Understand → Execute → Learn.
+
+- **Observation layer (`app/state/sources/`)** — passive adapters that watch the founder's
+  tools and emit raw events. **Obsidian first** (local vault file sync, slice 1);
+  GitHub/Stripe/Slack/Calendar/Notion later. This is the **Observe** loop.
+- **Reconciler (`app/state/reconciler.py`)** — the Observe→Remember core, reused by every
+  feed: record observation (idempotent) → write-gate → dedup-on-ingest → create/merge entity
+  with provenance → maintain relations → mirror into RAG/memory.
+- **Three feeds, each provenance-tagged:** `observed` (tool adapters), `user_doc` (founder-
+  provided docs — extends the knowledge ingestion path), `system` (agent-written memories +
+  Hermes procedural skills). Trust: `user_doc` > `observed` > `system`.
+- **Hygiene system (anti-bloat):** (1) write-gate — store only if novel/specific/durable;
+  (2) provenance trust-weighting; (3) dedup-on-ingest (semantic match → merge, not insert);
+  (4) decay + composite scoring (reuses `memory_pages` machinery); (5) periodic **Curator**
+  pass (merge/archive/surface). Slice 1 ships (1)+(3); the rest is designed-for.
+
+### Tables (Alembic only)
+
+`state_sources` (registered source + sync cursor), `state_observations` (raw inbound events;
+idempotency + audit), `company_state_entities` (typed canonical entities + provenance/
+confidence/pin), `state_relations` (typed edges, `memory_links`-style).
+
+### Relationship to the existing memory layers (no duplication)
+
+The State Engine is a **fourth, distinct** layer. `knowledge_items` (RAG) = unstructured doc
+recall; `memory_pages`/`memory_links` (temporal KG) = episodic/semantic memory that decays;
+4-layer agent memory = in-flight per-run context; **State Engine = authoritative normalized
+state that does not decay.** Memory/RAG remain the recall substrate; ingestion feeds *both*.
+
+Full design: [docs/superpowers/specs/2026-06-22-company-state-engine-design.md](superpowers/specs/2026-06-22-company-state-engine-design.md).
+
 ## RAG / retrieval — `app/retrieval/`
 
 Chunker → embedder → retriever over `knowledge_items` (pgvector). Embeddings via

@@ -250,6 +250,9 @@ class Workflow(Base):
     total_runs: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     successful_runs: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
+    # n8n workflow identifier returned on push (ADR-008 / FR-2). NULL until compiled+pushed.
+    n8n_workflow_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
     created_at: Mapped[datetime] = _ts_now()
     updated_at: Mapped[datetime] = _ts_now()
 
@@ -283,6 +286,13 @@ class WorkflowExecution(Base):
 
     output_summary: Mapped[Optional[str]] = mapped_column(Text)
     error_message: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Per-step state sidecar (ADR-008 data-model delta). Keyed by IR step_id, e.g.
+    # {"s1": {"status": "completed", "output": ...},
+    #  "s2": {"status": "awaiting_approval", "approval_id": "...", "resume_url": "..."}}.
+    # The authoritative home for per-step status / approval / n8n resume-URL and the
+    # target of the C-1 atomic single-use transition. NULL until the first step runs.
+    step_state: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = _ts_now()
     updated_at: Mapped[datetime] = _ts_now()
