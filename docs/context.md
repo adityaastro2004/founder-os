@@ -1,6 +1,6 @@
 # Project context (auto)
 
-Generated: 2026-07-03T13:57:01.893Z
+Generated: 2026-07-03T16:31:38.934Z
 
 ## Detected stack
 
@@ -9,10 +9,15 @@ Generated: 2026-07-03T13:57:01.893Z
 ## Git
 
 - Branch: `phase0-foundation-revamp`
-- HEAD: `81e3825`
+- HEAD: `a410c9f`
 
 ## Recent commits
 
+- `a410c9f` audit(phase0): close-out verification — all 7 spec criteria met; live tier 14/14 green _(Aditya Jain, 2026-07-03)_
+- `4c9a958` test(phase0): RAG suite client timeout 60→300s — agent-chat section runs 30-90s+ on local ollama, flaked at 60s in soak (testing.md rule 5) _(Aditya Jain, 2026-07-03)_
+- `01f3f40` test(phase0): RAG agent-grounding check FAIL→WARN — LLM content-quality assertion flaked in close-out soak, passed on immediate re-run (testing.md rule 4); retrieval stays hard-asserted structurally _(Aditya Jain, 2026-07-03)_
+- `d0db615` chore(phase0): record security + review gate outcomes in task 012 _(Aditya Jain, 2026-07-03)_
+- `6e7e223` fix(phase0): eng-reviewer findings — B1 stale calendar import in test_e2e_pipeline (crashed suite), S1 same in test_system token-copy path, S2 idempotent adapter registration, N1 turbo.json formatting, N2 crawler test noted in testing.md _(Aditya Jain, 2026-07-03)_
 - `81e3825` docs(phase0): ADR-010, testing standard rewrite (3 tiers), architecture integrations+testing sections, roadmap phase table _(Aditya Jain, 2026-07-03)_
 - `1f86319` ci(phase0): run pytest unit tier in backend job _(Aditya Jain, 2026-07-03)_
 - `70018b5` chore(phase0): turbo test → API unit tier (apps/api joins npm workspace) _(Aditya Jain, 2026-07-03)_
@@ -28,14 +33,10 @@ Generated: 2026-07-03T13:57:01.893Z
 - `ca04fa5` audit(phase0): §8 workflows — PASS (AOV + n8n suites green, n8n reachable) _(Aditya Jain, 2026-07-03)_
 - `a18ac04` audit(phase0): §3 agent layer — PASS (live LLM round-trip verified) _(Aditya Jain, 2026-07-03)_
 - `84eefaf` audit(phase0): core suites — §4 §5 PASS, §6 FAIL (plan-gen timeout F1) _(Aditya Jain, 2026-07-03)_
-- `98e6b55` audit(phase0): §2 auth-path verdict — PASS _(Aditya Jain, 2026-07-03)_
-- `a82b212` audit(phase0): §1 boot verdict — PASS _(Aditya Jain, 2026-07-03)_
-- `bd6c91a` chore(phase0): open task 012 + audit report skeleton _(Aditya Jain, 2026-07-03)_
-- `00ae7e5` docs: Phase 0 implementation plan — 16 tasks (audit → repair → reshape) _(Aditya Jain, 2026-07-03)_
-- `94e7400` docs: Phase 0 foundation-revamp design spec (audit → repair → reshape) _(Aditya Jain, 2026-07-03)_
 
 ## Inferred recent decisions
 
+- `6e7e223` fix(phase0): eng-reviewer findings — B1 stale calendar import in test_e2e_pipeline (crashed suite), S1 same in test_system token-copy path, S2 idempotent adapter registration, N1 turbo.json formatting, N2 crawler test noted in testing.md
 - `81e3825` docs(phase0): ADR-010, testing standard rewrite (3 tiers), architecture integrations+testing sections, roadmap phase table
 - `1811ee3` refactor(phase0): calendar → integrations/google_calendar + first adapter (behavior-preserving)
 - `80c8c86` feat(phase0): integration adapter framework — base ABC + registry (ADR-010)
@@ -47,16 +48,16 @@ Generated: 2026-07-03T13:57:01.893Z
 
 ## Hotspots
 
-- 9x — `reports/2026-07-03-phase0-audit.md`
+- 10x — `reports/2026-07-03-phase0-audit.md`
 - 4x — `docs/roadmap.md`
 - 4x — `founder-os/apps/api/app/main.py`
 - 4x — `founder-os/apps/api/.env.example`
+- 3x — `founder-os/apps/api/test_rag_pipeline.py`
+- 3x — `docs/context.md`
+- 3x — `founder-os/apps/api/test_system.py`
+- 3x — `standards/testing.md`
 - 3x — `docs/architecture.md`
 - 3x — `docs/decisions.md`
-- 3x — `founder-os/apps/api/requirements.txt`
-- 3x — `CLAUDE.md`
-- 3x — `founder-os/apps/api/app/agents/orchestrator.py`
-- 3x — `founder-os/apps/api/app/api/activity_routes.py`
 
 ## Top-level tree
 
@@ -133,6 +134,7 @@ readme.html
 readme.md
 reports/
 reports/2026-07-03-phase0-audit.md
+reports/2026-07-03-phase0-retro.md
 reports/README.md
 skills/
 skills/analyze.md

@@ -229,8 +229,10 @@ calendar-config and workflows all passed; the fixes are:
 
 ## Close-out verification (2026-07-03, cold restart)
 
-Stack stopped and cold-booted (`./start.sh --stop && ./start.sh`); all commands run
-after the final commit on branch `phase0-foundation-revamp`:
+Stack stopped and cold-booted (`./start.sh --stop && ./start.sh`). The pytest/turbo
+commands ran after the final code commit; the CI line is the earlier branch run at
+`1f86319` (6 commits before final HEAD) — a fresh CI run at true HEAD is the merge
+condition recorded by eng-qa (see task 012 gate record):
 
 ```
 pytest -q                → 27 passed, 14 deselected in 0.84s   (unit + regression)
