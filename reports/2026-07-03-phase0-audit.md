@@ -13,9 +13,9 @@
 | 4 | Memory (4-layer + temporal KG) | **PASS** | §4 |
 | 5 | Knowledge / RAG | **PASS** | §5 |
 | 6 | Planner + weekly plan + APScheduler | **FAIL** (F1: plan generation timeout) | §6 |
-| 7 | Google Calendar | | §7 |
+| 7 | Google Calendar | **PASS (config) / BLOCKED (push — founder OAuth)** | §7 |
 | 8 | Workflows / automations (AOV + n8n) | **PASS** | §8 |
-| 9 | Approval gate | | §9 |
+| 9 | Approval gate | **FAIL** (F2: explicit "ask" pref is a no-op) | §9 |
 | 10 | Remaining routers (crawler, billing, settings, activity, history, queue) | | §10 |
 | 11 | Frontend | | §11 |
 
@@ -106,7 +106,17 @@ tight for the 3-tier fallback chain.
 
 ## §7 Google Calendar
 
-(filled by audit)
+**Verdict: PASS (config + OAuth URL) / BLOCKED (live push — needs founder consent).**
+
+- `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` present in `.env`.
+- OAuth URL generation (via `test_system.py` §4): PASS — well-formed
+  `accounts.google.com/o/oauth2/v2/auth?client_id=219004168797-….apps.googleusercontent.com…`.
+- "Generate rejects without GCal" guard: PASS.
+- Live push / event CRUD / memory-aware plan: **BLOCKED** — no OAuth tokens in the
+  dev DB. **Founder step:** open the dashboard → Planner → Connect Google Calendar
+  (or `GET /api/planner/connect` and visit the returned URL), grant access, then
+  re-run `python3 test_system.py` — sections 4/6/7 will exercise live push.
+- gcal tool risk classification exists (`gcal_create_event` etc. → MEDIUM; reads → LOW).
 
 ## §8 Workflows / automations
 
@@ -128,7 +138,32 @@ unchanged by this audit.
 
 ## §9 Approval gate
 
-(filled by audit)
+**Verdict: FAIL (F2)** — structure sound, one real defect, zero test coverage.
+
+What's sound (verified by code read + live probes):
+- `ExecutionEngine._execute_tool_calls` runs `approval_gate.check()` before **every**
+  tool call when `user_id` is set (`app/agents/execution.py:307-330`); held calls
+  return `pending_approval` placeholders (field observed live in chat responses).
+- `classify_tool_risk`: HIGH_RISK_TOOLS always → HIGH; unknown tools (e.g. MCP)
+  default **MEDIUM**, not LOW (`app/agents/approval.py:159-170`).
+- HIGH risk in `check()` → ALWAYS `_create_pending`, no bypass (`approval.py:419-429`).
+- Live negative probe: content agent asked to "publish a tweet" had no such tool
+  registered → no tool executed, nothing silently side-effected (LLM emitted JSON
+  text only). `GET /api/approvals/pending` → `[]` (consistent: no tool call happened).
+
+**F2 (defect):** `check()`'s docstring and the preference model say explicit
+`pref == "ask"` → create pending approval; the implementation **auto-approves** on
+`pref == "ask"` (`approval.py:456-461`). A founder who explicitly sets a tool to
+"ask me first" is silently not asked — the human-in-the-loop override is a no-op for
+LOW/MEDIUM tools. Correct semantics: unset preference → default policy
+(LOW/MEDIUM auto-approve); explicit `"ask"` → pending approval.
+
+**Coverage gap:** no `test_*.py` exercises `ApprovalGate`/`classify_tool_risk` at all
+(grep over all 13 scripts: zero hits). Fix F2 with a proper unit suite.
+
+*Note:* a live HIGH-risk hold cannot currently be tripped end-to-end because no
+registered tool is in `HIGH_RISK_TOOLS` (they arrive with future integrations) —
+enforcement verified at the `check()` level instead; unit tests to pin it.
 
 ## §10 Remaining routers
 
