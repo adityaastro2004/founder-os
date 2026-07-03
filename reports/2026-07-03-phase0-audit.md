@@ -12,7 +12,7 @@
 | 3 | Orchestrator + agent chat | **PASS** | §3 |
 | 4 | Memory (4-layer + temporal KG) | **PASS** | §4 |
 | 5 | Knowledge / RAG | **PASS** (F3 fixed, `6de8d3a`, live-verified) | §5 |
-| 6 | Planner + weekly plan + APScheduler | **FAIL → fixed (F1, `d0b5c6e`)** — final live re-verify in close-out | §6 |
+| 6 | Planner + weekly plan + APScheduler | **PASS (F1 fixed `d0b5c6e`, live-verified in close-out soak)** | §6 |
 | 7 | Google Calendar | **PASS (config) / BLOCKED (push — founder OAuth)** | §7 |
 | 8 | Workflows / automations (AOV + n8n) | **PASS** | §8 |
 | 9 | Approval gate | **PASS (F2 fixed, `36bc612`; eng-security PASS)** | §9 |
@@ -226,3 +226,38 @@ calendar-config and workflows all passed; the fixes are:
 - B1: Google Calendar live push — connect GCal via dashboard/`/api/planner/connect`,
   then re-run `test_system.py` (§7).
 - B2: Frontend UI click-through with a real Clerk login (§11).
+
+## Close-out verification (2026-07-03, cold restart)
+
+Stack stopped and cold-booted (`./start.sh --stop && ./start.sh`); all commands run
+after the final commit on branch `phase0-foundation-revamp`:
+
+```
+pytest -q                → 27 passed, 14 deselected in 0.84s   (unit + regression)
+pytest -m live -q        → 14 passed, 27 deselected in 390.52s (all 13 wrapped
+                           suites + F3 regression; includes test_system.py with
+                           real plan generation — F1 verified)
+turbo test               → api:test 27 passed — 1 task successful
+turbo lint / check-types → 3 tasks successful each
+CI (run 28654259024)     → success: Backend ✓ Frontend ✓ aggregate gate ✓
+```
+
+Two additional test-quality defects surfaced and fixed during the close-out soaks
+(both the exact classes standards/testing.md now names):
+- RAG agent-grounding check asserted LLM content → flaked; now WARN (rule 4).
+- RAG suite client timeout was a provider-blind 60s → flaked on the 30–90s local
+  agent chat; now 300s (rule 5).
+
+## Spec success criteria — final
+
+1. ✅ `./start.sh` cold-boots cleanly (§1 + close-out re-boot).
+2. ✅ This report: PASS/FAIL/BLOCKED + captured output for all 11 subsystems.
+3. ✅ F1/F2/F3 all fixed with regression tests (none deferred silently); product-side
+   async plan-gen deferred WITH task file (`tasks/backlog/013`).
+4. ✅ `pytest` / `turbo test` / CI unit tier all green (outputs above).
+5. ✅ `app/integrations/` framework + Google Calendar first adapter,
+   behavior-preserving (rename proven content-identical by eng-reviewer; live
+   OAuth probe identical; full live tier green post-migration).
+6. ✅ architecture.md + testing.md updated; ADR-010 recorded.
+7. ✅ Honest reporting throughout (failures shown verbatim incl. two close-out
+   flakes; BLOCKED items named as founder actions, not guessed).
