@@ -62,7 +62,10 @@ def auth_headers():
     return {"x-test-user": USER}
 
 
-client = httpx.Client(base_url=BASE, headers=auth_headers(), timeout=60)
+# 300s, not 60: section 11 does a real agent chat through the local LLM, which
+# runs 30-90s+ on llama3.1:8b (flaked at 60s in the Phase 0 close-out soak).
+# Provider-aware timeouts per standards/testing.md rule 5.
+client = httpx.Client(base_url=BASE, headers=auth_headers(), timeout=300)
 
 
 # ─── 1. Health Check ────────────────────────────────────────
