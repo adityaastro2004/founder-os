@@ -11,11 +11,11 @@
 | 2 | Auth path (Clerk + dev bypass + test_routes gating) | **PASS** | §2 |
 | 3 | Orchestrator + agent chat | **PASS** | §3 |
 | 4 | Memory (4-layer + temporal KG) | **PASS** | §4 |
-| 5 | Knowledge / RAG | **PASS** | §5 |
-| 6 | Planner + weekly plan + APScheduler | **FAIL** (F1: plan generation timeout) | §6 |
+| 5 | Knowledge / RAG | **PASS** (F3 fixed, `6de8d3a`, live-verified) | §5 |
+| 6 | Planner + weekly plan + APScheduler | **FAIL → fixed (F1, `d0b5c6e`)** — final live re-verify in close-out | §6 |
 | 7 | Google Calendar | **PASS (config) / BLOCKED (push — founder OAuth)** | §7 |
 | 8 | Workflows / automations (AOV + n8n) | **PASS** | §8 |
-| 9 | Approval gate | **FAIL** (F2: explicit "ask" pref is a no-op) | §9 |
+| 9 | Approval gate | **PASS (F2 fixed, `36bc612`; eng-security PASS)** | §9 |
 | 10 | Remaining routers (crawler, billing, settings, activity, history, queue) | **PASS** | §10 |
 | 11 | Frontend | **PASS** (boot + auth gating; UI click-through = founder item) | §11 |
 
@@ -198,6 +198,29 @@ calendar-config and workflows all passed; the fixes are:
 | **F1** | Planner (founder-named pain point) | Weekly plan generation times out — script banner says "Gemini 2.5 Flash" while `LLM_PROVIDER=ollama` | §6 | **Fix** (Task 9) |
 | **F2** | Approval gate (security-adjacent) | Explicit `"ask"` preference silently auto-approves LOW/MEDIUM tools; docstring contradicts code; zero gate test coverage | §9 | **Fix + unit suite** (Task 9; eng-security review) |
 | **F3** | Retrieval | Hybrid search reports score 0.000 while ranking/results work | §5 | Investigate; fix if root cause is small, else defer with task file |
+
+### Fix dispositions (Stage 2)
+
+- **F1 — fixed** (`d0b5c6e`). Root cause: the plan pipeline is two sequential
+  ≤4096-token LLM generations; measured **486s** on `ollama/llama3.1:8b` (endpoint
+  returned HTTP 200 with a valid 5-day plan) vs the test's fixed 300s cap. Fixed
+  test-side: provider-aware timeout (ollama→900s) + payload now sends goals in the
+  `message` field `PlanRequest` actually reads (old `goals`/`user_context` keys were
+  silently dropped by Pydantic). Product-side async generation → `tasks/backlog/013`.
+  Final live re-verification runs in close-out (server was in flight during repairs).
+- **F2 — fixed** (`36bc612`), unit-verified (19 tests incl. full 3-tier × preference
+  matrix). Root cause: `get_preference` returned `"ask"` for *unset*, so `check()`
+  had to auto-approve on `"ask"`, silently ignoring a founder's explicit "ask me".
+  Now: unset→`None`→default policy; explicit `"ask"`/unrecognized/empty→pending
+  (fail-safe). **eng-security audit: PASS, no blockers**; its should-fixes S1
+  (empty-string edge), S2 (risk-info mislabeling unset as "ask"), S3 (matrix
+  coverage), S4 (tamper-canary log), S5 (stale docstrings) all applied in the same
+  commit. Residual observation (pre-existing, not a weakness): HIGH × `always_deny`
+  yields a pending card instead of an auto-reject — noted for roadmap.
+- **F3 — fixed** (`6de8d3a`), live-verified (regression test failed at 0.0 pre-fix,
+  passes post-fix). Root cause: Postgres inferred `:sem_w`/`:ft_w` as **bigint** from
+  the `/(rrf_k + rank)` context → 0.7 truncated to 0 → integer division → every
+  hybrid score exactly 0 and ranking degenerated to ties. Explicit `float8` CASTs.
 
 **BLOCKED (founder actions, not defects):**
 - B1: Google Calendar live push — connect GCal via dashboard/`/api/planner/connect`,
