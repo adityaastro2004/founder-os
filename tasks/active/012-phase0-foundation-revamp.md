@@ -12,6 +12,21 @@ Everything verifiably working (audit report with PASS/FAIL + evidence; all FAILs
 fixed with regression tests or deferred with task files) + integration adapter
 framework, pytest harness, `turbo test`, CI unit tier.
 
+## Gate record
+
+- **eng-security (F2 diff): PASS**, no blockers; should-fixes S1–S5 all applied in
+  `36bc612`. Residual observation (HIGH × always_deny → pending, pre-existing) →
+  roadmap tech-debt.
+- **eng-reviewer (full branch diff 00ae7e5..81e3825): REQUEST CHANGES → resolved**
+  in `6e7e223`. Blocker B1 (stale `calendar_integration` import crashed
+  `test_e2e_pipeline.py` — migration grep missed root scripts), S1 (same stale
+  import in `test_system.py` token-copy path), S2 (adapter registration made
+  idempotent), N1 (turbo.json formatting churn reverted), N2 (crawler test noted
+  in testing.md), N3 (auto-generated docs/context.md committed). Everything else
+  approved: rename proven content-identical, gate strictly strengthened, scope
+  clean, tests genuinely pin their claims.
+- **eng-qa:** pending the post-fix full live soak.
+
 ## Acceptance criteria
 
 Success criteria 1–7 of the spec, verbatim:
