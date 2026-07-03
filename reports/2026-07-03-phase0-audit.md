@@ -10,9 +10,9 @@
 | 1 | Boot (Docker, Alembic, uvicorn, Celery, web) | **PASS** | §1 |
 | 2 | Auth path (Clerk + dev bypass + test_routes gating) | **PASS** | §2 |
 | 3 | Orchestrator + agent chat | | §3 |
-| 4 | Memory (4-layer + temporal KG) | | §4 |
-| 5 | Knowledge / RAG | | §5 |
-| 6 | Planner + weekly plan + APScheduler | | §6 |
+| 4 | Memory (4-layer + temporal KG) | **PASS** | §4 |
+| 5 | Knowledge / RAG | **PASS** | §5 |
+| 6 | Planner + weekly plan + APScheduler | **FAIL** (F1: plan generation timeout) | §6 |
 | 7 | Google Calendar | | §7 |
 | 8 | Workflows / automations (AOV + n8n) | | §8 |
 | 9 | Approval gate | | §9 |
@@ -52,15 +52,43 @@ checked under §3.
 
 ## §4 Memory
 
-(filled by audit)
+**Verdict: PASS.** `test_memory.py` → `=== ALL TESTS PASSED ===`, exit 0.
+Temporal KG CRUD, page types, importance scoring, pin/unpin all verified live.
 
 ## §5 Knowledge / RAG
 
-(filled by audit)
+**Verdict: PASS.** `test_rag_pipeline.py` → all checks green, exit 0: ingest (text,
+second doc, markdown file upload), stats (3 items, 3 embeddings), hybrid / semantic
+(top 0.669) / full-text / MMR search (3 categories), category filter, agent-uses-RAG
+grounding (found `$499`/`enterprise`/`per seat` indicators), list, embeddings present.
+
+*Observation (not a FAIL):* "Hybrid relevance — Top result score=0.000" — hybrid
+search returns rank-worthy results but the reported hybrid score is 0.0; semantic
+score works (0.669). Possible scoring/display defect inside hybrid fusion — logged
+as low-priority item in the ranked fix list (F4).
 
 ## §6 Planner + weekly plan + APScheduler
 
-(filled by audit)
+**Verdict: FAIL (F1).** From `test_system.py` (37/41 pass, exit non-zero):
+
+```
+5. LLM PLAN GENERATION (Gemini 2.5 Flash)
+  Generating plan with Gemini (this takes 15-30 seconds)...
+  [FAIL] Plan generation — timed out
+```
+
+Onboard + profile management PASSED; "Generate rejects without GCal" guard PASSED;
+memory-aware plan SKIPped (depends on GCal connect → §7 BLOCKED). Token/profile
+persistence PASSED. Root cause TBD in Task 9 — note the script banner says the plan
+path targets **Gemini 2.5 Flash** specifically while `LLM_PROVIDER=ollama`; suspects:
+hardcoded provider routing in the planner path, dead/quota GEMINI key, or timeout too
+tight for the 3-tier fallback chain.
+
+## §3a Core-suite evidence for the agent layer (completed in §3)
+
+`test_system.py` §8: List agents PASS (7 agents), LLM chat PASS via `ollama/llama3.1:8b`.
+`test_e2e_pipeline.py`: 50 PASS / 0 FAIL in 2.9s — full pipeline trace with mocked LLM
+(memory recall → context → parse → GCal-would-push → replan → memory store).
 
 ## §7 Google Calendar
 
