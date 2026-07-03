@@ -407,7 +407,7 @@ async def gcal_auth():
     Returns the URL the user should visit to grant calendar access.
     Requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env.
     """
-    from app.integrations.calendar_integration import get_auth_url
+    from app.integrations.google_calendar.client import get_auth_url
 
     settings = get_settings()
     if not settings.GOOGLE_CLIENT_ID:
@@ -433,7 +433,7 @@ async def gcal_callback(code: str, state: str = "founder-os"):
     Redirects to the production planner callback which persists tokens.
     Also handles tokens directly for backward compatibility.
     """
-    from app.integrations.calendar_integration import (
+    from app.integrations.google_calendar.client import (
         exchange_code_for_tokens,
         store_tokens,
     )
@@ -487,7 +487,7 @@ async def push_plan_to_google_calendar(
     Each task becomes a color-coded calendar event.
     """
     from app.agents.planner_models import WeeklyPlan
-    from app.integrations.calendar_integration import push_plan_to_gcal, get_tokens
+    from app.integrations.google_calendar.client import push_plan_to_gcal, get_tokens
 
     if not _latest_plan:
         raise HTTPException(

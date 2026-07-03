@@ -71,7 +71,7 @@ async def automated_planner_job() -> None:
         logger.info("    Plan: %d tasks in %.1fs", task_count, duration)
 
         # Push to Google Calendar
-        from app.integrations.calendar_integration import push_plan_to_gcal
+        from app.integrations.google_calendar.client import push_plan_to_gcal
         try:
             result = await push_plan_to_gcal(
                 plan=plan,

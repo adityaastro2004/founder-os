@@ -261,7 +261,7 @@ async def connect_gcal(clerk: ClerkUser = Depends(require_auth)):
     Start Google Calendar connection. Opens OAuth consent screen.
     After granting access, your calendar is linked permanently.
     """
-    from app.integrations.calendar_integration import get_auth_url
+    from app.integrations.google_calendar.client import get_auth_url
 
     settings = get_settings()
     if not settings.GOOGLE_CLIENT_ID:
@@ -305,7 +305,7 @@ async def connect_callback(code: str, state: str):
     OAuth2 callback — automatically called by Google after user grants access.
     Links the calendar to the user's profile.
     """
-    from app.integrations.calendar_integration import exchange_code_for_tokens
+    from app.integrations.google_calendar.client import exchange_code_for_tokens
 
     settings = get_settings()
     user_id = _decode_oauth_state(state)
@@ -325,8 +325,8 @@ async def connect_callback(code: str, state: str):
     user.store_gcal_tokens(tokens)
     save_user(user)
 
-    # Also store in the legacy calendar_integration token store
-    from app.integrations.calendar_integration import store_tokens
+    # Also store in the legacy google_calendar client token store
+    from app.integrations.google_calendar.client import store_tokens
     store_tokens(user_id, tokens)
 
     # Return an HTML page that shows success and auto-closes the popup
