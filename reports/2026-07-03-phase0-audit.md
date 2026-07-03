@@ -9,7 +9,7 @@
 |---|-----------|---------|------------------|
 | 1 | Boot (Docker, Alembic, uvicorn, Celery, web) | **PASS** | §1 |
 | 2 | Auth path (Clerk + dev bypass + test_routes gating) | **PASS** | §2 |
-| 3 | Orchestrator + agent chat | | §3 |
+| 3 | Orchestrator + agent chat | **PASS** | §3 |
 | 4 | Memory (4-layer + temporal KG) | **PASS** | §4 |
 | 5 | Knowledge / RAG | **PASS** | §5 |
 | 6 | Planner + weekly plan + APScheduler | **FAIL** (F1: plan generation timeout) | §6 |
@@ -48,7 +48,21 @@ checked under §3.
 
 ## §3 Orchestrator + agent chat
 
-(filled by audit)
+**Verdict: PASS.** All four agent suites green + live LLM round-trip verified.
+
+- `test_agent_prompts.py` exit 0 — strategy markers, role elevation, code→DB prompt
+  sync idempotent.
+- `test_agent_specialization.py` exit 0 — generate/approve/reject/parse paths.
+- `test_agent_evolution.py` exit 0 — regeneration, supersede, rollback, registry
+  override + fallback.
+- `pytest test_content_agent.py` — 25 passed in 0.50s.
+- **Live probe:** `POST /api/agents/orchestrator/chat` (dev bypass) → real reply from
+  `ollama/llama3.1:8b`; response carries `agent, reply, llm_provider, model,
+  tokens_used, cost_usd, pending_approvals, tool_calls_made, …`. Structure asserted,
+  not content quality.
+- §2 observation resolved: DB `model` field on agent definitions is display metadata;
+  runtime provider comes from `LLM_PROVIDER` (`llm_provider` in the live response
+  confirmed ollama).
 
 ## §4 Memory
 
