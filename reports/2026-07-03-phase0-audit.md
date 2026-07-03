@@ -7,7 +7,7 @@
 
 | # | Subsystem | Verdict | Evidence section |
 |---|-----------|---------|------------------|
-| 1 | Boot (Docker, Alembic, uvicorn, Celery, web) | | §1 |
+| 1 | Boot (Docker, Alembic, uvicorn, Celery, web) | **PASS** | §1 |
 | 2 | Auth path (Clerk + dev bypass + test_routes gating) | | §2 |
 | 3 | Orchestrator + agent chat | | §3 |
 | 4 | Memory (4-layer + temporal KG) | | §4 |
@@ -21,7 +21,17 @@
 
 ## §1 Boot
 
-(filled by audit)
+**Verdict: PASS.** `./start.sh` booted cleanly end-to-end (2026-07-03 ~14:29 local).
+
+- start.sh: `✔ Ollama found` · `✔ nomic-embed-text model available` · `✔ Migrations applied` · `✔ API server running (PID 1757)` · `✔ Celery worker running (PID 1787)` · `✔ Web dev server running (PID 1877)`; n8n profile active.
+- Health: `GET /api/health` → `{"healthy": true, "checks": {"api": "ok", "postgres": "ok", "redis": "ok"}}`
+- Web: `GET http://localhost:3000` → `200`
+- Containers: `postgres Up (healthy)`, `redis Up (healthy)`, `n8n Up (healthy)`
+- Alembic: `alembic current` → `0001_workflow_engine (head)`
+- Celery: `celery@Adityas-MacBook-Air-5.local ready.` (queues default,agents,orchestrator)
+
+*Note (doc nit, not a failure):* the health endpoint is `/api/health`; the `/api` prefix
+lives on the router in `app/api/routes.py:9`, not in `main.py`.
 
 ## §2 Auth path
 
