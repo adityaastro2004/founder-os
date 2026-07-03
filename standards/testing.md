@@ -63,3 +63,6 @@ the live tier is local-only (needs Ollama + Docker).
 - Frontend has no tests yet (Vitest + React Testing Library — roadmap `later`).
 - Migrate the 13 standalone scripts' bodies into native pytest modules over time;
   the wrapper keeps them counted meanwhile.
+- `app/crawler/test_crawler.py` is not wrapped in the live tier yet — still run
+  directly (`python app/crawler/test_crawler.py`); wrap or migrate it with the
+  scripts above.

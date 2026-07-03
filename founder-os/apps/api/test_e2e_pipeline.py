@@ -625,7 +625,7 @@ def test_day_date_mapping():
 def test_calendar_functions():
     """Test the calendar integration helper functions exist and have correct signatures."""
     print("\n━━━ 8. Calendar Integration ━━━")
-    from app.integrations import calendar_integration as cal
+    from app.integrations.google_calendar import client as cal
     import inspect
 
     # Check all required functions exist

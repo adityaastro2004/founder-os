@@ -400,7 +400,7 @@ if not gcal_connected:
 
     # Check if dev-user has tokens (from legacy test flow)
     try:
-        from app.integrations.calendar_integration import get_tokens as _gt
+        from app.integrations.google_calendar.client import get_tokens as _gt
         dev_tokens = _gt("dev-user")
         if dev_tokens and dev_tokens.get("access_token"):
             # Copy dev-user tokens to our test user
@@ -408,7 +408,7 @@ if not gcal_connected:
             u = get_or_create_user(USER)
             u.store_gcal_tokens(dev_tokens)
             save_user(u)
-            from app.integrations.calendar_integration import store_tokens as _st
+            from app.integrations.google_calendar.client import store_tokens as _st
             _st(USER, dev_tokens)
             gcal_connected = True
             ok("GCal tokens (copied from dev-user)", "Using existing authenticated session")

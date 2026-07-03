@@ -60,4 +60,8 @@ class GoogleCalendarAdapter(IntegrationAdapter):
 
 
 def register_adapter() -> None:
+    # Idempotent: lifespan can run more than once per process (e.g. multiple
+    # TestClient contexts); a second registration must not kill startup (S2).
+    if "google_calendar" in registry.all_adapters():
+        return
     registry.register(GoogleCalendarAdapter())
