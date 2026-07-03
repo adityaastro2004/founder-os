@@ -44,6 +44,13 @@ def fail(name: str, detail: str = ""):
     print(f"  [FAIL] {name}" + (f" — {detail}" if detail else ""))
 
 
+def warn(name: str, detail: str = ""):
+    # Non-fatal: for LLM content-quality observations (standards/testing.md
+    # rule 4 — local-model output varies; structure is asserted, content isn't).
+    RESULTS.append((name, "WARN", detail))
+    print(f"  [WARN] {name}" + (f" — {detail}" if detail else ""))
+
+
 def skip(name: str, detail: str = ""):
     global SKIP
     SKIP += 1
@@ -393,8 +400,12 @@ def test_agent_uses_knowledge():
         ok("Agent uses RAG context", f"Found indicators: {found}")
         print(f"    Response preview: {response_text[:300]}...")
     else:
-        fail(
-            "Agent response missing ingested knowledge",
+        # WARN, not FAIL: whether the local 8B model quotes the exact tokens is
+        # content quality, which varies run-to-run (flaked in the Phase 0
+        # close-out soak, passed on immediate re-run). Retrieval itself is
+        # hard-asserted structurally in sections 5-10 above.
+        warn(
+            "Agent response missing ingested knowledge (content-quality, non-fatal)",
             f"None of {pricing_indicators} found in response",
         )
         print(f"    Response: {response_text[:500]}")
