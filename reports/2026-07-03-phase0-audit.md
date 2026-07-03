@@ -16,8 +16,8 @@
 | 7 | Google Calendar | **PASS (config) / BLOCKED (push — founder OAuth)** | §7 |
 | 8 | Workflows / automations (AOV + n8n) | **PASS** | §8 |
 | 9 | Approval gate | **FAIL** (F2: explicit "ask" pref is a no-op) | §9 |
-| 10 | Remaining routers (crawler, billing, settings, activity, history, queue) | | §10 |
-| 11 | Frontend | | §11 |
+| 10 | Remaining routers (crawler, billing, settings, activity, history, queue) | **PASS** | §10 |
+| 11 | Frontend | **PASS** (boot + auth gating; UI click-through = founder item) | §11 |
 
 ## §1 Boot
 
@@ -79,7 +79,7 @@ grounding (found `$499`/`enterprise`/`per seat` indicators), list, embeddings pr
 *Observation (not a FAIL):* "Hybrid relevance — Top result score=0.000" — hybrid
 search returns rank-worthy results but the reported hybrid score is 0.0; semantic
 score works (0.669). Possible scoring/display defect inside hybrid fusion — logged
-as low-priority item in the ranked fix list (F4).
+as low-priority item in the ranked fix list (F3).
 
 ## §6 Planner + weekly plan + APScheduler
 
@@ -167,12 +167,39 @@ enforcement verified at the `check()` level instead; unit tests to pin it.
 
 ## §10 Remaining routers
 
-(filled by audit)
+**Verdict: PASS.** All probed with `x-test-user: audit-user`:
+
+```
+/api/activity/recent  → 200    /api/activity/stats   → 200
+/api/billing/plans    → 200    /api/billing/status   → 200
+/api/history/runs     → 200    /api/history/sessions → 200
+/api/settings/apps    → 200    /api/settings/profile → 404*
+/api/queue/tasks      → 200
+/api/research/status  → 200    /api/research/findings → 200
+```
+
+\* intentional semantics: `{"detail":"Profile not found. Complete onboarding first."}`
+for a user who hasn't onboarded (`settings_routes.py:102-103`) — not a defect.
 
 ## §11 Frontend
 
-(filled by audit)
+**Verdict: PASS (boot + wiring).** `/` → 200, `/sign-in` → 200, `/dashboard` → 307
+(Clerk auth redirect, expected). `logs/web.log`: zero error lines. Full UI
+click-through (dashboard, knowledge upload, workflows pages) is recorded as a
+**founder manual-verification item** — not automatable without a real Clerk session.
 
 ## Ranked fix list
 
-(filled at end of Stage 1)
+Order per spec: boot → agents/chat → calendar → workflows → rest. Boot, agents,
+calendar-config and workflows all passed; the fixes are:
+
+| # | Area | Symptom | Evidence | Disposition |
+|---|------|---------|----------|-------------|
+| **F1** | Planner (founder-named pain point) | Weekly plan generation times out — script banner says "Gemini 2.5 Flash" while `LLM_PROVIDER=ollama` | §6 | **Fix** (Task 9) |
+| **F2** | Approval gate (security-adjacent) | Explicit `"ask"` preference silently auto-approves LOW/MEDIUM tools; docstring contradicts code; zero gate test coverage | §9 | **Fix + unit suite** (Task 9; eng-security review) |
+| **F3** | Retrieval | Hybrid search reports score 0.000 while ranking/results work | §5 | Investigate; fix if root cause is small, else defer with task file |
+
+**BLOCKED (founder actions, not defects):**
+- B1: Google Calendar live push — connect GCal via dashboard/`/api/planner/connect`,
+  then re-run `test_system.py` (§7).
+- B2: Frontend UI click-through with a real Clerk login (§11).
