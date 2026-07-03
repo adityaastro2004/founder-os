@@ -14,7 +14,7 @@
 | 5 | Knowledge / RAG | **PASS** | §5 |
 | 6 | Planner + weekly plan + APScheduler | **FAIL** (F1: plan generation timeout) | §6 |
 | 7 | Google Calendar | | §7 |
-| 8 | Workflows / automations (AOV + n8n) | | §8 |
+| 8 | Workflows / automations (AOV + n8n) | **PASS** | §8 |
 | 9 | Approval gate | | §9 |
 | 10 | Remaining routers (crawler, billing, settings, activity, history, queue) | | §10 |
 | 11 | Frontend | | §11 |
@@ -110,7 +110,21 @@ tight for the 3-tier fallback chain.
 
 ## §8 Workflows / automations
 
-(filled by audit)
+**Verdict: PASS.** All five suites exit 0 against the live server:
+
+- `test_workflow_ir.py` — 16 passed (IR persistence, get_step)
+- `test_workflow_compiler.py` — 19 passed (cron → Schedule Trigger node, manual
+  trigger, connections)
+- `test_workflow_generator.py` — 16 passed (incl. empty-goal rejected before LLM)
+- `test_workflow_routes.py` — 13/13 (create → run → run-record; no route collision)
+- `test_n8n_client.py` — 15 passed (transport failure → N8nUnavailableError; API key
+  never leaks into error messages)
+- n8n container: `Up (healthy)`, `GET :5678` → 200.
+
+*Scope note:* this validates the default in-process AOV path end-to-end plus n8n
+client/compiler correctness and n8n reachability. A live push of a compiled workflow
+INTO n8n (API key pairing etc.) is task 004 scope — already `later` on the roadmap,
+unchanged by this audit.
 
 ## §9 Approval gate
 
