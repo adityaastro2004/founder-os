@@ -385,8 +385,11 @@ class VectorStore:
                 s.tags,
                 s.source_url,
                 s.similarity,
-                COALESCE(:sem_w / (:rrf_k + s.sem_rank), 0)
-                    + COALESCE(:ft_w / (:rrf_k + f.ft_rank), 0) AS hybrid_score
+                -- CASTs are load-bearing (F3): without them Postgres infers the
+                -- float params as bigint from the rank context, truncating 0.7→0
+                -- and integer-dividing every score to exactly 0 (ranking ties).
+                COALESCE(CAST(:sem_w AS float8) / (CAST(:rrf_k AS float8) + s.sem_rank), 0)
+                    + COALESCE(CAST(:ft_w AS float8) / (CAST(:rrf_k AS float8) + f.ft_rank), 0) AS hybrid_score
             FROM semantic s
             LEFT JOIN fulltext f ON s.id = f.id
             WHERE s.similarity >= :min_sim
