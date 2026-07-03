@@ -15,6 +15,20 @@
 
 ## Now
 
+- **Full-system revamp (founder-approved 2026-07-03):** six sequential phases, each
+  with its own design → plan → build cycle. See the
+  [Phase 0 spec](superpowers/specs/2026-07-03-phase0-foundation-revamp-design.md)
+  for the decomposition rationale.
+
+  | Phase | Outcome | Status |
+  |-------|---------|--------|
+  | 0 | Foundation revamp — audit → repair → reshape (task 012) | `now` |
+  | 1 | State Engine core + Obsidian sync (task 011) | `next` |
+  | 2 | Notion adapter (same engine/ABC) | `later` |
+  | 3 | Hermes skills feed (`system` feed) | `later` |
+  | 4 | Paperclip (paperclip.ing) via MCP | `later` |
+  | 5 | Deployment — Docker images + runbook | `later` |
+
 - **Company State Engine — the moat (flagship, task 011):** a canonical, living model of
   the company (goals · projects · tasks · decisions · metrics · people · meetings) fed by
   passive multi-channel observation and surfaced where the founder already works. Wrapped in
@@ -70,6 +84,12 @@
 - **Tech-debt (from task 001 review):** promote the private `_get_llm_generate`
   (`profile_routes.py`) to a public helper in `app/agents/llm.py`; reused by
   specialization. Status: `next`.
+- **Async interactive plan generation (task 013):** plan gen takes ~486s on local
+  ollama (2 sequential 4k-token calls) — move to Celery job + polling. From Phase 0
+  audit F1. Status: `next`. See [tasks/backlog/013](../tasks/backlog/013-planner-async-generation.md).
+- **Tech-debt (from Phase 0 security review):** HIGH-risk × `always_deny` yields a
+  pending approval card instead of an auto-reject — user asked never to be asked.
+  Safe (nothing executes without a human) but noisy. Status: `later`.
 
 ## Later
 

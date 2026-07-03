@@ -1,42 +1,55 @@
 # Testing Standards — Founder OS
 
-> Honest state of testing today, plus the convention to follow until a real
-> framework is adopted. Never report unverified work as done.
+> The testing contract as of Phase 0 (2026-07-03, task 012). pytest is real now.
+> Never report unverified work as done.
 
-## Current reality
+## The three tiers
 
-- **No test framework is configured.** `pytest` is not in `requirements.txt`;
-  there is no `pytest.ini`, no `jest`/`vitest`.
-- **Backend tests are standalone scripts** at `apps/api/test_*.py`, run directly:
+Backend tests live in `founder-os/apps/api/tests/` and run with pytest
+(`pytest.ini`: `asyncio_mode = auto`, `testpaths = tests`, live tier deselected
+by default).
 
-  ```bash
-  cd founder-os/apps/api && source .venv/bin/activate
-  python test_e2e_pipeline.py     # end-to-end agent pipeline (mock LLM)
-  python test_system.py           # system tests
-  python test_memory.py           # memory system
-  python test_rag_pipeline.py     # RAG pipeline
-  python test_content_agent.py    # content agent
-  python app/crawler/test_crawler.py
-  ```
+| Tier | Where | Needs | Run |
+|------|-------|-------|-----|
+| **unit** | `tests/unit/` | nothing — no DB/Redis/LLM (`tests/conftest.py` supplies CI-mirror env defaults) | `pytest` |
+| **regression** | `tests/regression/` | one per fixed bug; unit-style when possible, `@pytest.mark.live` when the bug needs real services (e.g. F3 needed Postgres type inference) | `pytest` / `pytest -m live` |
+| **live** | `tests/live/` + live-marked regressions | the full stack on `localhost:8000` (`./start.sh`), Ollama, `APP_ENV=development` | `pytest -m live` |
 
-  They use `unittest.mock`, `asyncio`, and manual asserts/printed results.
-- **Frontend has no tests.**
+`tests/live/test_live_suites.py` wraps all 13 standalone `apps/api/test_*.py`
+scripts (they remain directly runnable: `python3 test_system.py`). The scripts
+authenticate via the dev-only `x-test-user` bypass (hard-gated on
+`APP_ENV=development` in `app/auth.py`).
 
-## Convention until a framework lands
+## Commands
 
-For any non-trivial change, add or extend verification — don't skip it:
+```bash
+cd founder-os/apps/api && source .venv/bin/activate
+pytest                    # unit + non-live regression (fast, no services)
+pytest -m live            # full live tier — start the stack first (./start.sh)
+# From the monorepo root:
+turbo test                # runs the API unit tier via apps/api package.json
+```
 
-1. **Prefer extending an existing `test_*.py` script** that already covers the area
-   (e.g. memory change → `test_memory.py`). Keep the standalone, runnable style:
-   `async` where needed, mock the LLM (don't hit a live provider), print a clear
-   pass/fail summary, exit non-zero on failure.
-2. **New area** → add a new `apps/api/test_<area>.py` following the same shape.
-3. **Mock external IO** — LLM providers, network, and (where practical) the DB —
-   so tests are deterministic and runnable without paid services.
-4. **If automated testing isn't feasible**, do a **manual verification**: run the
-   relevant command from [CLAUDE.md §6](../CLAUDE.md), exercise the endpoint/flow,
-   and record the observed output in the task file. Say explicitly that it was
-   manual.
+CI (`.github/workflows/ci.yml`, backend job) runs the unit tier on every run;
+the live tier is local-only (needs Ollama + Docker).
+
+## Rules
+
+1. **Every bug fix ships a regression test** that failed before the fix and passes
+   after — named/documented with the audit/bug id (e.g. `F3`). No fix commits
+   without one.
+2. **New features**: unit tests for logic; a live test (or live-suite extension)
+   when the behavior spans services.
+3. **Unit tier must stay service-free** — if an import drags in a connection at
+   module scope, that's a defect to fix (lazy-init), never a reason to mark the
+   test live.
+4. **LLM-dependent assertions test structure, not content quality** — local model
+   output varies (e.g. assert round-trip fields exist, never prose contents).
+5. **Timeouts must be provider-aware** — local Ollama is 10–30× slower than hosted
+   APIs (measured: 486s for the 2-call plan pipeline on `llama3.1:8b` vs 15–30s
+   hosted). Read the provider from `/api/agents/system` where a test must wait.
+6. **If automated testing isn't feasible**, record a manual verification (command +
+   observed output) in the task file and say explicitly that it was manual.
 
 ## Reporting
 
@@ -45,8 +58,8 @@ For any non-trivial change, add or extend verification — don't skip it:
 - "Done" requires a passing test or a recorded manual verification (see
   [docs/requirements.md](../docs/requirements.md) → Definition of done).
 
-## Target (future task, out of scope now)
+## Still open (roadmap)
 
-Adopt `pytest` + `pytest-asyncio` for the backend and Vitest + React Testing
-Library for the frontend, with a `turbo test` task. When that lands, migrate the
-standalone scripts and update this file.
+- Frontend has no tests yet (Vitest + React Testing Library — roadmap `later`).
+- Migrate the 13 standalone scripts' bodies into native pytest modules over time;
+  the wrapper keeps them counted meanwhile.
