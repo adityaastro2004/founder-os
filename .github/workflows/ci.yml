@@ -155,6 +155,11 @@ jobs:
       - name: Import smoke test (FastAPI app loads)
         run: python -c "from app.main import app; print(f'app imports OK — {len(app.routes)} routes')"
 
+      # Unit tier only: no DB/Redis/LLM needed (tests/conftest.py supplies dummy
+      # env; live tests are marked and deselected by pytest.ini addopts).
+      - name: Unit tests (pytest)
+        run: pytest -m "not live" -q
+
       - name: Validate schema.sql against pgvector Postgres
         run: |
           which psql >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y postgresql-client; }
