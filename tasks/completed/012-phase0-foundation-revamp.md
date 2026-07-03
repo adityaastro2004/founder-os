@@ -1,6 +1,6 @@
 # 012 — Phase 0: Foundation Revamp
 
-- **Status:** active
+- **Status:** completed (2026-07-03; CI green at HEAD `fba518f`: run 28673085612)
 - **Opened:** 2026-07-03
 - **Spec:** [docs/superpowers/specs/2026-07-03-phase0-foundation-revamp-design.md](../../docs/superpowers/specs/2026-07-03-phase0-foundation-revamp-design.md)
 - **Plan:** [docs/superpowers/plans/2026-07-03-phase0-foundation-revamp.md](../../docs/superpowers/plans/2026-07-03-phase0-foundation-revamp.md)
@@ -25,7 +25,11 @@ framework, pytest harness, `turbo test`, CI unit tier.
   in testing.md), N3 (auto-generated docs/context.md committed). Everything else
   approved: rename proven content-identical, gate strictly strengthened, scope
   clean, tests genuinely pin their claims.
-- **eng-qa:** pending the post-fix full live soak.
+- **eng-qa: PASS — all 7 spec criteria met** (per-criterion evidence in its report,
+  2026-07-03). Conditions: (1) push + confirm a green CI run at true HEAD before
+  merge (prior green run 28654259024 was 6 commits behind); (2) close-out preamble
+  wording corrected per its honesty flag. Live tier at close-out: **14 passed in
+  6:30**; unit tier 27 passed; turbo test/lint/check-types green.
 
 ## Acceptance criteria
 
