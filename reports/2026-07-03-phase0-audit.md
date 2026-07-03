@@ -8,7 +8,7 @@
 | # | Subsystem | Verdict | Evidence section |
 |---|-----------|---------|------------------|
 | 1 | Boot (Docker, Alembic, uvicorn, Celery, web) | **PASS** | §1 |
-| 2 | Auth path (Clerk + dev bypass + test_routes gating) | | §2 |
+| 2 | Auth path (Clerk + dev bypass + test_routes gating) | **PASS** | §2 |
 | 3 | Orchestrator + agent chat | | §3 |
 | 4 | Memory (4-layer + temporal KG) | | §4 |
 | 5 | Knowledge / RAG | | §5 |
@@ -35,7 +35,16 @@ lives on the router in `app/api/routes.py:9`, not in `main.py`.
 
 ## §2 Auth path
 
-(filled by audit)
+**Verdict: PASS.** The dev bypass and dev test routes are both provably hard-gated.
+
+- `app/auth.py:137-151` `_dev_test_user`: returns `None` when `settings.APP_ENV != "development"` **before** the `x-test-user` header is ever read.
+- `app/main.py:105-107`: `test_router` mounted only inside `if settings.APP_ENV == "development":` (comment: "Dev-only test routes (no auth required)").
+- Live behavior (dev): `GET /api/agents` without header → **401**; with `x-test-user: audit-user` → **200** (agents list returned).
+- Deployment requirement carried to Phase 5: production must set `APP_ENV` ≠ `development`; both the bypass and `test_routes` then vanish.
+
+*Observation for §3:* the agent registry lists `"model": "claude-sonnet-4-20250514"` on
+agent definitions while `LLM_PROVIDER=ollama` — display/DB field vs. runtime provider;
+checked under §3.
 
 ## §3 Orchestrator + agent chat
 
