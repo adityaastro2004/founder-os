@@ -1,0 +1,62 @@
+name: Deploy
+
+# Deploys the backend stack to a single host (VPS / EC2) over SSH.
+# The frontend deploys separately on Vercel (its own GitHub integration).
+#
+# Runs ONLY after the CI workflow succeeds on `main` (so we never deploy a red
+# build), plus a manual trigger. Secrets stay on the server: the .env.production
+# file lives there and is never sent from CI.
+#
+# Required repository secrets (Settings → Secrets and variables → Actions):
+#   DEPLOY_HOST     server IP / hostname
+#   DEPLOY_USER     ssh user (e.g. ubuntu, root, deploy)
+#   DEPLOY_SSH_KEY  private key authorized on the server (PEM, no passphrase)
+#   DEPLOY_PATH     path to the monorepo dir on the server (…/founder-os/founder-os)
+#   DEPLOY_PORT     (optional) ssh port; defaults to 22
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy backend to host
+    runs-on: ubuntu-latest
+    # Manual run, or only when the triggering CI run passed.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    steps:
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            cd "${{ secrets.DEPLOY_PATH }}"
+
+            # Pull the exact commit CI validated. reset --hard leaves the
+            # gitignored .env.production + named volumes untouched.
+            git fetch --all --prune
+            git reset --hard origin/main
+
+            # Rebuild + restart. Include the n8n profile (core workflow engine).
+            docker compose --env-file .env.production --profile n8n \
+              -f docker-compose.prod.yml up -d --build
+
+            # Reclaim space from old image layers.
+            docker image prune -f

@@ -15,6 +15,7 @@ import {
   Blocks,
   Lightbulb,
   CalendarDays,
+  CreditCard,
   X,
 } from "lucide-react";
 
@@ -27,11 +28,12 @@ const navigation = [
   { name: "Memory", href: "/dashboard/memory", icon: Brain },
   { name: "Knowledge", href: "/dashboard/knowledge", icon: BookOpen },
   { name: "Content Ideas", href: "/dashboard/content-ideas", icon: Lightbulb },
-  { name: "Automations", href: "/dashboard/automations", icon: Zap },
+  { name: "Automations", href: "/dashboard/workflows", icon: Zap },
   { name: "Apps", href: "/dashboard/apps", icon: Blocks },
 ];
 
 const bottomNav = [
+  { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 

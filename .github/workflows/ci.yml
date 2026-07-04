@@ -1,0 +1,181 @@
+name: CI
+
+# Founder OS is double-nested: the git root holds this file, the Turborepo
+# monorepo lives in ./founder-os. Frontend paths are relative to ./founder-os,
+# backend paths to ./founder-os/apps/api.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────────
+  # Frontend — Turborepo (web + docs + packages): lint, type-check, build
+  # ──────────────────────────────────────────────────────────────────────────
+  frontend:
+    name: Frontend (lint · types · build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: founder-os
+    env:
+      # Dummy build-time env so Next.js / Clerk / Stripe builds don't fail on
+      # missing public keys. These are NOT real credentials — they only satisfy
+      # format parsers at build time. Runtime uses real secrets in the host env.
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_Y2xlcmsuZXhhbXBsZS5jb20k
+      CLERK_SECRET_KEY: sk_test_dummy_ci_value
+      NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+      NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: /dashboard
+      NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: /onboarding
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: pk_test_dummy_ci_value
+      TURBO_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: founder-os/package-lock.json
+
+      - name: Cache Turbo
+        uses: actions/cache@v4
+        with:
+          path: founder-os/.turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type-check
+        run: npm run check-types
+
+      - name: Build
+        run: npm run build
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Backend — FastAPI / Python: lint, syntax, import smoke, schema load
+  # ──────────────────────────────────────────────────────────────────────────
+  backend:
+    name: Backend (lint · imports · schema)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: founder-os/apps/api
+    env:
+      DATABASE_URL: postgresql+asyncpg://founder:founder@localhost:5432/founder_os
+      DATABASE_URL_SYNC: postgresql+psycopg2://founder:founder@localhost:5432/founder_os
+      REDIS_URL: redis://localhost:6379/0
+      # Dummy provider keys so any client constructed at import time succeeds.
+      # No network calls happen at construction, so these are never validated.
+      LLM_PROVIDER: ollama
+      ANTHROPIC_API_KEY: sk-ant-dummy-ci-value
+      OPENAI_API_KEY: dummy-ci-value
+      STRIPE_SECRET_KEY: sk_test_dummy_ci_value
+      PGPASSWORD: founder
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: founder
+          POSTGRES_PASSWORD: founder
+          POSTGRES_DB: founder_os
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U founder -d founder_os"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: founder-os/apps/api/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff
+
+      # Blocking: real bugs only — syntax errors (E9), bad f-strings/asserts
+      # (F63, F7) and undefined names in __all__ / use-before-assign (F82).
+      # F821 (undefined name) is excluded: the codebase uses string forward-ref
+      # annotations (e.g. `agent: "BaseAgent"`) that pyflakes can't resolve but
+      # are valid at runtime — the import smoke test below catches truly-broken
+      # names instead. Near-zero false positives, keeps CI green.
+      - name: Lint (critical)
+        run: ruff check --output-format=github --select=E9,F63,F7,F82 --ignore=F821 .
+
+      # Informational: full ruff report, never fails the build (no ruff config yet).
+      - name: Lint (full, non-blocking)
+        run: ruff check --output-format=github .
+        continue-on-error: true
+
+      - name: Compile all sources (syntax check)
+        run: python -m compileall -q app
+
+      - name: Import smoke test (FastAPI app loads)
+        run: python -c "from app.main import app; print(f'app imports OK — {len(app.routes)} routes')"
+
+      - name: Validate schema.sql against pgvector Postgres
+        run: |
+          which psql >/dev/null 2>&1 || { sudo apt-get update && sudo apt-get install -y postgresql-client; }
+          psql "postgresql://founder:founder@localhost:5432/founder_os" \
+            -v ON_ERROR_STOP=1 -f schema.sql
+          echo "schema.sql applied cleanly"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Aggregate gate — a single required status for branch protection.
+  # ──────────────────────────────────────────────────────────────────────────
+  ci-success:
+    name: CI success
+    runs-on: ubuntu-latest
+    needs: [frontend, backend]
+    if: always()
+    steps:
+      - name: Verify all jobs passed
+        run: |
+          if [ "${{ needs.frontend.result }}" != "success" ] || \
+             [ "${{ needs.backend.result }}" != "success" ]; then
+            echo "One or more CI jobs failed."
+            exit 1
+          fi
+          echo "All CI jobs passed."

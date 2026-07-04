@@ -16,6 +16,9 @@ at once, context-switching dozens of times a day.
 
 ## The problem
 
+- The business is **fragmented**: Slack knows the conversation, GitHub the code, Stripe
+  the revenue, Obsidian/Notion the docs, Calendar the schedule — but **no system knows the
+  company**. The founder app-switches dozens of times a day to reassemble context by hand.
 - Existing AI tools help with *isolated* tasks but don't understand the business
   holistically, don't remember last week, and can't coordinate across domains.
   They're co-pilots, not co-founders.
@@ -24,11 +27,21 @@ at once, context-switching dozens of times a day.
 
 ## The differentiator
 
-**Auto-generated workflows.** You talk to one **Orchestrator** (inspired by
-Stripe's Minions). It analyses the request, decomposes it into subtasks, delegates
-to the right specialist agents, and synthesises one coherent answer. You never pick
-an agent and never wire a flow — the system figures out what to do from your goals,
-data, and history, and evolves workflows automatically as you grow.
+**The Company State Engine** (see ADR-009) — a canonical, living model of the company
+(goals · projects · tasks · decisions · metrics · people · meetings) fed by **passive
+multi-channel observation** and surfaced **where you already work** (Obsidian first, Notion
+later). Every tool you use becomes a sync endpoint; the engine is the single source of truth
+they reconcile into. It runs five loops: **Observe → Remember → Understand → Execute →
+Learn.**
+
+Supporting that moat: you talk to one **Orchestrator** (inspired by Stripe's Minions) that
+auto-generates the workflow for any request — you never pick an agent or wire a flow. (n8n
+remains an *optional, invisible* execution backend, not the differentiator.)
+
+The engine is fed by three provenance-tagged feeds — your tools (`observed`), docs you give
+it (`user_doc`), and what the system learns itself (`system`: agent memories + Hermes
+skills) — and a **hygiene system** (write-gate, dedup, decay, Curator) keeps it genuinely
+useful and never bloated.
 
 ## Principles
 

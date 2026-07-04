@@ -18,7 +18,6 @@ import {
   ChevronDown,
   ChevronUp,
   Plus,
-  RotateCcw,
   Wrench,
   Plug,
   Zap,

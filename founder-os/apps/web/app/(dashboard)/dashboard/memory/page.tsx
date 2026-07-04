@@ -12,10 +12,7 @@ import {
   Hash,
   Clock,
   Star,
-  ChevronDown,
-  ChevronUp,
   Database,
-  TrendingUp,
   Layers,
   Plus,
   X,
@@ -267,9 +264,9 @@ export default function MemoryPage() {
   };
 
   // Re-fetch when chapter filter changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!loading) handleRecall();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedChapter]);
 
   const handlePin = async (id: string, currentlyPinned: boolean) => {

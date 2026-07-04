@@ -31,6 +31,45 @@ services:
       timeout: 5s
       retries: 5
 
+  # n8n — invisible workflow execution + visualization backend (ADR-008, task 004).
+  # Default-on via the "n8n" compose profile, which start.sh activates by default.
+  # Opt out (zero-cost laptop) with: FOS_DISABLE_N8N=1 ./start.sh
+  # or, when driving compose directly, simply omit the profile:
+  #   docker compose up -d            # postgres + redis only (no n8n)
+  #   docker compose --profile n8n up -d   # include n8n
+  n8n:
+    image: n8nio/n8n:2.26.8
+    container_name: founder-os-n8n
+    restart: unless-stopped
+    profiles: ["n8n"]
+    ports:
+      - "5678:5678"
+    environment:
+      # Editor / REST API origin — used by the Founder OS API client and editor link-out.
+      N8N_HOST: localhost
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: http
+      N8N_EDITOR_BASE_URL: http://localhost:5678
+      WEBHOOK_URL: http://localhost:5678/
+      GENERIC_TIMEZONE: Asia/Kolkata
+      # n8n reaches the Founder OS API for HTTP-node callbacks via the host gateway
+      # (the API runs on the host via start.sh/uvicorn, not in this compose network).
+      FOS_API_BASE_URL: http://host.docker.internal:8000
+      # Do not expose diagnostics; keep the editor private (R-1 deployment hardening).
+      N8N_DIAGNOSTICS_ENABLED: "false"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - n8ndata:/home/node/.n8n
+    healthcheck:
+      test:
+        ["CMD-SHELL", "wget -q --spider http://localhost:5678/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
 volumes:
   pgdata:
   redisdata:
+  n8ndata:

@@ -1,0 +1,131 @@
+# Founder OS — production stack for a single host (VPS / EC2).
+# The Next.js frontend deploys separately (Vercel); this file runs everything else.
+#
+#   cp .env.production.example .env.production      # then fill it in
+#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+#   # include the optional n8n workflow engine:
+#   docker compose --env-file .env.production -f docker-compose.prod.yml --profile n8n up -d --build
+#
+# NOTE: `--env-file .env.production` makes ${VAR} interpolation below resolve from
+# that file; `env_file:` on each service injects the same vars into the container.
+
+services:
+  # Reverse proxy + automatic HTTPS. The ONLY service exposed to the internet.
+  caddy:
+    image: caddy:2-alpine
+    container_name: founder-os-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: ${API_DOMAIN:-localhost}
+      N8N_DOMAIN: ${N8N_DOMAIN:-n8n.localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      api:
+        condition: service_started
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: founder-os-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-founder}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-founder}
+      POSTGRES_DB: ${POSTGRES_DB:-founder_os}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-founder} -d ${POSTGRES_DB:-founder_os}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: founder-os-redis
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ./apps/api
+    image: founder-os-api
+    container_name: founder-os-api
+    restart: unless-stopped
+    env_file: .env.production
+    # Run migrations, then serve. Idempotent on restart.
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    # Not published to the host — only the Caddy proxy reaches it over the
+    # internal network. (For local debugging, add a `ports: ["8000:8000"]`.)
+    expose:
+      - "8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/openapi.json > /dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  worker:
+    # Reuses the API image (built by the `api` service). Celery background jobs.
+    image: founder-os-api
+    container_name: founder-os-worker
+    restart: unless-stopped
+    env_file: .env.production
+    command: celery -A app.celery_app worker --loglevel=info -Q default,agents,orchestrator
+    depends_on:
+      api:
+        condition: service_started
+      redis:
+        condition: service_healthy
+
+  n8n:
+    image: n8nio/n8n:2.26.8
+    container_name: founder-os-n8n
+    restart: unless-stopped
+    profiles: ["n8n"]
+    # Reached via the Caddy proxy (N8N_DOMAIN), not published to the host.
+    expose:
+      - "5678"
+    environment:
+      N8N_HOST: ${N8N_HOST:-localhost}
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: ${N8N_PROTOCOL:-http}
+      N8N_EDITOR_BASE_URL: ${N8N_EDITOR_BASE_URL:-http://localhost:5678}
+      WEBHOOK_URL: ${WEBHOOK_URL:-http://localhost:5678/}
+      GENERIC_TIMEZONE: ${GENERIC_TIMEZONE:-Asia/Kolkata}
+      # n8n HTTP nodes call back into the API over the compose network.
+      FOS_API_BASE_URL: http://api:8000
+      N8N_DIAGNOSTICS_ENABLED: "false"
+    volumes:
+      - n8ndata:/home/node/.n8n
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:5678/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  pgdata:
+  redisdata:
+  n8ndata:
+  caddy_data:
+  caddy_config:

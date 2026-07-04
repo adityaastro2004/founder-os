@@ -541,6 +541,65 @@ Pattern 4: GATHER-THEN-ACT (research informs action)
         )
 
     # ------------------------------------------------------------------
+    # Workflow generation (Wave 2b / ADR-008 US-1) — additive, off the main loop
+    # ------------------------------------------------------------------
+
+    async def generate_and_persist_workflow(
+        self,
+        db: "Any",
+        goal: str,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        context: Optional[str] = None,
+    ) -> "Any":
+        """
+        Auto-generate a workflow IR from a founder's natural-language goal and
+        persist it as a `Workflow` owned by this orchestrator's user.
+
+        Thin, additive entry point (does NOT alter the orchestration loop). It
+        reuses the orchestrator's own provider-neutral LLM (`self.llm`) and bound
+        `user_id`, generates a validated IR via `app.workflows.generator`, and
+        persists it via `app.workflows.service.create_workflow`. `n8n_workflow_id`
+        is left NULL — compile+push to n8n is Wave 3.
+
+        Wave 3 should call THIS method from the workflow API/orchestrate path when
+        a founder asks to automate/schedule a recurring goal, then compile the
+        returned workflow's `steps` IR and push it to n8n, recording the returned
+        n8n id via `service.set_n8n_workflow_id`.
+
+        Raises `WorkflowGenerationError` (from the generator) if no valid IR could
+        be produced — never persists an invalid IR (O-1-AMEND / C-8).
+        """
+        from app.workflows.generator import generate_workflow_ir
+        from app.workflows.ir import parse_ir
+        from app.workflows.service import create_workflow
+
+        ir = await generate_workflow_ir(self.llm, goal, context=context)
+
+        # `generate_workflow_ir` already ran validate_ir; this normalises the
+        # stored shape and would surface any residual schema drift loudly.
+        parsed = parse_ir(ir)
+        is_scheduled = parsed.trigger.type == "cron"
+        schedule_cron = getattr(parsed.trigger, "cron", None)
+
+        workflow = await create_workflow(
+            db,
+            user_id=str(self.user_id),
+            name=name or (goal.strip()[:120] or "Untitled workflow"),
+            description=description or goal.strip()[:500],
+            steps=ir,
+            is_scheduled=is_scheduled,
+            schedule_cron=schedule_cron,
+            n8n_workflow_id=None,  # Wave 3: set after compile + push to n8n
+        )
+        logger.info(
+            "generate_and_persist_workflow: persisted workflow %s for user %s (%d steps, scheduled=%s)",
+            workflow.id, self.user_id, len(parsed.steps), is_scheduled,
+        )
+        return workflow
+
+    # ------------------------------------------------------------------
     # Delegation execution (called by the delegate_task tool)
     # ------------------------------------------------------------------
 

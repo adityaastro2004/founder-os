@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, FormEvent } from "react";
+import { useState, useEffect, useCallback, useRef, FormEvent } from "react";
 import { useApi } from "@/lib/use-api";
 import {
   BookOpen,
@@ -8,12 +8,10 @@ import {
   Search,
   Loader2,
   Trash2,
-  Link as LinkIcon,
   FileText,
+  FileUp,
   Tag,
   Database,
-  ChevronDown,
-  ChevronUp,
   ExternalLink,
   X,
   Upload,
@@ -61,10 +59,12 @@ export default function KnowledgePage() {
   const [stats, setStats] = useState<KnowledgeStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [showIngest, setShowIngest] = useState(false);
-  const [ingestMode, setIngestMode] = useState<"text" | "url">("text");
+  const [ingestMode, setIngestMode] = useState<"text" | "url" | "file">("text");
   const [ingestTitle, setIngestTitle] = useState("");
   const [ingestContent, setIngestContent] = useState("");
   const [ingestCategory, setIngestCategory] = useState("");
+  const [ingestFile, setIngestFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [ingesting, setIngesting] = useState(false);
   const [ingestResult, setIngestResult] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -110,7 +110,7 @@ export default function KnowledgePage() {
           }),
         });
         setIngestResult(`Created ${data.chunks_created} chunks (${data.total_tokens} tokens)`);
-      } else {
+      } else if (ingestMode === "url") {
         if (!ingestContent.trim()) return;
         const data = await api("/api/knowledge/ingest/url", {
           method: "POST",
@@ -121,6 +121,22 @@ export default function KnowledgePage() {
           }),
         });
         setIngestResult(`Ingested from URL: ${data.chunks_created} chunks`);
+      } else {
+        if (!ingestFile) return;
+        const formData = new FormData();
+        formData.append("file", ingestFile);
+        if (ingestTitle.trim()) formData.append("title", ingestTitle.trim());
+        if (ingestCategory.trim()) formData.append("category", ingestCategory.trim());
+        const data = await api("/api/knowledge/ingest/file", {
+          method: "POST",
+          body: formData,
+          timeoutMs: 120_000, // PDFs take longer to extract + embed
+        });
+        setIngestResult(
+          `Uploaded ${ingestFile.name}: ${data.chunks_created} chunks (${data.total_tokens} tokens)`
+        );
+        setIngestFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       }
       setIngestTitle("");
       setIngestContent("");
@@ -235,6 +251,18 @@ export default function KnowledgePage() {
               <Globe className="w-3.5 h-3.5" />
               URL
             </button>
+            <button
+              onClick={() => setIngestMode("file")}
+              className={clsx(
+                "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors",
+                ingestMode === "file"
+                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
+                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
+              )}
+            >
+              <FileUp className="w-3.5 h-3.5" />
+              File / PDF
+            </button>
           </div>
           <form onSubmit={handleIngest} className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -261,7 +289,7 @@ export default function KnowledgePage() {
                 rows={5}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] resize-none placeholder:text-[var(--color-text-muted)]"
               />
-            ) : (
+            ) : ingestMode === "url" ? (
               <input
                 type="url"
                 value={ingestContent}
@@ -269,11 +297,43 @@ export default function KnowledgePage() {
                 placeholder="https://example.com/article"
                 className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
               />
+            ) : (
+              <div>
+                <label
+                  htmlFor="knowledge-file-input"
+                  className="flex items-center gap-3 w-full px-3 py-4 text-sm rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-subtle)] cursor-pointer hover:border-[var(--color-text-muted)] transition-colors"
+                >
+                  <FileUp className="w-5 h-5 text-[var(--color-text-muted)] shrink-0" />
+                  {ingestFile ? (
+                    <span className="text-[var(--color-text)] truncate">
+                      {ingestFile.name}{" "}
+                      <span className="text-[var(--color-text-muted)]">
+                        ({(ingestFile.size / 1024).toFixed(0)} KB)
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="text-[var(--color-text-muted)]">
+                      Choose a PDF, TXT, MD, CSV or JSON file (max 10 MB)
+                    </span>
+                  )}
+                </label>
+                <input
+                  id="knowledge-file-input"
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".pdf,.txt,.md,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json"
+                  onChange={(e) => setIngestFile(e.target.files?.[0] ?? null)}
+                  className="sr-only"
+                />
+              </div>
             )}
             <div className="flex items-center gap-3">
               <button
                 type="submit"
-                disabled={!ingestContent.trim() || ingesting}
+                disabled={
+                  ingesting ||
+                  (ingestMode === "file" ? !ingestFile : !ingestContent.trim())
+                }
                 className="px-4 py-2 text-sm font-medium text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
               >
                 {ingesting ? (

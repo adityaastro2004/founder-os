@@ -1,6 +1,11 @@
 from pydantic_settings import BaseSettings
+from pydantic import model_validator
 from functools import lru_cache
 from pathlib import Path
+
+# Minimum entropy for the workflow callback signing secret (O-2-AMEND / B-4).
+# token_urlsafe(32) → 32 bytes → ≥43 URL-safe chars.
+MIN_CALLBACK_SECRET_LEN = 43
 
 
 ENV_FILE_PATH = Path(__file__).resolve().parent.parent / ".env"
@@ -46,6 +51,14 @@ class Settings(BaseSettings):
     EMBEDDING_BASE_URL: str = ""  # Falls back to OLLAMA_BASE_URL or OpenAI default
     EMBEDDING_DIMENSIONS: int = 1536  # Padded/truncated to match pgvector column
 
+    # ── Stripe Payments ──
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_PUBLISHABLE_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    STRIPE_STARTER_PRICE_ID: str = ""   # Monthly price ID from Stripe Dashboard
+    STRIPE_PRO_PRICE_ID: str = ""
+    STRIPE_ENTERPRISE_PRICE_ID: str = ""
+
     # App
     APP_ENV: str = "development"
     DEBUG: bool = False
@@ -70,7 +83,40 @@ class Settings(BaseSettings):
     # In-process providers (Google Calendar) are auto-registered — no config needed.
     MCP_SERVERS: list[dict] = []
 
+    # ── n8n + Workflow callbacks (Track B — ADR-008) ──
+    # n8n REST connection (Track A wires the service; Track B reads these here).
+    N8N_BASE_URL: str = "http://localhost:5678"
+    N8N_API_KEY: str = ""
+    # Where n8n HTTP nodes call back into Founder OS (the public-from-n8n base URL).
+    WORKFLOW_CALLBACK_BASE_URL: str = "http://localhost:8000"
+    # HMAC signing secret for per-workflow callback tokens (O-2). No usable default;
+    # generate with: python -c "import secrets; print(secrets.token_urlsafe(32))".
+    # Validated fail-fast below for any non-development environment.
+    WORKFLOW_CALLBACK_SECRET: str = ""
+    # Optional rollover slot for key rotation via `kid` (O-2-AMEND #3).
+    WORKFLOW_CALLBACK_SECRET_PREVIOUS: str = ""
+
     model_config = {"env_file": str(ENV_FILE_PATH), "env_file_encoding": "utf-8"}
+
+    @model_validator(mode="after")
+    def _validate_callback_secret(self) -> "Settings":
+        """
+        Fail-fast on a weak/missing workflow callback secret (O-2-AMEND / B-4).
+
+        Outside `development` the app MUST refuse to start if the secret is empty or
+        shorter than 32 bytes of entropy (≥43 chars for token_urlsafe(32)). In
+        `development` a missing secret is tolerated at startup (non-callback flows);
+        the compiler enforces presence before compiling a workflow. Fail closed.
+        """
+        if self.APP_ENV != "development":
+            secret = self.WORKFLOW_CALLBACK_SECRET or ""
+            if len(secret) < MIN_CALLBACK_SECRET_LEN:
+                raise ValueError(
+                    "WORKFLOW_CALLBACK_SECRET must be set to at least 32 bytes of entropy "
+                    f"(≥{MIN_CALLBACK_SECRET_LEN} chars) when APP_ENV != 'development'. "
+                    'Generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))".'
+                )
+        return self
 
 
 @lru_cache

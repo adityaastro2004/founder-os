@@ -122,6 +122,7 @@ CREATE TABLE workflows (
     is_active BOOLEAN DEFAULT true,
     total_runs INTEGER DEFAULT 0,
     successful_runs INTEGER DEFAULT 0,
+    n8n_workflow_id VARCHAR(255),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -142,6 +143,7 @@ CREATE TABLE workflow_executions (
     duration_seconds INTEGER,
     output_summary TEXT,
     error_message TEXT,
+    step_state JSONB,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

@@ -1,0 +1,31 @@
+# Founder OS — Caddy reverse proxy with automatic HTTPS (Let's Encrypt).
+# Domains come from env (set in .env.production); local defaults keep it parseable
+# and bootable without DNS. Only this proxy is exposed publicly (80/443); the API
+# and n8n stay on the internal compose network.
+
+{
+	# ACME contact for cert issuance / expiry notices.
+	email {$ACME_EMAIL:admin@localhost}
+}
+
+# ── API ────────────────────────────────────────────────────────────────────
+{$API_DOMAIN:localhost} {
+	encode zstd gzip
+
+	# Baseline hardening headers.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy api:8000
+}
+
+# ── n8n editor (served only when the `n8n` profile is running) ───────────────
+{$N8N_DOMAIN:n8n.localhost} {
+	encode zstd gzip
+	reverse_proxy n8n:5678
+}

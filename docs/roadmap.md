@@ -15,12 +15,43 @@
 
 ## Now
 
+- **Company State Engine — the moat (flagship, task 011):** a canonical, living model of
+  the company (goals · projects · tasks · decisions · metrics · people · meetings) fed by
+  passive multi-channel observation and surfaced where the founder already works. Wrapped in
+  the five loops (Observe → Remember → Understand → Execute → Learn). Why: fragmentation /
+  app-switching is the deepest, most defensible founder pain — no tool today *knows the
+  company*. **Slice 1** = State Engine core + **Obsidian** bidirectional sync (local-first,
+  no OAuth), proving Observe→Remember→Sync end-to-end. Status: `now`. See ADR-009 +
+  [tasks/backlog/011](../tasks/backlog/011-company-state-engine.md) +
+  [spec](superpowers/specs/2026-06-22-company-state-engine-design.md).
 - _(seed)_ **Establish the development factory** — the meta-layer in this repo so
   the system improves itself. Why: less founder context-repetition, higher quality.
   Status: `now`.
 
 ## Next
 
+- **State Engine — feed 2 (`user_doc`) + feed 3 (`system`):** extend the reconciler so
+  founder-provided docs (existing PDF/knowledge ingestion) and system-generated knowledge
+  (agent memories + Hermes procedural skills) also emit canonical state entities — each
+  provenance-tagged. Why: the founder asked the engine to be updated by both what it learns
+  itself and the docs they give it. Builds on task 011 slice 1. Status: `next`.
+- **State Engine — hygiene/Curator (anti-bloat):** ship the full hygiene system —
+  provenance trust-weighting, decay + composite scoring (reuse `memory_pages`), and a
+  periodic **Curator** pass that merges/archives/surfaces entities + Hermes skills. Why:
+  keep the engine genuinely useful, never bloated (founder requirement). Write-gate + dedup
+  ship in slice 1; this completes #2/#4/#5. Status: `next`. See ADR-009.
+- **State Engine — more observation adapters:** GitHub (commits/PRs/issues/CI), then
+  Stripe (MRR), Slack, Calendar, Notion. Why: each tool added to the unified model removes
+  one more reason to app-switch. Status: `next`.
+- **n8n-backed auto-workflow system (now optional, task 004):** founder goal →
+  Orchestrator auto-generates a workflow → compiled + pushed to **self-hosted n8n**
+  (invisible execution + free visual editor) → runs → results visible in Founder OS, with
+  the **approval gate enforced server-side**. Why: dynamic in-process AOV graphs are now the
+  default execution model (ADR-009); n8n is repositioned as an *optional, invisible*
+  execution backend for founders who want a visible/editable flow — no longer the headline
+  differentiator. Ships as a thin vertical slice. Status: `later` (de-prioritized below the
+  State Engine). See [tasks/backlog/004](../tasks/backlog/004-n8n-workflow-engine.md) +
+  ADR-008/ADR-009.
 - **Agent Evolution — continuous auto-evolution (#4):** trigger context-model rebuild +
   regeneration automatically as memory/feedback accumulate (cadence + cost caps), so
   agents self-rewrite without a manual kick. Builds on task 003. Status: `next`.
@@ -42,8 +73,10 @@
 
 ## Later
 
-- **Agent Evolution — workflow execution engine** (task 004): wire the unused
-  `workflow*` tables into a real engine. See [agent-evolution.md](agent-evolution.md) §3.
+- **Workflow auto-evolution (task 004 follow-on):** generated workflows self-rewrite as
+  metrics/integrations/feedback change (the readme's "workflows evolve automatically"
+  promise) + conditional/branching logic. Builds on the n8n v1 slice and ties into the
+  feedback loop (tasks 003-followup / 007). Status: `later`.
 - **Agent Evolution — reasoning scaffolding** (task 006): plan/reflect hooks in
   `ExecutionEngine`. See [agent-evolution.md](agent-evolution.md) §4.
 - **Adopt a real test framework** (pytest + pytest-asyncio backend, Vitest frontend)
@@ -55,6 +88,8 @@
 
 ## Backlog / ideas
 
+- **Workflow template marketplace** — community-built / shareable generated-workflow
+  templates. Unvetted; surfaced as out-of-scope from task 004. Status: `idea`.
 - _(unvetted ideas land here for the product agent to prioritize)_
 
 ---
@@ -68,6 +103,7 @@
 | 2026-06-11 | Agent Evolution Engine — per-founder definition regeneration (Context Model + Generator) | [tasks/completed/003](../tasks/completed/003-agent-evolution-engine.md) |
 | 2026-06-11 | Production hardening — 10 bug classes fixed; agents+RAG+A2A proven live (RAG 16/16, A2A delegation, memory ALL, units 120/120) | [tasks/completed/008](../tasks/completed/008-prod-hardening-core.md) |
 | 2026-06-12 | PDF → RAG ingestion + blank-only primary_goal auto-fill (live-verified; + fixed a BackgroundTasks request-rollback bug) | [tasks/completed/009](../tasks/completed/009-pdf-rag-goal-autofill.md) |
+| 2026-06-12 | Knowledge tab File/PDF upload UI (+ apiFetch FormData fix) | [tasks/completed/010](../tasks/completed/010-knowledge-tab-file-upload.md) |
 
 > Known technical-debt items live alongside the roadmap so prioritization sees the
 > full picture. Significant architectural choices are recorded in

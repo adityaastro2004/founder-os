@@ -130,8 +130,6 @@ _AGENT_DISPLAY_NAMES = {
     "planner": "Planner Agent",
     "content": "Content Agent",
     "research": "Research Agent",
-    "ops": "Ops Agent",
-    "product": "Product Agent",
     "support": "Support Agent",
 }
 
