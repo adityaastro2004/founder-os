@@ -1,8 +1,8 @@
 ---
 id: 011
 title: Company State Engine — core + Obsidian bidirectional sync (slice 1)
-status: backlog
-stage: product
+status: active
+stage: architect
 owner: eng-product
 created: 2026-06-22
 dependencies: []
