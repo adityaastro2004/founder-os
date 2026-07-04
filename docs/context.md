@@ -1,6 +1,6 @@
 # Project context (auto)
 
-Generated: 2026-06-18T14:47:12.440Z
+Generated: 2026-07-03T16:31:38.934Z
 
 ## Detected stack
 
@@ -8,49 +8,56 @@ Generated: 2026-06-18T14:47:12.440Z
 
 ## Git
 
-- Branch: `ci/github-actions`
-- HEAD: `3ce6a61`
+- Branch: `phase0-foundation-revamp`
+- HEAD: `a410c9f`
 
 ## Recent commits
 
-- `3ce6a61` update _(Aditya Jain, 2026-06-17)_
-- `7834da6` CI updates _(Aditya Jain, 2026-06-17)_
-- `4db8fd6` ci: add GitHub Actions CI + security scanning _(Aditya Jain, 2026-06-17)_
-- `af2a110` added other agents and pdf rag for knowledge _(Aditya Jain, 2026-06-12)_
-- `b3caad9` chore: merge remote changes, keep .env.example template _(Aditya Jain, 2026-05-19)_
-- `bb2912f` chore: remove tracked caches, logs, backups; add root .gitignore _(Aditya Jain, 2026-05-19)_
-- `426cf06` Delete founder-os/apps/api/.env.example _(Aditya Raj Jain, 2026-05-19)_
-- `c32f8be` Merge pull request #2 from adityaastro2004/copilot/vscode-mmx3hltc-x7lw _(Aditya Raj Jain, 2026-03-30)_
-- `715714e` Merge branch 'main' into copilot/vscode-mmx3hltc-x7lw _(Aditya Raj Jain, 2026-03-30)_
-- `8851db8` Add web crawler research module and API _(Aditya Jain, 2026-03-30)_
-- `50eeb0f` Wire agent tools to DB, add web search & safety _(Aditya Jain, 2026-03-30)_
-- `35cb7ac` Fix planner chat failing to push weekly plans to Google Calendar _(Aditya Jain, 2026-03-24)_
-- `01ebc0c` Merge pull request #1 from adityaastro2004/claude/compassionate-nobel _(Aditya Raj Jain, 2026-03-24)_
-- `43c8789` Fix security issues, add missing deps, and improve setup UX _(Aditya Jain, 2026-03-24)_
-- `2e08e9b` Auto-push weekly plans to Google Calendar _(Aditya Jain, 2026-03-19)_
-- `bf0f39f` update _(Aditya Jain, 2026-03-19)_
-- `b6c9cae` log update _(Aditya Jain, 2026-03-19)_
-- `c2bf276` Checkpoint from VS Code for cloud agent session _(Aditya Jain, 2026-03-19)_
-- `baf504e` Add settings API, founder profile and agent fixes _(Aditya Jain, 2026-03-09)_
-- `a798b59` api key update _(Aditya Jain, 2026-03-09)_
+- `a410c9f` audit(phase0): close-out verification — all 7 spec criteria met; live tier 14/14 green _(Aditya Jain, 2026-07-03)_
+- `4c9a958` test(phase0): RAG suite client timeout 60→300s — agent-chat section runs 30-90s+ on local ollama, flaked at 60s in soak (testing.md rule 5) _(Aditya Jain, 2026-07-03)_
+- `01f3f40` test(phase0): RAG agent-grounding check FAIL→WARN — LLM content-quality assertion flaked in close-out soak, passed on immediate re-run (testing.md rule 4); retrieval stays hard-asserted structurally _(Aditya Jain, 2026-07-03)_
+- `d0db615` chore(phase0): record security + review gate outcomes in task 012 _(Aditya Jain, 2026-07-03)_
+- `6e7e223` fix(phase0): eng-reviewer findings — B1 stale calendar import in test_e2e_pipeline (crashed suite), S1 same in test_system token-copy path, S2 idempotent adapter registration, N1 turbo.json formatting, N2 crawler test noted in testing.md _(Aditya Jain, 2026-07-03)_
+- `81e3825` docs(phase0): ADR-010, testing standard rewrite (3 tiers), architecture integrations+testing sections, roadmap phase table _(Aditya Jain, 2026-07-03)_
+- `1f86319` ci(phase0): run pytest unit tier in backend job _(Aditya Jain, 2026-07-03)_
+- `70018b5` chore(phase0): turbo test → API unit tier (apps/api joins npm workspace) _(Aditya Jain, 2026-07-03)_
+- `1811ee3` refactor(phase0): calendar → integrations/google_calendar + first adapter (behavior-preserving) _(Aditya Jain, 2026-07-03)_
+- `80c8c86` feat(phase0): integration adapter framework — base ABC + registry (ADR-010) _(Aditya Jain, 2026-07-03)_
+- `597dc77` audit(phase0): record F1-F3 fix dispositions + eng-security PASS _(Aditya Jain, 2026-07-03)_
+- `6de8d3a` fix(phase0): F3 hybrid search scored 0.0 — root cause: Postgres inferred float params as bigint in the RRF division, integer-dividing every score to 0 (ranking ties) _(Aditya Jain, 2026-07-03)_
+- `36bc612` fix(phase0): F2 approval gate — explicit 'ask' preference now gates; root cause: unset was conflated with 'ask' so check() auto-approved both _(Aditya Jain, 2026-07-03)_
+- `d0b5c6e` fix(phase0): F1 plan-generation timeout — root cause: two sequential 4k-token LLM calls take 486s on local ollama vs the test's fixed 300s cap _(Aditya Jain, 2026-07-03)_
+- `5e85d79` test(phase0): pytest harness — unit/regression/live tiers, 13 scripts wrapped _(Aditya Jain, 2026-07-03)_
+- `1fe9991` audit(phase0): complete — §10 §11 PASS; ranked fix list F1-F3 + founder items B1-B2 _(Aditya Jain, 2026-07-03)_
+- `2c469f3` audit(phase0): §7 calendar (config PASS, push BLOCKED on OAuth) + §9 approval gate FAIL (F2: 'ask' pref no-op) _(Aditya Jain, 2026-07-03)_
+- `ca04fa5` audit(phase0): §8 workflows — PASS (AOV + n8n suites green, n8n reachable) _(Aditya Jain, 2026-07-03)_
+- `a18ac04` audit(phase0): §3 agent layer — PASS (live LLM round-trip verified) _(Aditya Jain, 2026-07-03)_
+- `84eefaf` audit(phase0): core suites — §4 §5 PASS, §6 FAIL (plan-gen timeout F1) _(Aditya Jain, 2026-07-03)_
 
 ## Inferred recent decisions
 
-- `35cb7ac` Fix planner chat failing to push weekly plans to Google Calendar
-- `43c8789` Fix security issues, add missing deps, and improve setup UX
+- `6e7e223` fix(phase0): eng-reviewer findings — B1 stale calendar import in test_e2e_pipeline (crashed suite), S1 same in test_system token-copy path, S2 idempotent adapter registration, N1 turbo.json formatting, N2 crawler test noted in testing.md
+- `81e3825` docs(phase0): ADR-010, testing standard rewrite (3 tiers), architecture integrations+testing sections, roadmap phase table
+- `1811ee3` refactor(phase0): calendar → integrations/google_calendar + first adapter (behavior-preserving)
+- `80c8c86` feat(phase0): integration adapter framework — base ABC + registry (ADR-010)
+- `597dc77` audit(phase0): record F1-F3 fix dispositions + eng-security PASS
+- `6de8d3a` fix(phase0): F3 hybrid search scored 0.0 — root cause: Postgres inferred float params as bigint in the RRF division, integer-dividing every score to 0 (ranking ties)
+- `36bc612` fix(phase0): F2 approval gate — explicit 'ask' preference now gates; root cause: unset was conflated with 'ask' so check() auto-approved both
+- `d0b5c6e` fix(phase0): F1 plan-generation timeout — root cause: two sequential 4k-token LLM calls take 486s on local ollama vs the test's fixed 300s cap
+- `1fe9991` audit(phase0): complete — §10 §11 PASS; ranked fix list F1-F3 + founder items B1-B2
 
 ## Hotspots
 
-- 5x — `founder-os/apps/api/.env.example`
-- 5x — `founder-os/apps/api/app/config.py`
-- 3x — `founder-os/apps/api/app/main.py`
-- 3x — `founder-os/apps/api/requirements.txt`
-- 3x — `founder-os/apps/web/app/(dashboard)/dashboard/memory/page.tsx`
-- 3x — `founder-os/apps/api/app/agents/execution.py`
-- 3x — `founder-os/apps/api/app/agents/registry.py`
-- 3x — `founder-os/apps/api/app/__pycache__/config.cpython-314.pyc`
-- 3x — `founder-os/apps/api/app/agents/__pycache__/agents.cpython-314.pyc`
-- 3x — `founder-os/apps/api/app/agents/__pycache__/registry.cpython-314.pyc`
+- 10x — `reports/2026-07-03-phase0-audit.md`
+- 4x — `docs/roadmap.md`
+- 4x — `founder-os/apps/api/app/main.py`
+- 4x — `founder-os/apps/api/.env.example`
+- 3x — `founder-os/apps/api/test_rag_pipeline.py`
+- 3x — `docs/context.md`
+- 3x — `founder-os/apps/api/test_system.py`
+- 3x — `standards/testing.md`
+- 3x — `docs/architecture.md`
+- 3x — `docs/decisions.md`
 
 ## Top-level tree
 
@@ -73,23 +80,14 @@ Generated: 2026-06-18T14:47:12.440Z
 .claude/skills/refactor/
 .claude/skills/security_audit/
 .claude/worktrees/
-.claude/worktrees/agent-a29d69a01b831fc82/
-.claude/worktrees/agent-af979e2410f142f1a/
 .claude/worktrees/compassionate-nobel/
 .claude/worktrees/heuristic-northcutt/
+.turbo/
+.turbo/cache/
 .vscode/
 .vscode/settings.json
-AUDIT.md
 CLAUDE.md
-ONBOARDING.md
-agents/
-agents/architect.md
-agents/executor.md
-agents/planner.md
-agents/product.md
-agents/qa.md
-agents/reviewer.md
-agents/security.md
+DEPLOY.md
 docs/
 docs/agent-evolution.md
 docs/architecture.md
@@ -97,17 +95,23 @@ docs/context.md
 docs/decisions.md
 docs/requirements.md
 docs/roadmap.md
+docs/superpowers/
+docs/superpowers/plans/
+docs/superpowers/specs/
 docs/vision.md
 founder-os/
+founder-os/.env.production.example
 founder-os/.npmrc
 founder-os/.turbo/
 founder-os/.turbo/cache/
 founder-os/.turbo/preferences/
+founder-os/Caddyfile
 founder-os/README.md
 founder-os/apps/
 founder-os/apps/api/
 founder-os/apps/docs/
 founder-os/apps/web/
+founder-os/docker-compose.prod.yml
 founder-os/docker-compose.yml
 founder-os/logs/
 founder-os/logs/api.log
@@ -129,6 +133,8 @@ meta/scaffold-trio.md
 readme.html
 readme.md
 reports/
+reports/2026-07-03-phase0-audit.md
+reports/2026-07-03-phase0-retro.md
 reports/README.md
 skills/
 skills/analyze.md
@@ -146,12 +152,15 @@ tasks/
 tasks/README.md
 tasks/TEMPLATE.md
 tasks/active/
+tasks/active/012-phase0-foundation-revamp.md
 tasks/backlog/
 tasks/backlog/004-n8n-workflow-engine.md
 tasks/backlog/004-workflow-execution-engine.md
 tasks/backlog/005-temporal-memory-injection.md
 tasks/backlog/006-reasoning-scaffolding.md
 tasks/backlog/007-feedback-behavior-loop.md
+tasks/backlog/011-company-state-engine.md
+tasks/backlog/013-planner-async-generation.md
 tasks/completed/
 tasks/completed/001-founder-aware-agent-specialization.md
 tasks/completed/002-agent-strategic-prompt-upgrade.md

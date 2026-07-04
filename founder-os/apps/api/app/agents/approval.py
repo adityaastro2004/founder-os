@@ -231,7 +231,10 @@ class ApprovalPreferences:
     Each user has a hash of tool_name → preference:
       - "always_allow"  — auto-approve this tool
       - "always_deny"   — auto-reject this tool
-      - "ask"           — always ask (default)
+      - "ask"           — always ask before running
+
+    No entry (unset) = default policy: LOW/MEDIUM auto-approve, HIGH always
+    gates. Unset and explicit "ask" are deliberately distinct (F2).
 
     HIGH-RISK tools cannot be set to "always_allow".
     """
@@ -249,10 +252,16 @@ class ApprovalPreferences:
     def _prefs_key(self, user_id: str) -> str:
         return f"{self.KEY_PREFIX}:{user_id}"
 
-    async def get_preference(self, user_id: str, tool_name: str) -> str:
-        """Get the user's preference for a specific tool. Default: 'ask'."""
+    async def get_preference(self, user_id: str, tool_name: str) -> str | None:
+        """Get the user's preference for a tool, or ``None`` if never set.
+
+        Unset must not be conflated with an explicit ``"ask"`` (F2, Phase 0
+        audit): unset follows the default risk policy; explicit "ask" gates.
+        """
         val = await self._redis.hget(self._prefs_key(user_id), tool_name)
-        return val.decode() if val else "ask"
+        # `is not None` (not truthiness): a stored empty string must surface as
+        # an unrecognized value (→ gated), never be mistaken for unset (S1).
+        return val.decode() if val is not None else None
 
     async def get_all_preferences(self, user_id: str) -> dict[str, str]:
         """Get all tool preferences for a user."""
@@ -284,7 +293,8 @@ class ApprovalPreferences:
         return True
 
     async def clear_preference(self, user_id: str, tool_name: str) -> None:
-        """Remove a specific tool preference (reverts to 'ask')."""
+        """Remove a tool preference — reverts to UNSET (default policy:
+        LOW/MEDIUM auto-approve, HIGH always gates), NOT to "ask"."""
         await self._redis.hdel(self._prefs_key(user_id), tool_name)
 
     async def clear_all_preferences(self, user_id: str) -> None:
@@ -410,9 +420,10 @@ class ApprovalGate:
           1. Classify the tool's risk level
           2. For HIGH-risk: ALWAYS create a pending approval (no bypass)
           3. For LOW/MEDIUM: check user preferences
+             - unset          → default policy: auto-approve (LOW and MEDIUM)
              - "always_allow" → auto-approve
              - "always_deny"  → reject immediately
-             - "ask" (default) → create pending approval
+             - "ask" (or any unrecognized value) → create pending approval
         """
         risk = classify_tool_risk(tool_name)
 
@@ -451,14 +462,22 @@ class ApprovalGate:
         # control can set individual tools to "ask" or "always_deny".
         # HIGH-risk tools are always caught above, so this only applies to
         # LOW and MEDIUM.
-        if pref == "ask":
+        if pref is None:
             return ApprovalDecision(
                 approved=True,
                 reason=f"Auto-approved '{tool_name}' ({risk.value} risk, default policy)",
                 auto_approved=True,
             )
 
-        # Fallback: create pending approval (shouldn't normally reach here)
+        # Explicit "ask" — the founder asked to be asked (F2). Any unrecognized
+        # stored value also fails safe toward asking, never auto-approving.
+        if pref != "ask":
+            # Tamper canary: nothing writes values outside the whitelist, so an
+            # unrecognized value means store corruption or direct Redis access.
+            logger.warning(
+                "Unrecognized approval preference %r for tool '%s' (user %s) — gating",
+                pref, tool_name, user_id,
+            )
         return await self._create_pending(
             user_id=user_id,
             tool_name=tool_name,
@@ -466,7 +485,7 @@ class ApprovalGate:
             risk_level=risk,
             agent_name=agent_name,
             session_id=session_id,
-            reason=f"Approval required for '{tool_name}' ({risk.value} risk)",
+            reason=f"Approval required for '{tool_name}' ({risk.value} risk, user preference '{pref}')",
         )
 
     async def _create_pending(

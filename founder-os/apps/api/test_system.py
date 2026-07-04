@@ -400,7 +400,7 @@ if not gcal_connected:
 
     # Check if dev-user has tokens (from legacy test flow)
     try:
-        from app.integrations.calendar_integration import get_tokens as _gt
+        from app.integrations.google_calendar.client import get_tokens as _gt
         dev_tokens = _gt("dev-user")
         if dev_tokens and dev_tokens.get("access_token"):
             # Copy dev-user tokens to our test user
@@ -408,7 +408,7 @@ if not gcal_connected:
             u = get_or_create_user(USER)
             u.store_gcal_tokens(dev_tokens)
             save_user(u)
-            from app.integrations.calendar_integration import store_tokens as _st
+            from app.integrations.google_calendar.client import store_tokens as _st
             _st(USER, dev_tokens)
             gcal_connected = True
             ok("GCal tokens (copied from dev-user)", "Using existing authenticated session")
@@ -420,34 +420,46 @@ if not gcal_connected:
 
 
 # ───────────────────────────────────────────────────────────────
-# 5. LLM PLAN GENERATION (Gemini)
+# 5. LLM PLAN GENERATION (provider from LLM_PROVIDER)
 # ───────────────────────────────────────────────────────────────
-header("5. LLM PLAN GENERATION (Gemini 2.5 Flash)")
+header("5. LLM PLAN GENERATION")
 
 plan_generated = False
 
-# Small delay to avoid Gemini rate limits (429) if previous LLM calls ran
+# Small delay to avoid rate limits (429) on hosted providers if previous LLM calls ran
 time.sleep(3)
 
-# Test via /api/test/plan first (doesn't require GCal)
+# The plan pipeline makes TWO sequential LLM generations (markdown plan, then a
+# parse-to-JSON pass). Local Ollama models need far longer than hosted APIs —
+# measured 486s total on llama3.1:8b (2026-07-03 Phase 0 audit, F1) vs 15-30s on
+# hosted. Pick the timeout from the live provider instead of hardcoding one.
 try:
-    print("  Generating plan with Gemini (this takes 15-30 seconds)...")
+    _sysinfo = c.get("/api/agents/system").json()
+    _llm_provider = _sysinfo.get("llm_provider", "unknown")
+except Exception:
+    _llm_provider = "unknown"
+PLAN_TIMEOUT = 900 if _llm_provider == "ollama" else 120
+
+# Test via /api/test/plan first (doesn't require GCal).
+# NOTE: PlanRequest takes a single `message` field — goals/context must be part
+# of it (separate `goals`/`user_context` keys are silently ignored by pydantic).
+try:
+    print(f"  Generating plan via {_llm_provider} (timeout {PLAN_TIMEOUT}s; local models are slow)...")
     t0 = time.time()
     r = c.post("/api/test/plan", json={
-        "goals": [
-            "Close Acme Corp enterprise upsell ($50k)",
-            "Ship v2.1 with memory system and temporal search",
-            "Interview 3 senior backend candidates",
-            "Prepare Series A pitch deck for Sequoia",
-            "Fix production DB migration pipeline",
-        ],
-        "user_context": (
-            "B2B SaaS startup, Developer Tools. 5 person team. "
+        "message": (
+            "Plan my week around these goals:\n"
+            "1. Close Acme Corp enterprise upsell ($50k)\n"
+            "2. Ship v2.1 with memory system and temporal search\n"
+            "3. Interview 3 senior backend candidates\n"
+            "4. Prepare Series A pitch deck for Sequoia\n"
+            "5. Fix production DB migration pipeline\n\n"
+            "Context: B2B SaaS startup, Developer Tools. 5 person team. "
             "$50k MRR, 150 users. Seed stage, Series A imminent. "
             "Timezone: Asia/Kolkata. Work hours: 09:00-18:00. "
             "Blockers: Legal review pending, one engineer on PTO."
         ),
-    })
+    }, timeout=PLAN_TIMEOUT)
     elapsed = time.time() - t0
 
     if r.status_code == 200:

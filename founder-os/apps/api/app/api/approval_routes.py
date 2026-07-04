@@ -80,7 +80,9 @@ class ToolRiskInfo(BaseModel):
     tool_name: str
     risk_level: str
     can_always_allow: bool
-    current_preference: str
+    # None = unset → default policy (LOW/MEDIUM auto-approve, HIGH gates).
+    # Distinct from explicit "ask", which always gates (F2/S2).
+    current_preference: str | None = None
 
 
 # ── Helpers ───────────────────────────────────────────────
@@ -238,7 +240,10 @@ async def set_preference(
     Options:
       - "always_allow" — auto-approve (NOT available for high-risk tools)
       - "always_deny"  — auto-reject
-      - "ask"          — always ask (default)
+      - "ask"          — always ask before running
+
+    Unset (no preference) = default policy: LOW/MEDIUM auto-approve,
+    HIGH always requires approval. Setting "ask" makes the tool gate.
 
     High-risk tools (PR push, social media posting, payments, deployments)
     cannot be set to "always_allow". This is enforced server-side.
@@ -276,7 +281,8 @@ async def clear_preference(
     tool_name: str,
     user: ClerkUser = Depends(require_auth),
 ):
-    """Clear a tool preference (reverts to 'ask')."""
+    """Clear a tool preference — reverts to UNSET (default policy: LOW/MEDIUM
+    auto-approve, HIGH always gates). To be asked every time, set "ask"."""
     redis = get_redis()
     prefs = ApprovalPreferences(redis)
     user_id = await _get_user_id(user)
@@ -314,7 +320,7 @@ async def get_risk_info(
             tool_name=tool,
             risk_level=risk.value,
             can_always_allow=not is_high,
-            current_preference=user_prefs.get(tool, "ask"),
+            current_preference=user_prefs.get(tool),  # None = unset/default (S2)
         ))
 
     return results

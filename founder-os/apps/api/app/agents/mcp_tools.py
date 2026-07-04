@@ -46,7 +46,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
     """
     MCP-compatible tool provider for Google Calendar.
 
-    Wraps the functions in ``calendar_integration.py`` and presents them
+    Wraps the functions in ``integrations/google_calendar/client.py`` and presents them
     as MCP tools with standard list_tools() / call_tool() contract.
 
     The provider needs a user_id + Google credentials to call the
@@ -367,7 +367,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
                 metadata={"provider": self.provider_name, "tool": name},
             )
         except Exception as exc:
-            from app.integrations.calendar_integration import CalendarAuthExpired
+            from app.integrations.google_calendar.client import CalendarAuthExpired
             duration = (time.monotonic() - start) * 1000
             if isinstance(exc, CalendarAuthExpired):
                 logger.warning("Calendar auth expired for user %s", self._user_id)
@@ -391,7 +391,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
 
     async def health_check(self) -> bool:
         """Check if we have valid tokens for the user."""
-        from app.integrations.calendar_integration import get_tokens
+        from app.integrations.google_calendar.client import get_tokens
         tokens = get_tokens(self._user_id)
         return tokens is not None
 
@@ -400,7 +400,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
     async def _list_events(
         self, max_results: int = 20, time_min: str | None = None, **_kw: Any,
     ) -> list[dict[str, Any]]:
-        from app.integrations.calendar_integration import list_upcoming_events
+        from app.integrations.google_calendar.client import list_upcoming_events
         events = await list_upcoming_events(
             user_id=self._user_id,
             client_id=self._client_id,
@@ -429,7 +429,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
         description: str = "",
         **_kw: Any,
     ) -> dict[str, Any]:
-        from app.integrations.calendar_integration import create_single_event
+        from app.integrations.google_calendar.client import create_single_event
         return await create_single_event(
             user_id=self._user_id,
             client_id=self._client_id,
@@ -449,7 +449,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
         description: str = "",
         **_kw: Any,
     ) -> dict[str, Any]:
-        from app.integrations.calendar_integration import create_all_day_event
+        from app.integrations.google_calendar.client import create_all_day_event
         return await create_all_day_event(
             user_id=self._user_id,
             client_id=self._client_id,
@@ -470,7 +470,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
         end_datetime: str | None = None,
         **_kw: Any,
     ) -> dict[str, Any]:
-        from app.integrations.calendar_integration import update_event
+        from app.integrations.google_calendar.client import update_event
         updates: dict[str, Any] = {}
         if summary is not None:
             updates["summary"] = summary
@@ -493,7 +493,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
     async def _delete_event(
         self, event_id: str, **_kw: Any,
     ) -> dict[str, Any]:
-        from app.integrations.calendar_integration import delete_event
+        from app.integrations.google_calendar.client import delete_event
         deleted = await delete_event(
             user_id=self._user_id,
             client_id=self._client_id,
@@ -506,7 +506,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
     async def _get_event(
         self, event_id: str, **_kw: Any,
     ) -> dict[str, Any]:
-        from app.integrations.calendar_integration import get_event
+        from app.integrations.google_calendar.client import get_event
         return await get_event(
             user_id=self._user_id,
             client_id=self._client_id,
@@ -558,7 +558,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
     async def _push_weekly_plan(
         self, plan_json: str | dict = "", **_kw: Any,
     ) -> dict[str, Any]:
-        from app.integrations.calendar_integration import push_plan_to_gcal
+        from app.integrations.google_calendar.client import push_plan_to_gcal
         from app.agents.planner_models import WeeklyPlan
 
         # Accept both a JSON string and a pre-parsed dict/object
@@ -625,7 +625,7 @@ class MCPGoogleCalendarProvider(ToolProvider):
         **_kw: Any,
     ) -> dict[str, Any]:
         """Bulk-delete calendar events (AI-generated or any matching keyword)."""
-        from app.integrations.calendar_integration import (
+        from app.integrations.google_calendar.client import (
             list_upcoming_events,
             delete_event,
         )

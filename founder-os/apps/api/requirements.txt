@@ -47,3 +47,7 @@ stripe>=11.0.0
 apscheduler>=3.10.0
 python-multipart>=0.0.22
 pdfplumber
+
+# Testing (Phase 0)
+pytest>=8.0
+pytest-asyncio>=0.24

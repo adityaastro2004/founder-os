@@ -97,11 +97,33 @@ state that does not decay.** Memory/RAG remain the recall substrate; ingestion f
 
 Full design: [docs/superpowers/specs/2026-06-22-company-state-engine-design.md](superpowers/specs/2026-06-22-company-state-engine-design.md).
 
+## Integrations — `app/integrations/` (ADR-010)
+
+Every external tool plugs in through exactly one `IntegrationAdapter`
+(`base.py`): `configure()` / `health()` / `observe(user_id)` / `sync(user_id,
+changes)` with `Capability` flags (`OBSERVE | SYNC | HEALTH`). Adapters are
+registered once in the `main.py` lifespan and looked up via `registry.py` —
+never imported ad-hoc by callers.
+
+```
+external tool ──▶ <tool>/client.py (transport)
+                     └─▶ <tool>/adapter.py (IntegrationAdapter)
+                            └─▶ registry ──▶ [Phase 1: State Engine reconciler]
+adapter output = provenance-tagged "observed" ObservedEvents (ADR-009 feed 1)
+```
+
+Adapters carry **no business logic** — reconciliation belongs to the State
+Engine. First adapter: `google_calendar/` (`client.py` = the OAuth/event
+functions, still called directly by `mcp_tools`/`planner_routes`/`scheduler`;
+`adapter.py` = the uniform seam). Obsidian (task 011), Notion, and Paperclip
+implement the same ABC.
+
 ## RAG / retrieval — `app/retrieval/`
 
 Chunker → embedder → retriever over `knowledge_items` (pgvector). Embeddings via
 Ollama `nomic-embed-text` (1536 dims) or OpenAI `text-embedding-3-small`. Hybrid
-search exposed through `knowledge_routes.py`.
+search (RRF fusion; explicit `float8` casts are load-bearing — see F3 in the
+Phase 0 audit) exposed through `knowledge_routes.py`.
 
 ## Memory & temporal knowledge graph
 
@@ -109,6 +131,14 @@ search exposed through `knowledge_routes.py`.
 - Temporal knowledge graph in `memory_pages` + `memory_links`
   (`planner_models_db.py`): composite scoring, spaced-repetition review, entity
   linking, typed relationships. Exposed via `memory_routes.py`.
+
+## Testing tiers — `apps/api/tests/` (Phase 0)
+
+`unit/` (no services; conftest supplies env), `regression/` (one per fixed bug),
+`live/` (`@pytest.mark.live`, needs `./start.sh`; wraps the 13 standalone
+`test_*.py` scripts). `pytest` = unit tier; `pytest -m live` = full stack;
+`turbo test` from the monorepo root; CI runs the unit tier. Contract:
+[standards/testing.md](../standards/testing.md).
 
 ## Background work & scheduling
 

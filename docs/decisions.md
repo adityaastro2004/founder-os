@@ -19,6 +19,35 @@
 
 ---
 
+## ADR-010 — Integration adapter framework (`app/integrations/`)
+
+- Date: 2026-07-03
+- Status: accepted
+- Context: Phases 1–4 of the revamp (Obsidian, Notion, Hermes feed, Paperclip) each
+  need a tool integration; before Phase 0 there was one ad-hoc module
+  (`calendar_integration.py`) imported from 4 different places with no common
+  contract, and no seam for the State Engine's `observed` feed to consume.
+- Decision: all external tools integrate via `app/integrations/`: an
+  `IntegrationAdapter` ABC (`configure`/`health`/`observe`/`sync`, `Capability`
+  flags, multi-tenant `user_id` per call) plus a startup-time registry
+  (`registry.register()` in the lifespan; callers look adapters up by name).
+  Adapter output is provenance-tagged `observed` `ObservedEvent`s — the State
+  Engine's feed 1 (ADR-009). Adapters carry no business logic; reconciliation
+  lives in the engine. Google Calendar is the first adapter
+  (`google_calendar/client.py` moved verbatim + thin `adapter.py`); existing
+  callers still use its client functions directly (behavior-preserving),
+  converging on the adapter in Phase 1.
+- Consequences: Obsidian (task 011) implements the same ABC; the registry becomes
+  the single discovery point (health dashboard later). Rejected: per-tool ad-hoc
+  modules (status quo — no contract) and a heavyweight plugin system (YAGNI).
+  Also decided from Phase 0 measurement: `models.py` (1029 lines / 32 well-bounded
+  classes) and `orchestrator.py` (853 lines) were measured and NOT split — clean
+  boundaries, low churn benefit, high import/Alembic risk; revisit when a phase
+  must modify them substantially.
+- Links: [Phase 0 spec](superpowers/specs/2026-07-03-phase0-foundation-revamp-design.md),
+  [Phase 0 audit](../reports/2026-07-03-phase0-audit.md), ADR-009,
+  `founder-os/apps/api/app/integrations/`.
+
 ## ADR-009 — The Company State Engine becomes the moat; n8n demoted to optional execution
 
 - Date: 2026-06-22

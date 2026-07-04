@@ -63,6 +63,9 @@ async def lifespan(application: FastAPI):
     await init_db()
     await _sync_agent_definitions()
     await init_redis()
+    # Integration adapters (ADR-010): register once; callers use the registry.
+    from app.integrations.google_calendar.adapter import register_adapter as register_gcal_adapter
+    register_gcal_adapter()
     start_scheduler()
     yield
     # ── Shutdown ──
