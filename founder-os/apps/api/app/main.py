@@ -23,6 +23,7 @@ from app.api.specialization_routes import router as specialization_router
 from app.api.evolution_routes import router as evolution_router
 from app.api.billing_routes import router as billing_router
 from app.api.workflow_routes import router as workflow_router
+from app.api.state_routes import router as state_router
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.redis import init_redis, close_redis
@@ -66,7 +67,9 @@ async def lifespan(application: FastAPI):
     await init_redis()
     # Integration adapters (ADR-010): register once; callers use the registry.
     from app.integrations.google_calendar.adapter import register_adapter as register_gcal_adapter
+    from app.integrations.obsidian.adapter import register_adapter as register_obsidian_adapter
     register_gcal_adapter()
+    register_obsidian_adapter()
     start_scheduler()
     yield
     # ── Shutdown ──
@@ -105,6 +108,7 @@ app.include_router(specialization_router)
 app.include_router(evolution_router)
 app.include_router(billing_router)
 app.include_router(workflow_router)
+app.include_router(state_router)
 
 # Dev-only test routes (no auth required)
 if settings.APP_ENV == "development":
