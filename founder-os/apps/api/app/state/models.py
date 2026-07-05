@@ -27,6 +27,11 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
+# Load-bearing: these models FK to users.id (app.models). In the Celery worker
+# nothing else imports app.models, and SQLAlchemy mapper configuration fails
+# with NoReferencedTableError('users') at first ORM use (E2E-caught 2026-07-06).
+import app.models  # noqa: F401, E402
+
 # Feed values + entity types are CHECK-constrained NOW so the later feeds and
 # the Curator land with zero schema change (spec §4 / arch §1.1).
 PROVENANCE_FEEDS = ("observed", "user_doc", "system")
