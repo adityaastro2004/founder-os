@@ -38,6 +38,7 @@ logging.basicConfig(
 # Import models so they are registered with Base.metadata
 import app.models  # noqa: F401
 import app.planner_models_db  # noqa: F401
+import app.state.models  # noqa: F401  — registers State Engine models (ADR-009)
 
 
 async def _sync_agent_definitions() -> None:
