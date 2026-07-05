@@ -141,6 +141,98 @@ def _sha16(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
+# ── Managed-folder write jail (arch §4) ─────────────────────────────────
+# Exactly ONE function in the codebase opens vault files for writing. Any
+# escape is P0 (task 011 success metric "Safety").
+
+
+class ManagedFolderViolation(Exception):
+    """A write attempted to land outside vault_root/managed_folder."""
+
+
+def _managed_root(vault_root: Path | str, managed_folder: str) -> Path:
+    resolved_vault = Path(vault_root).resolve(strict=True)
+    managed = (resolved_vault / managed_folder).resolve()
+    # A managed_folder config value like "../x" fails here (step 1).
+    if managed != resolved_vault and resolved_vault not in managed.parents:
+        raise ManagedFolderViolation(
+            f"managed folder {managed_folder!r} escapes the vault root"
+        )
+    if managed == resolved_vault:
+        raise ManagedFolderViolation("managed folder must be a subfolder, not the vault root")
+    return managed
+
+
+def _jail(managed_root: Path, relative_path: str) -> Path:
+    # Cheap early rejects BEFORE joining (step 2).
+    if (
+        not relative_path
+        or relative_path.startswith(("/", "\\"))
+        or "\\" in relative_path
+        or "\x00" in relative_path
+        or ".." in Path(relative_path).parts
+        or (len(relative_path) > 1 and relative_path[1] == ":")  # drive prefix
+    ):
+        raise ManagedFolderViolation(f"illegal managed path: {relative_path!r}")
+    final = (managed_root / relative_path).resolve()
+    # resolve() follows symlinks: a symlinked subdir pointing outside the vault
+    # resolves outside managed_root and is rejected here (step 3).
+    if managed_root not in final.parents:
+        raise ManagedFolderViolation(f"path escapes the managed folder: {relative_path!r}")
+    return final
+
+
+def write_managed(vault_root: Path | str, managed_folder: str, relative_path: str, content: str) -> Path:
+    managed = _managed_root(vault_root, managed_folder)
+    managed.mkdir(parents=True, exist_ok=True)
+    final = _jail(managed, relative_path)
+    final.parent.mkdir(parents=True, exist_ok=True)
+    # Parent dirs created above may themselves be new; re-check after mkdir in
+    # case a component was a pre-existing symlink (jail already resolved it).
+    final.write_text(content, encoding="utf-8")
+    return final
+
+
+def prune_managed(vault_root: Path | str, managed_folder: str, keep: set[str]) -> list[str]:
+    """Delete ONLY renderer-owned .md files under the managed folder that are
+    absent from the just-rendered keep-set. Never touches anything else."""
+    managed = _managed_root(vault_root, managed_folder)
+    if not managed.exists():
+        return []
+    keep_final = {_jail(managed, k) for k in keep}
+    removed: list[str] = []
+    for p in sorted(managed.rglob("*.md")):
+        resolved = p.resolve()
+        if managed not in resolved.parents:
+            continue  # symlinked stray — not ours, never delete through it
+        if resolved not in keep_final:
+            p.unlink()
+            removed.append(str(p.relative_to(managed)))
+    return removed
+
+
+def validate_vault_path(path: str) -> Path:
+    """Shared by the POST route (422) and the sync task (last_error). Arch §6."""
+    p = Path(path)
+    if not p.is_absolute():
+        raise ValueError("vault_path must be absolute")
+    if not p.exists():
+        raise ValueError("vault_path does not exist")
+    resolved = p.resolve()
+    if not resolved.is_dir():
+        raise ValueError("vault_path is not a directory")
+    import os as _os
+    if not _os.access(resolved, _os.R_OK | _os.X_OK):
+        raise ValueError("vault_path is not readable")
+    if resolved == Path("/") or resolved == Path.home().resolve():
+        raise ValueError("vault_path may not be / or the home directory itself")
+    import app as _app_pkg
+    project_root = Path(_app_pkg.__file__).resolve().parent.parent
+    if resolved == project_root or project_root in resolved.parents or resolved in project_root.parents:
+        raise ValueError("vault_path may not contain or be contained by the API project")
+    return resolved
+
+
 # ── external_id scheme (arch §3.3) ──────────────────────────────────────
 # Format: obsidian:{source_id}:{kind}:{key}. source_id is the state_sources
 # UUID so two vaults never collide. Checkbox STATE is stripped from task keys
