@@ -139,3 +139,106 @@ def walk_vault(
 
 def _sha16(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+
+
+# ── external_id scheme (arch §3.3) ──────────────────────────────────────
+# Format: obsidian:{source_id}:{kind}:{key}. source_id is the state_sources
+# UUID so two vaults never collide. Checkbox STATE is stripped from task keys
+# (toggle keeps the id); goal/project identity is their text, vault-wide.
+
+def external_id_for_note(source_id: str, rel_path: str, fm: dict) -> str:
+    if fm.get("founderos_id"):
+        return f"obsidian:{source_id}:note:id:{fm['founderos_id']}"
+    return f"obsidian:{source_id}:note:{_norm_rel_path(rel_path)}"
+
+
+def external_id_for_task(source_id: str, rel_path: str, norm_text: str, ordinal: int) -> str:
+    base = f"obsidian:{source_id}:task:{_norm_rel_path(rel_path)}:{_sha16(norm_text)}"
+    return base if ordinal == 1 else f"{base}:{ordinal}"
+
+
+def _first_paragraph(body: str, cap: int = 500) -> str:
+    for block in body.split("\n\n"):
+        block = "\n".join(
+            l for l in block.split("\n")
+            if not _HEADING_RE.match(l) and not _CHECKBOX_RE.match(l)
+        ).strip()
+        if block:
+            return block[:cap]
+    return ""
+
+
+def events_for_note(source_id: str, rel_path: str, parsed: ParsedNote, observed_at):
+    """Map one parsed note to ObservedEvents (arch §3.4).
+
+    The note itself always emits obsidian.note; frontmatter goal:/project: and
+    decision tag/path emit ADDITIONAL entities with their own identities.
+    """
+    from app.integrations.base import ObservedEvent
+
+    rel = _norm_rel_path(rel_path)
+    stem = rel.rsplit("/", 1)[-1].removesuffix(".md")
+    fm = parsed.frontmatter
+    events: list = []
+
+    def _ev(kind: str, external_id: str, payload: dict) -> None:
+        events.append(ObservedEvent(
+            source="obsidian", kind=kind, external_id=external_id,
+            payload=payload, observed_at=observed_at,
+        ))
+
+    goals = fm.get("goal")
+    goal_values = [goals] if isinstance(goals, str) else list(goals or [])
+    project_name = fm.get("project") if isinstance(fm.get("project"), str) else None
+    if project_name is None and rel.startswith("Projects/"):
+        project_name = stem
+    is_decision = "decision" in parsed.tags or rel.split("/", 1)[0] == "Decisions"
+
+    note_title = parsed.h1 or stem
+    summary = _first_paragraph(parsed.body)
+    note_eid = external_id_for_note(source_id, rel, fm)
+    mentions = [*goal_values, *( [project_name] if project_name else [] )]
+    _ev("obsidian.note", note_eid, {
+        "entity_type": "note", "title": note_title, "summary": summary,
+        "attributes": {"path": rel, "tags": sorted(parsed.tags), "frontmatter": {k: str(v) for k, v in fm.items()}},
+        "relation_hints": {"mentions": mentions},
+    })
+
+    for value in goal_values:
+        _ev("obsidian.goal", f"obsidian:{source_id}:goal:{_sha16(str(value))}", {
+            "entity_type": "goal", "title": str(value), "summary": summary,
+            "attributes": {"asserted_in": rel},
+            "relation_hints": {},
+        })
+
+    if project_name:
+        _ev("obsidian.project", f"obsidian:{source_id}:project:{_sha16(project_name)}", {
+            "entity_type": "project", "title": project_name, "summary": summary,
+            "attributes": {"note_path": rel},
+            "relation_hints": {},
+        })
+
+    if is_decision:
+        _ev("obsidian.decision", f"obsidian:{source_id}:decision:{rel}", {
+            "entity_type": "decision", "title": note_title, "summary": summary or parsed.body[:500].strip(),
+            "attributes": {"path": rel, "tags": sorted(parsed.tags)},
+            "relation_hints": {},
+        })
+
+    task_eids: list[str] = []
+    for box in parsed.checkboxes:
+        eid = external_id_for_task(source_id, rel, box.text, box.ordinal)
+        task_eids.append(eid)
+        hints: dict = {"derived_from_note": note_eid}
+        if project_name:
+            hints["part_of_project"] = project_name
+        if box.parent_index is not None:
+            hints["parent_task_external_id"] = task_eids[box.parent_index]
+        _ev("obsidian.task", eid, {
+            "entity_type": "task", "title": box.text,
+            "status": "done" if box.done else "open",
+            "attributes": {"note_path": rel, "raw_line": box.text},
+            "relation_hints": hints,
+        })
+
+    return events
