@@ -53,6 +53,17 @@ def render(entities: list, relations: list, *, now: datetime) -> dict[str, str]:
     files: dict[str, str] = {}
     footer = _footer(now)
 
+    # Disambiguate colliding project slugs deterministically (security N4:
+    # distinct titles like "x!" / "x?" both slug to "x" — suffix with id8).
+    slugs: dict[Any, str] = {}
+    used: set[str] = set()
+    for p in projects:
+        s = _slug(p.title, p.id)
+        if s in used:
+            s = f"{s}-{str(p.id)[:8]}"
+        used.add(s)
+        slugs[p.id] = s
+
     lines = ["# Goals", ""]
     for g in goals:
         conf = f"{float(g.confidence):.2f}"
@@ -77,7 +88,7 @@ def render(entities: list, relations: list, *, now: datetime) -> dict[str, str]:
             plines.append("## Tasks")
             plines += [_task_line(t) for t in open_t]
             plines += [_task_line(t) for t in done_t]
-        files[f"Projects/{_slug(p.title, p.id)}.md"] = "\n".join(plines) + "\n" + footer
+        files[f"Projects/{slugs[p.id]}.md"] = "\n".join(plines) + "\n" + footer
 
     tlines = ["# Tasks", ""]
     for p in projects:

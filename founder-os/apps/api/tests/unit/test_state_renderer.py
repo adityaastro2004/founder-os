@@ -77,6 +77,15 @@ def test_slug_fallback_for_hostile_project_names():
     assert re.fullmatch(r"Projects/project-[0-9a-f]{8}\.md", path2), path2
 
 
+def test_colliding_project_slugs_disambiguated():
+    from app.state.renderer import render
+
+    a, b = ent("project", "x!"), ent("project", "x?")
+    files = render([a, b], [], now=NOW)
+    proj_paths = [k for k in files if k.startswith("Projects/")]
+    assert len(proj_paths) == 2 and len(set(proj_paths)) == 2  # no overwrite (N4)
+
+
 def test_renderer_module_is_pure():
     import inspect
 

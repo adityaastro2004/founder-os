@@ -363,11 +363,17 @@ async def get_entity(
         raise HTTPException(status_code=404, detail="Entity not found")
     entity, source_name = row
 
+    # user_id predicate is redundant with the scoped anchor entity, but makes
+    # the no-cross-user-leak invariant local instead of inferred (security N2).
     rels_out = list((await db.execute(
-        select(StateRelation).where(StateRelation.source_entity_id == entity.id)
+        select(StateRelation).where(
+            StateRelation.source_entity_id == entity.id, StateRelation.user_id == uid,
+        )
     )).scalars())
     rels_in = list((await db.execute(
-        select(StateRelation).where(StateRelation.target_entity_id == entity.id)
+        select(StateRelation).where(
+            StateRelation.target_entity_id == entity.id, StateRelation.user_id == uid,
+        )
     )).scalars())
     observations = list((await db.execute(
         select(StateObservation)

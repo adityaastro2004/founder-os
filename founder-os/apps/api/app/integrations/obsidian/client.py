@@ -187,8 +187,10 @@ def write_managed(vault_root: Path | str, managed_folder: str, relative_path: st
     managed.mkdir(parents=True, exist_ok=True)
     final = _jail(managed, relative_path)
     final.parent.mkdir(parents=True, exist_ok=True)
-    # Parent dirs created above may themselves be new; re-check after mkdir in
-    # case a component was a pre-existing symlink (jail already resolved it).
+    # Safety comes from _jail's resolve() above (symlinks followed, escape
+    # rejected). Residual TOCTOU between that resolve and this write requires a
+    # concurrent local attacker — outside the local-first threat model (N1;
+    # revisit with tasks/backlog/014 before any hosted deployment).
     final.write_text(content, encoding="utf-8")
     return final
 

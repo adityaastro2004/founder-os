@@ -66,13 +66,13 @@ def state_sync_task(self: Task, source_id: str, user_id: str, direction: str = "
         redis_client = aioredis.from_url(get_settings().REDIS_URL)
         key = sync_lock_key(source_id)
         try:
-            # The route also guards with NX before enqueueing; this second take
-            # covers direct/scheduled invocations (v1.1 watcher reuses this task).
-            got = await redis_client.set(key, task_id, nx=True, ex=LOCK_TTL_S)
-            if not got:
-                holder = await redis_client.get(key)
-                if holder is not None and holder.decode() != task_id:
-                    raise RuntimeError("sync already running for this source")
+            # Protocol (E2E-regression 2026-07-06): the ROUTE serializes triggers
+            # with SET NX "queued" before enqueueing; the task then takes OVER the
+            # reservation unconditionally (an NX re-take here can never succeed —
+            # that bug made every routed sync abort as "already running").
+            # Direct invocations (v1.1 watcher) must go through the same
+            # reserve-then-enqueue path or accept last-writer-wins.
+            await redis_client.set(key, task_id, ex=LOCK_TTL_S)
             return await _run_sync_async(source_id, user_id, direction)
         finally:
             try:
