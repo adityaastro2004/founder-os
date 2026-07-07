@@ -28,6 +28,7 @@ from app.crawler.sources import (
 )
 from app.database import async_session
 from app.memory.manager import get_memory_manager
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -150,7 +151,7 @@ class ResearchEngine:
                 row = planner_user.first()
 
                 if not row:
-                    logger.warning("No planner_users entry for %s", user_id)
+                    logger.warning("No planner_users entry for %s", sl(user_id))
                     return None
 
                 company_name = row[1] or "Unknown Company"
@@ -216,7 +217,7 @@ class ResearchEngine:
                 )
 
         except Exception as e:
-            logger.error("build_research_profile(%s) failed: %s", user_id, e)
+            logger.error("build_research_profile(%s) failed: %s", sl(user_id), sl(e))
             return None
 
     async def run_research_cycle(self, user_id: str) -> Optional[ResearchReport]:
@@ -233,7 +234,7 @@ class ResearchEngine:
             # Step 1: Build profile
             profile = await self.build_research_profile(user_id)
             if not profile:
-                logger.error("Could not build research profile for %s", user_id)
+                logger.error("Could not build research profile for %s", sl(user_id))
                 return None
 
             logger.info(
@@ -320,9 +321,9 @@ class ResearchEngine:
                     except Exception as e:
                         logger.error(
                             "Error processing query '%s' for %s: %s",
-                            query,
-                            user_id,
-                            e,
+                            sl(query),
+                            sl(user_id),
+                            sl(e),
                         )
 
             report = ResearchReport(
@@ -347,7 +348,7 @@ class ResearchEngine:
             return report
 
         except Exception as e:
-            logger.error("run_research_cycle(%s) failed: %s", user_id, e)
+            logger.error("run_research_cycle(%s) failed: %s", sl(user_id), sl(e))
             return None
 
     async def monitor_competitors(
@@ -562,7 +563,7 @@ class ResearchEngine:
                 auto_embed=True,
             )
 
-            logger.debug("Stored research finding %s for %s", page_id, user_id)
+            logger.debug("Stored research finding %s for %s", page_id, sl(user_id))
             return page_id
 
         except Exception as e:

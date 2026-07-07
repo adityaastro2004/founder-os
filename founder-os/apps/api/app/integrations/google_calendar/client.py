@@ -17,6 +17,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
 import httpx
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +39,9 @@ def store_tokens(user_id: str, tokens: dict[str, Any]) -> None:
         user = get_or_create_user(user_id)
         user.store_gcal_tokens(tokens)
         save_user(user)
-        logger.info("Stored GCal tokens for %s in PostgreSQL", user_id)
+        logger.info("Stored GCal tokens for %s in PostgreSQL", sl(user_id))
     except Exception as exc:
-        logger.error("Failed to persist tokens for %s: %s", user_id, exc)
+        logger.error("Failed to persist tokens for %s: %s", sl(user_id), sl(exc))
 
 
 def get_tokens(user_id: str) -> dict[str, Any] | None:

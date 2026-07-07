@@ -24,6 +24,7 @@ from enum import Enum
 from typing import Any
 
 import httpx
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -491,7 +492,7 @@ class OpenAICompatibleProvider(LLMProvider):
             payload["tool_choice"] = "auto"
             logger.debug(
                 "OpenAI-compat request: model=%s, %d tools, %d messages",
-                model_name, len(tools), len(api_messages),
+                sl(model_name), len(tools), len(api_messages),
             )
 
         if stop_sequences:
@@ -941,7 +942,7 @@ class GeminiWithFallback(LLMProvider):
         if model and not model.startswith("gemini"):
             logger.warning(
                 "Ignoring non-Gemini model '%s' — using default '%s'",
-                model, self.default_model,
+                sl(model), self.default_model,
             )
             model = None
         gen_kwargs = dict(system=system, model=model, temperature=temperature, max_tokens=max_tokens, **kwargs)

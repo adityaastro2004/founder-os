@@ -77,5 +77,13 @@ celery.conf.update(
     task_time_limit=360,        # 6 min hard kill
 )
 
-# ── Auto-discover tasks ──────────────────────────────────────
-celery.autodiscover_tasks(["app.tasks"])
+# ── Task registration ────────────────────────────────────────
+# Explicit imports, NOT autodiscover: autodiscover_tasks(["app.tasks"]) looks
+# for a module named app.tasks.tasks (related_name default) and silently
+# registered NOTHING — verified 2026-07-06: a live worker reported zero
+# registered tasks; agent tasks only worked in the API process because
+# queue_routes imports them. Explicit is the fix (pinned by unit test).
+celery.conf.imports = (
+    "app.tasks.agent_tasks",
+    "app.tasks.state_tasks",
+)

@@ -53,6 +53,7 @@ from enum import Enum
 from typing import Any, Optional
 
 import redis.asyncio as aioredis
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -285,7 +286,7 @@ class ApprovalPreferences:
         if preference == "always_allow" and tool_name in HIGH_RISK_TOOLS:
             logger.warning(
                 "Blocked attempt to always-allow high-risk tool '%s' for user '%s'",
-                tool_name, user_id,
+                sl(tool_name), sl(user_id),
             )
             return False
 
@@ -476,7 +477,7 @@ class ApprovalGate:
             # unrecognized value means store corruption or direct Redis access.
             logger.warning(
                 "Unrecognized approval preference %r for tool '%s' (user %s) — gating",
-                pref, tool_name, user_id,
+                sl(pref), sl(tool_name), sl(user_id),
             )
         return await self._create_pending(
             user_id=user_id,

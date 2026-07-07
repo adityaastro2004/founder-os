@@ -28,6 +28,7 @@ from app.agents.registry import AgentRegistry
 from app.user_store import get_user as get_planner_user
 from app.users import get_or_create_user_id
 from app.models import AgentRun, ChatMessage as ChatMessageModel
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ async def _extract_insights_background(
             if insights:
                 logger.info(
                     "Extracted %d insights for user %s from %s",
-                    len(insights), user_id[:8], agent_name,
+                    len(insights), sl(user_id[:8]), sl(agent_name),
                 )
 
             # Auto-synthesise profile every 25 interactions (LLM call)

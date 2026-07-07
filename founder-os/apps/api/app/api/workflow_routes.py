@@ -28,6 +28,7 @@ from app.database import get_db
 from app.models import Workflow, WorkflowExecution
 from app.users import get_or_create_user_id
 from app.workflows import service
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -182,9 +183,11 @@ async def run_workflow(
                 )
         except N8nError as exc:
             run.status = "failed"
-            run.error_message = str(exc)
+            # Generic client-facing message; detail stays in logs (CodeQL
+            # py/stack-trace-exposure — exception text is not for API responses).
+            run.error_message = "n8n trigger failed — see server logs"
             run.completed_at = datetime.now(timezone.utc)
-            logger.warning("n8n trigger failed for workflow %s: %s", workflow_id, exc)
+            logger.warning("n8n trigger failed for workflow %s: %s", sl(workflow_id), sl(exc))
 
     await db.flush()
     return _serialize_run(run)

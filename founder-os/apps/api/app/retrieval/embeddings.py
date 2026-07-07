@@ -351,3 +351,33 @@ def create_embedding_provider(
         return CachedEmbeddingProvider(base, redis)
 
     return base
+
+
+def get_default_embedder(redis: aioredis.Redis | None = None) -> EmbeddingProvider:
+    """Settings-driven default embedder (arch 2026-07-04 §2.4).
+
+    Replicates the provider-selection logic of knowledge_routes._get_embedder so
+    non-route modules (app/state/*) never import a route module. Converge the
+    route helper onto this factory later.
+    """
+    from app.config import get_settings  # local import: avoid config↔retrieval cycle
+
+    settings = get_settings()
+    if settings.LLM_PROVIDER == "ollama":
+        return create_embedding_provider(
+            provider="ollama", base_url=settings.OLLAMA_BASE_URL, redis=redis,
+        )
+    if settings.LLM_PROVIDER == "openai_compatible":
+        return create_embedding_provider(
+            provider="openai", api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL, redis=redis,
+        )
+    # anthropic/gemini have no embedding API: prefer OpenAI if keyed, else Ollama.
+    if settings.OPENAI_API_KEY:
+        return create_embedding_provider(
+            provider="openai", api_key=settings.OPENAI_API_KEY,
+            base_url=settings.OPENAI_BASE_URL, redis=redis,
+        )
+    return create_embedding_provider(
+        provider="ollama", base_url=settings.OLLAMA_BASE_URL, redis=redis,
+    )

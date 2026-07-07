@@ -51,3 +51,4 @@ pdfplumber
 # Testing (Phase 0)
 pytest>=8.0
 pytest-asyncio>=0.24
+python-frontmatter>=1.1.0

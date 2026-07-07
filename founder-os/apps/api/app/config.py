@@ -76,6 +76,13 @@ class Settings(BaseSettings):
     SERPAPI_KEY: str = ""
     TAVILY_API_KEY: str = ""
 
+    # ── Company State Engine (arch 2026-07-04 §11) ──
+    STATE_DEDUP_SIM_THRESHOLD: float = 0.88
+    STATE_WRITE_GATE_JUDGE_MAX_PER_SYNC: int = 10
+    STATE_WRITE_GATE_JUDGE_TIMEOUT_S: int = 30
+    STATE_OBSIDIAN_MAX_FILES: int = 5000
+    STATE_OBSIDIAN_MAX_FILE_BYTES: int = 1_048_576
+
     # ── MCP Tool Servers ──
     # External MCP servers (stdio or SSE) to connect to.
     # Each entry: {"name": "...", "transport": "stdio"|"sse", "command": "...",

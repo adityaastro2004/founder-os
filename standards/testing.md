@@ -48,7 +48,14 @@ the live tier is local-only (needs Ollama + Docker).
 5. **Timeouts must be provider-aware** — local Ollama is 10–30× slower than hosted
    APIs (measured: 486s for the 2-call plan pipeline on `llama3.1:8b` vs 15–30s
    hosted). Read the provider from `/api/agents/system` where a test must wait.
-6. **If automated testing isn't feasible**, record a manual verification (command +
+6. **Poll for advancement, not presence** — when waiting on an async job,
+   key the wait on a monotonic marker moving past its pre-trigger value (e.g.
+   `last_synced_at` advancing), never on "a result exists": the previous run's
+   result satisfies presence instantly (Phase 1 E2E lesson).
+7. **Restart the Celery worker after backend changes** — uvicorn `--reload`
+   covers only the API process; a stale worker silently runs old code
+   (two Phase 1 E2E rounds lost to this).
+8. **If automated testing isn't feasible**, record a manual verification (command +
    observed output) in the task file and say explicitly that it was manual.
 
 ## Reporting

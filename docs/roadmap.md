@@ -23,8 +23,8 @@
   | Phase | Outcome | Status |
   |-------|---------|--------|
   | 0 | Foundation revamp — audit → repair → reshape (task 012) | `done` (2026-07-03) |
-  | 1 | State Engine core + Obsidian sync (task 011) | `now` |
-  | 2 | Notion adapter (same engine/ABC) | `later` |
+  | 1 | State Engine core + Obsidian sync (task 011) | `done` (2026-07-07) |
+  | 2 | Notion adapter (same engine/ABC) | `next` |
   | 3 | Hermes skills feed (`system` feed) | `later` |
   | 4 | Paperclip (paperclip.ing) via MCP | `later` |
   | 5 | Deployment — Docker images + runbook | `later` |
@@ -87,6 +87,10 @@
 - **Async interactive plan generation (task 013):** plan gen takes ~486s on local
   ollama (2 sequential 4k-token calls) — move to Celery job + polling. From Phase 0
   audit F1. Status: `next`. See [tasks/backlog/013](../tasks/backlog/013-planner-async-generation.md).
+- **Tech-debt (CodeQL, pre-existing):** 8 `py/incomplete-url-substring-sanitization`
+  findings in `app/crawler/research.py` (URL allowlist checks by substring — use
+  parsed-hostname comparison). Plus ~130 non-security lint alerts (unused imports,
+  empty excepts) — sweep opportunistically. Status: `later`.
 - **Tech-debt (from Phase 0 security review):** HIGH-risk × `always_deny` yields a
   pending approval card instead of an auto-reject — user asked never to be asked.
   Safe (nothing executes without a human) but noisy. Status: `later`.
@@ -118,6 +122,7 @@
 
 | Date | Item | Task |
 |------|------|------|
+| 2026-07-07 | Phase 1 — Company State Engine slice 1: 4-table canonical state + reconciler (write-gate, dedup, provenance) + Obsidian adapter with jailed bidirectional sync + /api/state; live E2E proven (observe→reconcile→render loop, idempotent) | [tasks/completed/011](../tasks/completed/011-company-state-engine.md) |
 | 2026-07-03 | Phase 0 foundation revamp — full-system audit (11 subsystems, live-verified), F1–F3 fixed with regression tests, pytest 3-tier harness + turbo test + CI unit tier, integration adapter framework (ADR-010) with Google Calendar as first adapter | [tasks/completed/012](../tasks/completed/012-phase0-foundation-revamp.md) |
 | 2026-06-10 | Founder-aware agent specialization (Evolution Engine MVP) | [tasks/completed/001](../tasks/completed/001-founder-aware-agent-specialization.md) |
 | 2026-06-10 | Strategic systems-thinking prompts + code→DB sync (agents now run rich prompts) | [tasks/completed/002](../tasks/completed/002-agent-strategic-prompt-upgrade.md) |
