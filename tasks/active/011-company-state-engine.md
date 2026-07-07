@@ -54,37 +54,37 @@ what confidence) so that I can trust and audit the model.
 ## Acceptance criteria (slice 1)
 
 **US-1 — Observe**
-- [ ] An authenticated, user-scoped endpoint triggers a sync of a configured vault path; it
-      parses markdown (frontmatter, headings, `- [ ]`/`- [x]` checkboxes) and reconciles into
+- [x] An authenticated, user-scoped endpoint triggers a sync of a configured vault path; it
+      parses markdown (frontmatter, headings, `- [x]`/`- [x]` checkboxes) and reconciles into
       `company_state_entities` (+ relations) **and** RAG (`knowledge_items`).
-- [ ] Mapping (v1): checkboxes → `task` (status from box); frontmatter `goal:`/`project:` →
+- [x] Mapping (v1): checkboxes → `task` (status from box); frontmatter `goal:`/`project:` →
       `goal`/`project`; `#decision` or a `Decisions/` path → `decision`; else → `note`. A task
       under a project note links `part_of` that project.
-- [ ] Re-running the sync is **idempotent** (no duplicate entities); `state_observations`
+- [x] Re-running the sync is **idempotent** (no duplicate entities); `state_observations`
       dedups by `external_id` (stable per file/block).
 
 **US-2 — Sync back**
-- [ ] The engine writes/overwrites a managed `FounderOS/` subfolder in the vault
+- [x] The engine writes/overwrites a managed `FounderOS/` subfolder in the vault
       (`Goals.md`, `Projects/*.md`, `Tasks.md`, `Decisions.md`) rendering current state.
-- [ ] The engine **only** writes inside `FounderOS/`; the rest of the vault is never modified
+- [x] The engine **only** writes inside `FounderOS/`; the rest of the vault is never modified
       (read-only observed). Verified.
 
 **US-3 — Hygiene (write-gate + dedup)**
-- [ ] The reconciler drops entities that fail the write-gate (trivial/empty/generic) and,
+- [x] The reconciler drops entities that fail the write-gate (trivial/empty/generic) and,
       on near-duplicate (semantic match of same type), **merges/updates** the existing entity
       (bumping `last_asserted_at`/`confidence`) instead of inserting a new row.
 
 **US-4 — Provenance**
-- [ ] Every `company_state_entity` records `source` (`observed` for this slice), the source
+- [x] Every `company_state_entity` records `source` (`observed` for this slice), the source
       id, `confidence`, and `last_asserted_at`. Exposed on the read API.
 
 **Cross-cutting**
-- [ ] All new user-facing endpoints require Clerk JWT (`require_auth`) and scope data to the
+- [x] All new user-facing endpoints require Clerk JWT (`require_auth`) and scope data to the
       authenticated user (`standards/security.md`).
-- [ ] New tables created via **Alembic only**, not hand-edited `schema.sql` (CLAUDE.md §5.8).
-- [ ] Vault path is local + config-driven; nothing secret logged/committed; Docker/mounted-
+- [x] New tables created via **Alembic only**, not hand-edited `schema.sql` (CLAUDE.md §5.8).
+- [x] Vault path is local + config-driven; nothing secret logged/committed; Docker/mounted-
       vault path documented.
-- [ ] End-to-end manual verification recorded (live `:8000`, per `standards/testing.md`).
+- [x] End-to-end manual verification recorded (live `:8000`, per `standards/testing.md`).
 
 ## Success metrics  <!-- eng-product -->
 - **Loop proven (binary gate):** one real vault → `state` populated → `FounderOS/` folder
@@ -109,6 +109,27 @@ the roadmap and ADR-009.
 - Managed-folder render/ownership guarantee (how the "writes only inside `FounderOS/`"
   invariant is enforced and tested).
 - Vault access model for the API process (local path vs. mounted dir in Docker).
+
+## Gate record (2026-07-07)
+
+- **Architecture:** eng-architect doc
+  [2026-07-04-phase1-state-engine-architecture.md](../../docs/superpowers/specs/2026-07-04-phase1-state-engine-architecture.md)
+  — implemented without redesign.
+- **eng-security: PASS**, no blockers for local-first slice 1. S1 (vault-read
+  symlink hardening) -> `tasks/backlog/014` (hard prerequisite before hosted
+  deployment); nits N1/N2/N4 applied same-day.
+- **Evidence for the acceptance boxes:** live E2E
+  `tests/live/test_state_obsidian_live.py` — **PASSED 27.56s** (register -> sync ->
+  entities/relations/provenance -> idempotent re-sync `created=0,
+  unchanged=observed` -> checkbox toggle flips the same entity -> `FounderOS/`
+  rendered -> sha256 of every non-managed vault file unchanged -> `state://` RAG
+  rows without dupes -> rapid-fire trigger 409). Unit tier: 107 tests incl. the
+  12-case managed-jail battery, gate/dedup/renderer/external_id suites.
+- **Worker-integration bugs found by the live tier, fixed with regression
+  tests:** Celery registered zero tasks (autodiscover misconfig, pre-existing);
+  sync-lock NX double-take deadlock; worker mapper config missing the users FK
+  import. Plus one E2E-harness fix (stale-report polling).
+- **eng-reviewer / eng-qa:** pending (close-out).
 
 ## Next agent
 → **eng-architect**: turn this product spec + the design spec into the concrete schema,

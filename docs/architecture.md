@@ -68,12 +68,22 @@ synchronization endpoint reconciled into and out of this model.
 
 Wrapped in the **five loops**: Observe → Remember → Understand → Execute → Learn.
 
-- **Observation layer (`app/state/sources/`)** — passive adapters that watch the founder's
-  tools and emit raw events. **Obsidian first** (local vault file sync, slice 1);
-  GitHub/Stripe/Slack/Calendar/Notion later. This is the **Observe** loop.
-- **Reconciler (`app/state/reconciler.py`)** — the Observe→Remember core, reused by every
-  feed: record observation (idempotent) → write-gate → dedup-on-ingest → create/merge entity
-  with provenance → maintain relations → mirror into RAG/memory.
+- **Observation layer (ADR-010 adapters)** — passive `IntegrationAdapter`s emit
+  provenance-tagged `ObservedEvent`s. **Obsidian shipped** (slice 1,
+  `app/integrations/obsidian/`: `client.py` vault IO incl. the jailed managed-folder
+  write sink, `adapter.py` OBSERVE|SYNC|HEALTH); GitHub/Stripe/Slack/Calendar/Notion
+  later. This is the **Observe** loop.
+- **Reconciler (`app/state/reconciler.py`, as-built slice 1)** — the Observe→Remember
+  core, reused by every feed: record observation (idempotent by
+  `(source_id, external_id, content_hash)`) → write-gate (`write_gate.py`: heuristics
+  + bounded fail-open LLM judge) → hard resolution (prior observation / exact title) →
+  dedup-on-ingest (`dedup.py`: pgvector cosine ≥ 0.88 → merge with asymptotic
+  confidence bump) → create/merge with provenance → relations upsert → RAG mirror
+  (`mirror.py`, `state://` keys). Rendering back: `renderer.py` (pure) →
+  `client.write_managed` (the ONLY vault writer). Sync runs are always Celery-queued
+  (`app/tasks/state_tasks.py`, per-source Redis lock); API surface is `/api/state`
+  (`state_routes.py`: sources CRUD, 202 sync trigger, read-only entities/relations
+  with full provenance — the reconciler is the only writer).
 - **Three feeds, each provenance-tagged:** `observed` (tool adapters), `user_doc` (founder-
   provided docs — extends the knowledge ingestion path), `system` (agent-written memories +
   Hermes procedural skills). Trust: `user_doc` > `observed` > `system`.

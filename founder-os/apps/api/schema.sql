@@ -784,3 +784,80 @@ CREATE TABLE IF NOT EXISTS agent_definitions (
 CREATE INDEX IF NOT EXISTS ix_agent_definitions_user ON agent_definitions(user_id);
 CREATE INDEX IF NOT EXISTS ix_agent_definitions_user_agent_status
     ON agent_definitions(user_id, agent_name, status);
+
+-- ============================================================================
+-- COMPANY STATE ENGINE (ADR-009 slice 1) — secondary sync artifact.
+-- Authoritative source: alembic/versions/0002_state_engine.py (CLAUDE.md §5.8).
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS state_sources (
+    id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type             VARCHAR(50) NOT NULL CHECK (type IN ('obsidian','github','stripe','slack','calendar','notion','user_doc','system')),
+    name             VARCHAR(255) NOT NULL,
+    config           JSONB NOT NULL DEFAULT '{}',
+    sync_cursor      JSONB,
+    status           VARCHAR(50) NOT NULL DEFAULT 'active',
+    last_synced_at   TIMESTAMPTZ,
+    last_error       TEXT,
+    last_sync_report JSONB,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (user_id, type, name)
+);
+CREATE INDEX IF NOT EXISTS ix_state_sources_user ON state_sources(user_id);
+
+CREATE TABLE IF NOT EXISTS company_state_entities (
+    id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    entity_type      VARCHAR(50) NOT NULL CHECK (entity_type IN ('goal','project','task','decision','metric','person','meeting','note')),
+    title            TEXT NOT NULL,
+    status           VARCHAR(50) NOT NULL DEFAULT 'active',
+    summary          TEXT,
+    attributes       JSONB NOT NULL DEFAULT '{}',
+    source           VARCHAR(20) NOT NULL CHECK (source IN ('observed','user_doc','system')),
+    source_id        UUID REFERENCES state_sources(id) ON DELETE SET NULL,
+    external_ref     VARCHAR(512),
+    confidence       NUMERIC(4,3) NOT NULL DEFAULT 0.700,
+    last_asserted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    pinned           BOOLEAN NOT NULL DEFAULT FALSE,
+    embedding        vector(1536),
+    is_active        BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS ix_state_entities_user_type ON company_state_entities(user_id, entity_type);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_state_entities_user_src_ref
+    ON company_state_entities(user_id, source_id, external_ref) WHERE external_ref IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS state_observations (
+    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    source_id    UUID NOT NULL REFERENCES state_sources(id) ON DELETE CASCADE,
+    user_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    external_id  VARCHAR(512) NOT NULL,
+    kind         VARCHAR(100) NOT NULL,
+    payload      JSONB NOT NULL,
+    content_hash VARCHAR(64) NOT NULL,
+    provenance   VARCHAR(20) NOT NULL DEFAULT 'observed' CHECK (provenance IN ('observed','user_doc','system')),
+    observed_at  TIMESTAMPTZ NOT NULL,
+    processed_at TIMESTAMPTZ,
+    outcome      VARCHAR(50),
+    entity_id    UUID REFERENCES company_state_entities(id) ON DELETE SET NULL,
+    created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_state_obs_dedup UNIQUE (source_id, external_id, content_hash)
+);
+CREATE INDEX IF NOT EXISTS ix_state_obs_lookup ON state_observations(source_id, external_id, observed_at);
+CREATE INDEX IF NOT EXISTS ix_state_obs_user ON state_observations(user_id);
+
+CREATE TABLE IF NOT EXISTS state_relations (
+    id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id          UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    source_entity_id UUID NOT NULL REFERENCES company_state_entities(id) ON DELETE CASCADE,
+    target_entity_id UUID NOT NULL REFERENCES company_state_entities(id) ON DELETE CASCADE,
+    relation_type    VARCHAR(50) NOT NULL DEFAULT 'mentions',
+    strength         NUMERIC(3,2) NOT NULL DEFAULT 0.50,
+    metadata_        JSONB DEFAULT '{}',
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (source_entity_id, target_entity_id, relation_type)
+);
+CREATE INDEX IF NOT EXISTS ix_state_relations_user ON state_relations(user_id);
