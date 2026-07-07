@@ -37,16 +37,27 @@ def vault_hashes(vault: pathlib.Path, exclude_top: str) -> dict:
     return out
 
 
-def wait_for_sync(c: httpx.Client, source_id: str) -> dict:
+def trigger_and_wait(c: httpx.Client, source_id: str, direction: str = "both") -> dict:
+    """Trigger a sync and wait for a FRESH report.
+
+    last_synced_at must ADVANCE past its pre-trigger value — polling for a
+    truthy report returns the PREVIOUS sync's report instantly (that stale
+    read masked the idempotency check entirely in an earlier run and let
+    pytest tear down the temp vault under the still-queued task).
+    """
+    prev = c.get(f"/api/state/sources/{source_id}").json()["last_synced_at"]
+    r = c.post(f"/api/state/sources/{source_id}/sync", json={"direction": direction})
+    assert r.status_code == 202, r.text[:300]
     deadline = time.time() + SYNC_WAIT_S
     while time.time() < deadline:
         src = c.get(f"/api/state/sources/{source_id}").json()
-        if src["status"] == "active" and src["last_sync_report"]:
-            return src["last_sync_report"]
         if src["status"] == "error":
             pytest.fail(f"sync errored: {src['last_error']}")
-        time.sleep(5)
-    pytest.fail(f"sync did not finish within {SYNC_WAIT_S}s")
+        if src["status"] == "active" and src["last_synced_at"] != prev \
+                and src["last_sync_report"]:
+            return src["last_sync_report"]
+        time.sleep(3)
+    pytest.fail(f"sync did not produce a fresh report within {SYNC_WAIT_S}s")
 
 
 def test_obsidian_end_to_end():
@@ -67,9 +78,7 @@ def test_obsidian_end_to_end():
         source_id = r.json()["id"]
 
         # ── sync #1 ─────────────────────────────────────────────────────
-        r = c.post(f"/api/state/sources/{source_id}/sync", json={"direction": "both"})
-        assert r.status_code == 202, r.text[:300]
-        report1 = wait_for_sync(c, source_id)
+        report1 = trigger_and_wait(c, source_id)
         assert report1["observed"] > 0 and report1["created"] > 0
         assert report1["errors"] == 0, report1
 
@@ -115,9 +124,7 @@ def test_obsidian_end_to_end():
         entity_count_1 = ents["total"]
 
         # ── sync #2: idempotency (US-1 AC3) ─────────────────────────────
-        r = c.post(f"/api/state/sources/{source_id}/sync", json={"direction": "both"})
-        assert r.status_code == 202
-        report2 = wait_for_sync(c, source_id)
+        report2 = trigger_and_wait(c, source_id)
         assert report2["created"] == 0, f"re-sync created entities: {report2}"
         assert report2["unchanged"] == report2["observed"], report2
         ents2 = c.get("/api/state/entities", params={"limit": 100}).json()
@@ -133,9 +140,7 @@ def test_obsidian_end_to_end():
         launch.write_text(launch.read_text().replace(
             "- [ ] Write the changelog for v2", "- [x] Write the changelog for v2",
         ))
-        r = c.post(f"/api/state/sources/{source_id}/sync", json={"direction": "both"})
-        assert r.status_code == 202
-        report3 = wait_for_sync(c, source_id)
+        report3 = trigger_and_wait(c, source_id)
         assert report3["created"] == 0, f"toggle must not create entities: {report3}"
         assert report3["updated"] >= 1, report3
 
@@ -145,8 +150,16 @@ def test_obsidian_end_to_end():
         # rendered Tasks.md reflects the flip
         assert "- [x] Write the changelog for v2" in (vault / "FounderOS" / "Tasks.md").read_text()
 
-        # overlap guard: second sync while none running → fine; two rapid-fire → 409
+        # overlap guard: rapid-fire second trigger while first holds the lock → 409
+        prev = c.get(f"/api/state/sources/{source_id}").json()["last_synced_at"]
         first = c.post(f"/api/state/sources/{source_id}/sync", json={})
         second = c.post(f"/api/state/sources/{source_id}/sync", json={})
-        assert 409 in (first.status_code, second.status_code) or first.status_code == 202
-        wait_for_sync(c, source_id)
+        assert first.status_code == 202
+        assert second.status_code == 409, second.text[:200]
+        # wait for the first to finish so teardown doesn't yank the vault from under it
+        deadline = time.time() + SYNC_WAIT_S
+        while time.time() < deadline:
+            src = c.get(f"/api/state/sources/{source_id}").json()
+            if src["status"] == "active" and src["last_synced_at"] != prev:
+                break
+            time.sleep(3)
