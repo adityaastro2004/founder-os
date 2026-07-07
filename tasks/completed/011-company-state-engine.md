@@ -1,8 +1,8 @@
 ---
 id: 011
 title: Company State Engine — core + Obsidian bidirectional sync (slice 1)
-status: active
-stage: architect
+status: done
+stage: completed
 owner: eng-product
 created: 2026-06-22
 dependencies: []
@@ -143,7 +143,21 @@ the roadmap and ADR-009.
   12.71s incl. the strengthened asserts. **Delta re-review: performed inline**
   (the reviewer agent hit its session limit mid-re-review; the full independent
   review above stands — recorded per the honest-reporting rule).
-- **eng-qa:** see below.
+- **eng-qa: PASS — all 11 acceptance criteria + all 4 success metrics** (own runs:
+  unit 116 passed; live E2E 1 passed in 12.90s; jail battery 12 passed). QA flags,
+  recorded honestly: (1) the "real vault" success metric was proven on the 8-file
+  fixture vault through the real stack — a personal-vault dogfood run is the
+  founder's post-merge step (see below); (2) the `#decision`-tag mapping branch
+  shares its code line with the tested `Decisions/` path branch but lacks a
+  dedicated unit case — follow-up nit; (3) CC-3 "nothing secret logged" verified
+  via the eng-security PASS citation.
+
+## Founder dogfood step (post-merge)
+
+Register YOUR real vault and run the loop:
+`POST /api/state/sources {"type":"obsidian","config":{"vault_path":"/path/to/your/vault"}}`
+→ `POST /api/state/sources/{id}/sync` → open the `FounderOS/` folder in Obsidian.
+(Or via the dashboard once the UI lands — slice 1 is API-first.)
 
 ## Next agent
 → **eng-architect**: turn this product spec + the design spec into the concrete schema,

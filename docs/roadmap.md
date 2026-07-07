@@ -23,8 +23,8 @@
   | Phase | Outcome | Status |
   |-------|---------|--------|
   | 0 | Foundation revamp — audit → repair → reshape (task 012) | `done` (2026-07-03) |
-  | 1 | State Engine core + Obsidian sync (task 011) | `now` |
-  | 2 | Notion adapter (same engine/ABC) | `later` |
+  | 1 | State Engine core + Obsidian sync (task 011) | `done` (2026-07-07) |
+  | 2 | Notion adapter (same engine/ABC) | `next` |
   | 3 | Hermes skills feed (`system` feed) | `later` |
   | 4 | Paperclip (paperclip.ing) via MCP | `later` |
   | 5 | Deployment — Docker images + runbook | `later` |
@@ -118,6 +118,7 @@
 
 | Date | Item | Task |
 |------|------|------|
+| 2026-07-07 | Phase 1 — Company State Engine slice 1: 4-table canonical state + reconciler (write-gate, dedup, provenance) + Obsidian adapter with jailed bidirectional sync + /api/state; live E2E proven (observe→reconcile→render loop, idempotent) | [tasks/completed/011](../tasks/completed/011-company-state-engine.md) |
 | 2026-07-03 | Phase 0 foundation revamp — full-system audit (11 subsystems, live-verified), F1–F3 fixed with regression tests, pytest 3-tier harness + turbo test + CI unit tier, integration adapter framework (ADR-010) with Google Calendar as first adapter | [tasks/completed/012](../tasks/completed/012-phase0-foundation-revamp.md) |
 | 2026-06-10 | Founder-aware agent specialization (Evolution Engine MVP) | [tasks/completed/001](../tasks/completed/001-founder-aware-agent-specialization.md) |
 | 2026-06-10 | Strategic systems-thinking prompts + code→DB sync (agents now run rich prompts) | [tasks/completed/002](../tasks/completed/002-agent-strategic-prompt-upgrade.md) |
