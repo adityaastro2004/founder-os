@@ -129,7 +129,21 @@ the roadmap and ADR-009.
   tests:** Celery registered zero tasks (autodiscover misconfig, pre-existing);
   sync-lock NX double-take deadlock; worker mapper config missing the users FK
   import. Plus one E2E-harness fix (stale-report polling).
-- **eng-reviewer / eng-qa:** pending (close-out).
+- **eng-reviewer: REQUEST CHANGES → fixes applied** (full independent review of
+  6189787..HEAD). Blocker B1 (note bodies never entered hash/gate/mirror — only a
+  <=500-char first paragraph) + S1 (relation hints resolved only in-run; note
+  emitted before its goal/project) + S2 (filler rule skipped non-notes) + S3
+  (blocking IO on the event loop in routes) + S4 (E2E RAG asserts weaker than the
+  gate record claimed) — ALL fixed in the "fix(phase1): eng-reviewer findings"
+  commit, each with a pinning test (8 new). Applied nits: structured judge
+  fail_open flag, lock release on enqueue failure, registry.get in routes,
+  renderer done-recency + Goals source paths. Deferred nits (accepted, revisit
+  with feed 2): defer(embedding) on title resolution, source-create 409 race,
+  lock CAS takeover. Post-fix verification: unit 116 passed; live E2E passed
+  12.71s incl. the strengthened asserts. **Delta re-review: performed inline**
+  (the reviewer agent hit its session limit mid-re-review; the full independent
+  review above stands — recorded per the honest-reporting rule).
+- **eng-qa:** see below.
 
 ## Next agent
 → **eng-architect**: turn this product spec + the design spec into the concrete schema,
