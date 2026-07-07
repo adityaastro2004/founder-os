@@ -63,18 +63,20 @@ def evaluate(c: EntityCandidate) -> tuple[GateDecision, list[str]]:
     # 2. task text length (tasks have no body — the title IS the text)
     if c.entity_type == "task" and len(title) < 3:
         return GateDecision.REJECT, ["task text < 3 chars"]
+    # 4. filler titles — ALL types (S2: `- [ ] todo` / `goal: test` must not
+    #    persist as canonical state); note-only scoping was an undocumented
+    #    deviation from arch §2.3.
+    is_filler = title.casefold() in FILLER_TITLES or _DAILY_NOTE_RE.match(title)
+    if is_filler:
+        if len(body) < 40:
+            return GateDecision.REJECT, ["filler title + tiny body"]
+        return GateDecision.BORDERLINE, ["filler title, substantive body"]
     # tasks/decisions/goals/projects are durable by nature — never brevity-gated
     if c.entity_type != "note":
         return GateDecision.ACCEPT, ["non-note types accepted after hard checks"]
     # 3. empty stubs
     if len(title) + len(body) < 10:
         return GateDecision.REJECT, ["empty stub (<10 chars total)"]
-    # 4. filler titles
-    is_filler = title.casefold() in FILLER_TITLES or _DAILY_NOTE_RE.match(title)
-    if is_filler:
-        if len(body) < 40:
-            return GateDecision.REJECT, ["filler title + tiny body"]
-        return GateDecision.BORDERLINE, ["filler title, substantive body"]
 
     reasons: list[str] = []
     word_count = len(body.split())
@@ -87,11 +89,12 @@ def evaluate(c: EntityCandidate) -> tuple[GateDecision, list[str]]:
     return GateDecision.ACCEPT, ["passed all heuristics"]
 
 
-async def judge(c: EntityCandidate, provider, timeout_s: float) -> tuple[bool, str]:
+async def judge(c: EntityCandidate, provider, timeout_s: float) -> tuple[bool, str, bool]:
     """One bounded LLM call on a BORDERLINE candidate. Fail-open on any error.
 
-    Budget enforcement (max calls per sync) lives in the reconciler, which also
-    applies FAIL_OPEN_CONFIDENCE when the budget is exhausted.
+    Returns (keep, reason, fail_open). fail_open is a STRUCTURED flag — never
+    inferred from the reason string (an LLM-authored reason could contain
+    anything). Budget enforcement lives in the reconciler.
     """
     from app.agents.llm import LLMMessage, Role
 
@@ -111,7 +114,7 @@ async def judge(c: EntityCandidate, provider, timeout_s: float) -> tuple[bool, s
         raw = (response.content or "").strip()
         start, end = raw.find("{"), raw.rfind("}")
         verdict = json.loads(raw[start:end + 1])
-        return bool(verdict["keep"]), str(verdict.get("reason", ""))[:200]
+        return bool(verdict["keep"]), str(verdict.get("reason", ""))[:200], False
     except Exception as exc:  # timeout, provider error, bad JSON — never wedge a sync
         logger.warning("write-gate judge fail-open (%s): %s", type(exc).__name__, exc)
-        return True, f"fail-open: judge unavailable ({type(exc).__name__})"
+        return True, f"fail-open: judge unavailable ({type(exc).__name__})", True

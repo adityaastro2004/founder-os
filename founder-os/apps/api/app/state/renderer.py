@@ -36,6 +36,13 @@ def _task_line(t: Any) -> str:
     return f"- [{box}] {t.title}"
 
 
+def _recent_done(tasks: list) -> list:
+    """§2.6: done section = the 50 MOST RECENT (deterministic id tiebreak)."""
+    done = [t for t in tasks if t.status == "done"]
+    done.sort(key=lambda t: (t.last_asserted_at, str(t.id)), reverse=True)
+    return done[:DONE_CAP]
+
+
 def render(entities: list, relations: list, *, now: datetime) -> dict[str, str]:
     ents = [e for e in _sorted(entities) if getattr(e, "is_active", True)]
     goals = [e for e in ents if e.entity_type == "goal"]
@@ -67,8 +74,10 @@ def render(entities: list, relations: list, *, now: datetime) -> dict[str, str]:
     lines = ["# Goals", ""]
     for g in goals:
         conf = f"{float(g.confidence):.2f}"
+        src_path = (g.attributes or {}).get("asserted_in")
+        src_note = f", from `{src_path}`" if src_path else ""
         lines.append(f"- **{g.title}** — confidence {conf}, last asserted "
-                     f"{g.last_asserted_at.strftime('%Y-%m-%d')}")
+                     f"{g.last_asserted_at.strftime('%Y-%m-%d')}{src_note}")
         if g.summary:
             lines.append(f"  - {g.summary}")
     files["Goals.md"] = "\n".join(lines) + "\n" + footer
@@ -97,14 +106,13 @@ def render(entities: list, relations: list, *, now: datetime) -> dict[str, str]:
             continue
         tlines.append(f"## {p.title}")
         tlines += [_task_line(t) for t in p_tasks if t.status != "done"]
-        done_t = [t for t in p_tasks if t.status == "done"][:DONE_CAP]
-        tlines += [_task_line(t) for t in done_t]
+        tlines += [_task_line(t) for t in _recent_done(p_tasks)]
         tlines.append("")
     unassigned = by_project.get(None, [])
     if unassigned:
         tlines.append("## Unassigned")
         tlines += [_task_line(t) for t in unassigned if t.status != "done"]
-        tlines += [_task_line(t) for t in unassigned if t.status == "done"][:DONE_CAP]
+        tlines += [_task_line(t) for t in _recent_done(unassigned)]
     files["Tasks.md"] = "\n".join(tlines) + "\n" + footer
 
     dlines = ["# Decisions", ""]

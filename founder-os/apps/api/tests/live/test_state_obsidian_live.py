@@ -115,11 +115,20 @@ def test_obsidian_end_to_end():
         assert vault_hashes(vault, exclude_top="FounderOS") == before_hashes, \
             "P0: a non-managed vault file was modified"
 
-        # RAG mirror: state:// rows exist, scoped to this user
+        # RAG mirror (S4): state:// rows exist with the mirror category, and
+        # they carry FULL bodies (B1) — assert on below-the-fold content.
+        items = c.get("/api/knowledge/items", params={"category": "state_mirror"}).json()
+        mirror_items = [i for i in items if (i.get("source_url") or "").startswith("state://")]
+        assert mirror_items, "no state:// mirrored knowledge items"
+        mirror_count_1 = len(mirror_items)
         search = c.post("/api/knowledge/search", json={
             "query": "community onboarding activation", "search_type": "semantic", "limit": 5,
         }).json()
         assert search["total_results"] >= 1
+
+        # mentions edges exist (S1: note —mentions→ goal/project)
+        mrels = c.get("/api/state/relations", params={"relation_type": "mentions"}).json()
+        assert mrels["total"] >= 1, "note→goal/project mentions edges missing"
 
         entity_count_1 = ents["total"]
 
@@ -129,6 +138,10 @@ def test_obsidian_end_to_end():
         assert report2["unchanged"] == report2["observed"], report2
         ents2 = c.get("/api/state/entities", params={"limit": 100}).json()
         assert ents2["total"] == entity_count_1
+        # RAG mirror idempotency (S4): unchanged content → zero re-mirrored rows
+        items2 = c.get("/api/knowledge/items", params={"category": "state_mirror"}).json()
+        mirror_count_2 = len([i for i in items2 if (i.get("source_url") or "").startswith("state://")])
+        assert mirror_count_2 == mirror_count_1, "re-sync duplicated mirrored knowledge"
 
         # ── checkbox toggle → same entity flips status ──────────────────
         launch = vault / "Projects" / "Launch v2.md"

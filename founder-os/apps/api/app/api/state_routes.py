@@ -135,11 +135,14 @@ async def _uid(user: ClerkUser, db: AsyncSession) -> uuid.UUID:
     return await get_or_create_user_id(user.user_id, db, email=user.email)
 
 
-def _validated_config(config: ObsidianConfig) -> dict:
+async def _validated_config(config: ObsidianConfig) -> dict:
+    from anyio import to_thread
+
     from app.integrations.obsidian.client import validate_vault_path
 
     try:
-        resolved = validate_vault_path(config.vault_path)
+        # stat/access are blocking filesystem calls — off the event loop (S3)
+        resolved = await to_thread.run_sync(validate_vault_path, config.vault_path)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=f"vault_path: {exc}")
     excludes = config.exclude_dirs or [".obsidian", ".trash", "Templates"]
@@ -199,7 +202,7 @@ async def create_source(
     db: AsyncSession = Depends(get_db),
 ):
     uid = await _uid(user, db)
-    config = _validated_config(body.config)
+    config = await _validated_config(body.config)
     name = body.name or config["vault_path"].rstrip("/").rsplit("/", 1)[-1]
 
     dupe = (await db.execute(
@@ -222,18 +225,21 @@ async def list_sources(
     user: ClerkUser = Depends(require_auth),
     db: AsyncSession = Depends(get_db),
 ):
-    from app.integrations.obsidian.adapter import ObsidianAdapter
+    from anyio import to_thread
+
+    from app.integrations import registry
 
     uid = await _uid(user, db)
     sources = list((await db.execute(
         select(StateSource).where(StateSource.user_id == uid).order_by(StateSource.created_at)
     )).scalars())
-    adapter = ObsidianAdapter()
+    adapter = registry.get("obsidian")  # ADR-010: registry, never ad-hoc instantiation
     out = []
     for s in sources:
         health = None
         if s.type == "obsidian":
-            h = adapter.check_source(s.config)
+            # capped vault walk = blocking IO — off the event loop (S3)
+            h = await to_thread.run_sync(adapter.check_source, s.config)
             health = HealthOut(ok=h.ok, detail=h.detail)
         out.append(_source_out(s, health))
     return SourceListResponse(sources=out, total=len(out))
@@ -261,7 +267,7 @@ async def update_source(
     if body.name is not None:
         source.name = body.name
     if body.config is not None:
-        source.config = _validated_config(body.config)
+        source.config = await _validated_config(body.config)
     if body.status is not None:
         source.status = body.status
     await db.commit()
@@ -298,12 +304,19 @@ async def trigger_sync(
         raise HTTPException(status_code=409, detail="Source is paused")
 
     redis = get_redis()
-    # NX guard here gives an immediate 409; the task re-takes/holds the same key.
-    got = await redis.set(sync_lock_key(str(source_id)), "queued", nx=True, ex=LOCK_TTL_S)
+    # NX guard here gives an immediate 409; the task takes over and releases it.
+    key = sync_lock_key(str(source_id))
+    got = await redis.set(key, "queued", nx=True, ex=LOCK_TTL_S)
     if not got:
         raise HTTPException(status_code=409, detail="A sync is already running for this source")
 
-    result = state_sync_task.delay(str(source_id), str(uid), body.direction)
+    try:
+        result = state_sync_task.delay(str(source_id), str(uid), body.direction)
+    except Exception as exc:
+        # Broker down: release the reservation instead of 900s of false 409s.
+        await redis.delete(key)
+        logger.error("sync enqueue failed for %s: %s", source_id, exc)
+        raise HTTPException(status_code=503, detail="Task queue unavailable — try again")
     return SyncSubmittedResponse(task_id=result.id, poll=f"/api/state/sources/{source_id}")
 
 

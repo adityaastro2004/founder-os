@@ -98,19 +98,37 @@ class FakeProvider:
 
 
 async def test_judge_keep_true_and_false():
-    keep, _ = await judge(cand(), FakeProvider('{"keep": true, "reason": "durable"}'), timeout_s=5)
-    assert keep is True
-    keep, _ = await judge(cand(), FakeProvider('{"keep": false, "reason": "trivial"}'), timeout_s=5)
-    assert keep is False
+    keep, _, fail_open = await judge(cand(), FakeProvider('{"keep": true, "reason": "durable"}'), timeout_s=5)
+    assert keep is True and fail_open is False
+    keep, _, fail_open = await judge(cand(), FakeProvider('{"keep": false, "reason": "trivial"}'), timeout_s=5)
+    assert keep is False and fail_open is False
 
 
 async def test_judge_error_and_garbage_fail_open():
-    keep, reason = await judge(cand(), FakeProvider(exc=RuntimeError("down")), timeout_s=5)
-    assert keep is True and "fail-open" in reason
-    keep, _ = await judge(cand(), FakeProvider("not json at all"), timeout_s=5)
-    assert keep is True
+    keep, _, fail_open = await judge(cand(), FakeProvider(exc=RuntimeError("down")), timeout_s=5)
+    assert keep is True and fail_open is True
+    keep, _, fail_open = await judge(cand(), FakeProvider("not json at all"), timeout_s=5)
+    assert keep is True and fail_open is True
 
 
 async def test_judge_timeout_fails_open():
-    keep, reason = await judge(cand(), FakeProvider('{"keep": false}', delay=1.0), timeout_s=0.05)
-    assert keep is True and "fail-open" in reason
+    keep, _, fail_open = await judge(cand(), FakeProvider('{"keep": false}', delay=1.0), timeout_s=0.05)
+    assert keep is True and fail_open is True
+
+
+async def test_judge_fail_open_is_structured_not_string_sniffed():
+    """An LLM reason CONTAINING 'fail-open' must not read as a judge failure."""
+    keep, reason, fail_open = await judge(
+        cand(), FakeProvider('{"keep": true, "reason": "fail-open mindset note"}'), timeout_s=5,
+    )
+    assert keep is True and fail_open is False and "fail-open" in reason
+
+
+# ── S2: filler titles gate ALL types, not just notes ────────────────────
+
+@pytest.mark.parametrize("etype", ["task", "goal", "project", "decision"])
+def test_filler_title_rejected_for_all_types(etype):
+    decision, _ = evaluate(cand(entity_type=etype, title="todo", body=""))
+    assert decision is GateDecision.REJECT
+    decision, _ = evaluate(cand(entity_type=etype, title="test", body=""))
+    assert decision is GateDecision.REJECT

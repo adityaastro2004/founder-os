@@ -289,15 +289,17 @@ def events_for_note(source_id: str, rel_path: str, parsed: ParsedNote, observed_
     is_decision = "decision" in parsed.tags or rel.split("/", 1)[0] == "Decisions"
 
     note_title = parsed.h1 or stem
-    summary = _first_paragraph(parsed.body)
+    # As-built deviation from §3.4 "first 500 chars", recorded in the arch doc:
+    # summary = first real paragraph (≤500) for display quality; the FULL body
+    # travels in the payload (B1) so mirror/gate/hash see everything.
+    summary = _first_paragraph(parsed.body) or parsed.body[:500].strip()
+    body = parsed.body.strip()
+    has_headings = parsed.h1 is not None
     note_eid = external_id_for_note(source_id, rel, fm)
     mentions = [*goal_values, *( [project_name] if project_name else [] )]
-    _ev("obsidian.note", note_eid, {
-        "entity_type": "note", "title": note_title, "summary": summary,
-        "attributes": {"path": rel, "tags": sorted(parsed.tags), "frontmatter": {k: str(v) for k, v in fm.items()}},
-        "relation_hints": {"mentions": mentions},
-    })
 
+    # Order matters (S1): goal/project/decision BEFORE the note so the note's
+    # mentions hints (and tasks' project links) resolve within the same run.
     for value in goal_values:
         _ev("obsidian.goal", f"obsidian:{source_id}:goal:{_sha16(str(value))}", {
             "entity_type": "goal", "title": str(value), "summary": summary,
@@ -314,10 +316,21 @@ def events_for_note(source_id: str, rel_path: str, parsed: ParsedNote, observed_
 
     if is_decision:
         _ev("obsidian.decision", f"obsidian:{source_id}:decision:{rel}", {
-            "entity_type": "decision", "title": note_title, "summary": summary or parsed.body[:500].strip(),
+            "entity_type": "decision", "title": note_title,
+            "summary": summary,
+            "body": body,  # B1: full body → hash/gate/mirror
+            "has_headings": has_headings,
             "attributes": {"path": rel, "tags": sorted(parsed.tags)},
             "relation_hints": {},
         })
+
+    _ev("obsidian.note", note_eid, {
+        "entity_type": "note", "title": note_title, "summary": summary,
+        "body": body,  # B1: full body → hash/gate/mirror; edits below the fold change content_hash
+        "has_headings": has_headings,
+        "attributes": {"path": rel, "tags": sorted(parsed.tags), "frontmatter": {k: str(v) for k, v in fm.items()}},
+        "relation_hints": {"mentions": mentions},
+    })
 
     task_eids: list[str] = []
     for box in parsed.checkboxes:

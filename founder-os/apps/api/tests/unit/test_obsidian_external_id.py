@@ -82,3 +82,39 @@ def test_nested_task_relation_hint():
     child = next(e for e in events if e.payload["title"] == "child")
     parent = next(e for e in events if e.payload["title"] == "parent")
     assert child.payload["relation_hints"]["parent_task_external_id"] == parent.external_id
+
+
+# ── B1: the FULL body travels in note/decision payloads ─────────────────
+
+def test_note_payload_carries_full_body_and_headings_flag():
+    body_p2 = "Second paragraph far below the fold with the important details."
+    text = f"# T\n\nFirst para.\n\n{body_p2}\n"
+    events = events_for_note(SRC, "n.md", parse_note("n.md", text), NOW)
+    note = next(e for e in events if e.kind == "obsidian.note")
+    assert body_p2 in note.payload["body"]
+    assert note.payload["has_headings"] is True
+    assert len(note.payload["summary"]) <= 500
+
+
+def test_below_the_fold_edit_changes_content_hash():
+    from app.state.reconciler import canonical_content_hash
+
+    v1 = "# T\n\nFirst para.\n\nDetails version one.\n"
+    v2 = "# T\n\nFirst para.\n\nDetails version TWO.\n"
+    h = [
+        canonical_content_hash(
+            next(e for e in events_for_note(SRC, "n.md", parse_note("n.md", v), NOW)
+                 if e.kind == "obsidian.note").payload
+        )
+        for v in (v1, v2)
+    ]
+    assert h[0] != h[1], "editing below the first paragraph must change the hash (B1)"
+
+
+# ── S1: goal/project/decision events precede the note event ─────────────
+
+def test_goal_and_project_events_emitted_before_note():
+    text = "---\ngoal: G1\nproject: P1\n---\n# N\nbody\n"
+    kinds = [e.kind for e in events_for_note(SRC, "Projects/x.md", parse_note("Projects/x.md", text), NOW)]
+    assert kinds.index("obsidian.goal") < kinds.index("obsidian.note")
+    assert kinds.index("obsidian.project") < kinds.index("obsidian.note")

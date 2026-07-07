@@ -99,7 +99,9 @@ class Reconciler:
                 user_id=self.user_id, source_id=self.source_id,
                 external_id=event.external_id, kind=event.kind,
                 title=event.payload.get("title", ""),
-                body=event.payload.get("summary") or "",
+                # B1: mirror the FULL body (arch §7 "note and decision bodies");
+                # summary is only the display fallback.
+                body=event.payload.get("body") or event.payload.get("summary") or "",
             ):
                 self.counters.mirrored += 1
 
@@ -167,10 +169,11 @@ class Reconciler:
         candidate = write_gate.EntityCandidate(
             entity_type=p.get("entity_type", "note"),
             title=str(p.get("title", "")),
-            body=str(p.get("summary") or ""),
+            # B1: gate on the full body, not the truncated summary
+            body=str(p.get("body") or p.get("summary") or ""),
             frontmatter_keys=tuple((p.get("attributes") or {}).get("frontmatter", {}).keys()),
             tags=tuple((p.get("attributes") or {}).get("tags", ())),
-            has_headings=False,
+            has_headings=bool(p.get("has_headings", False)),
         )
         decision, _reasons = write_gate.evaluate(candidate)
         if decision is write_gate.GateDecision.REJECT:
@@ -183,11 +186,15 @@ class Reconciler:
         self.counters.judge_calls += 1
         if self._provider is None:
             self._provider = self.provider_factory()
-        keep, reason = await write_gate.judge(candidate, self._provider, self.judge_timeout_s)
+        keep, reason, fail_open = await write_gate.judge(
+            candidate, self._provider, self.judge_timeout_s,
+        )
         if not keep:
             logger.info("write-gate judge rejected %s: %s", event.external_id, reason)
             return None
-        return write_gate.FAIL_OPEN_CONFIDENCE if "fail-open" in reason else 0.700
+        # Structured flag, not reason-string sniffing (review nit): only a real
+        # judge failure downgrades confidence.
+        return write_gate.FAIL_OPEN_CONFIDENCE if fail_open else 0.700
 
     async def _dedup_or_create(self, event, observation, confidence: float):
         p = event.payload
@@ -238,12 +245,12 @@ class Reconciler:
         hints = event.payload.get("relation_hints") or {}
         edges: list[tuple[uuid.UUID, uuid.UUID, str]] = []
 
-        derived = hints.get("derived_from_note")
-        if derived and derived in self._run_entities:
-            edges.append((entity.id, self._run_entities[derived], "derived_from"))
-        parent = hints.get("parent_task_external_id")
-        if parent and parent in self._run_entities:
-            edges.append((entity.id, self._run_entities[parent], "part_of"))
+        derived = await self._resolve_hint(hints.get("derived_from_note"))
+        if derived:
+            edges.append((entity.id, derived, "derived_from"))
+        parent = await self._resolve_hint(hints.get("parent_task_external_id"))
+        if parent:
+            edges.append((entity.id, parent, "part_of"))
 
         proj_name = hints.get("part_of_project")
         if proj_name:
@@ -267,6 +274,27 @@ class Reconciler:
                 """),
                 {"u": str(self.user_id), "s": str(src), "t": str(tgt), "r": rtype},
             )
+
+    async def _resolve_hint(self, external_id: str | None) -> uuid.UUID | None:
+        """Resolve a relation-hint external_id to an entity id.
+
+        In-run map first; fall back to the observation trail (S1) so hints
+        still resolve when the target's event was `unchanged` this run (e.g. a
+        checkbox added to an otherwise-unmodified note).
+        """
+        if not external_id:
+            return None
+        if external_id in self._run_entities:
+            return self._run_entities[external_id]
+        row = (await self.db.execute(
+            text("""
+                SELECT entity_id FROM state_observations
+                WHERE source_id = :sid AND external_id = :eid AND entity_id IS NOT NULL
+                ORDER BY observed_at DESC LIMIT 1
+            """),
+            {"sid": str(self.source_id), "eid": external_id},
+        )).fetchone()
+        return row.entity_id if row else None
 
     async def _find_by_title(self, entity_type: str, title: str) -> uuid.UUID | None:
         norm = " ".join(title.split()).casefold()

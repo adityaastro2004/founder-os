@@ -37,18 +37,18 @@ def test_sync_direction_literal():
         SyncTriggerRequest(direction="sideways")
 
 
-def test_validated_config_rejects_bad_paths_as_422():
+async def test_validated_config_rejects_bad_paths_as_422():
     from fastapi import HTTPException
 
     with pytest.raises(HTTPException) as exc:
-        _validated_config(ObsidianConfig(vault_path="relative/path"))
+        await _validated_config(ObsidianConfig(vault_path="relative/path"))
     assert exc.value.status_code == 422
 
     with pytest.raises(HTTPException) as exc:
-        _validated_config(ObsidianConfig(vault_path="/nonexistent-vault-xyz"))
+        await _validated_config(ObsidianConfig(vault_path="/nonexistent-vault-xyz"))
     assert exc.value.status_code == 422
 
 
-def test_validated_config_appends_managed_folder_to_excludes(tmp_path):
-    cfg = _validated_config(ObsidianConfig(vault_path=str(tmp_path)))
+async def test_validated_config_appends_managed_folder_to_excludes(tmp_path):
+    cfg = await _validated_config(ObsidianConfig(vault_path=str(tmp_path)))
     assert "FounderOS" in cfg["exclude_dirs"]  # never observe our own output
