@@ -33,6 +33,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Optional
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -291,7 +292,7 @@ class MemoryManager:
                 )
                 await session.commit()
 
-            logger.debug("Async stored memory page %s for %s", page_id, user_id)
+            logger.debug("Async stored memory page %s for %s", page_id, sl(user_id))
             return page_id
         except Exception as exc:
             logger.error("async_store() failed: %s", exc)

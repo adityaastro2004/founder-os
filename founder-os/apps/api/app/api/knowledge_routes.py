@@ -50,6 +50,7 @@ from app.retrieval.vector_store import VectorStore
 from app.retrieval.chunker import TextChunker
 from app.retrieval.ingester import Ingester
 from app.retrieval.retriever import ContextRetriever
+from app.log_sanitize import sl
 
 router = APIRouter(prefix="/api/knowledge", tags=["knowledge"])
 
@@ -163,7 +164,7 @@ async def _maybe_autofill_primary_goal(user_id: uuid.UUID, doc_title: str, text:
                 profile.primary_goal_description = note
             await session.commit()
             logger.info(
-                "primary_goal auto-filled from '%s' for user %s", doc_title, user_id
+                "primary_goal auto-filled from '%s' for user %s", sl(doc_title), sl(user_id)
             )
     except Exception:  # background work must never crash or surface to the request
         logger.exception("primary_goal auto-fill failed for user %s", user_id)

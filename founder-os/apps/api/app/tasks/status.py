@@ -18,6 +18,7 @@ import time
 from typing import Any, Optional
 
 import redis.asyncio as aioredis
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +186,7 @@ class TaskStatusService:
             status["user_id"] = user_id
         await self._redis.set(key, json.dumps(status), ex=86400)
 
-        logger.info(f"Task {task_id} cancelled by user")
+        logger.info("Task %s cancelled by user", sl(task_id))
         return status
 
     async def get_task_count(self, user_id: str) -> int:

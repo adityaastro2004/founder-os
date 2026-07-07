@@ -24,6 +24,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import BaseModel, Field
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -363,7 +364,7 @@ def _sync_fetch(user_id: str) -> UserProfile | None:
             if row:
                 return _row_to_profile(row)
     except Exception as exc:
-        logger.error("DB fetch failed for %s: %s", user_id, exc)
+        logger.error("DB fetch failed for %s: %s", sl(user_id), sl(exc))
     return None
 
 

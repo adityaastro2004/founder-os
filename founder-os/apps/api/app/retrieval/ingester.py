@@ -32,6 +32,7 @@ import httpx
 from app.retrieval.chunker import TextChunker, Chunk, count_tokens
 from app.retrieval.embeddings import EmbeddingProvider
 from app.retrieval.vector_store import VectorStore
+from app.log_sanitize import sl
 
 logger = logging.getLogger(__name__)
 
@@ -142,8 +143,8 @@ class Ingester:
         total_tokens = sum(c.token_count for c in chunks)
 
         logger.info(
-            f"Ingested document '{title or doc_id}': "
-            f"{len(chunks)} chunks, {total_tokens} tokens"
+            "Ingested document '%s': %d chunks, %d tokens",
+            sl(title or doc_id), len(chunks), total_tokens,
         )
 
         return IngestionResult(

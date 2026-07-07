@@ -49,6 +49,7 @@ from app.agents.tool_protocol import LocalToolProvider, ToolRegistry
 from app.models import Agent as AgentModel, AgentDefinition, UserAgentConfig
 from app.retrieval.embeddings import EmbeddingProvider, create_embedding_provider
 from app.retrieval.retriever import ContextRetriever
+from app.log_sanitize import sl
 
 
 class AgentRegistry:
@@ -292,11 +293,11 @@ class AgentRegistry:
                 tool_registry.add_provider(mcp_provider)
                 logger.info(
                     "Added MCP provider '%s' for agent '%s'",
-                    mcp_provider.provider_name,
-                    agent_name,
+                    sl(mcp_provider.provider_name),
+                    sl(agent_name),
                 )
         except Exception:
-            logger.exception("Failed to load MCP providers for agent '%s'", agent_name)
+            logger.exception("Failed to load MCP providers for agent '%s'", sl(agent_name))
 
         await tool_registry.refresh()
 
