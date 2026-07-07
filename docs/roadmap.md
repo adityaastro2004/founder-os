@@ -87,6 +87,10 @@
 - **Async interactive plan generation (task 013):** plan gen takes ~486s on local
   ollama (2 sequential 4k-token calls) — move to Celery job + polling. From Phase 0
   audit F1. Status: `next`. See [tasks/backlog/013](../tasks/backlog/013-planner-async-generation.md).
+- **Tech-debt (CodeQL, pre-existing):** 8 `py/incomplete-url-substring-sanitization`
+  findings in `app/crawler/research.py` (URL allowlist checks by substring — use
+  parsed-hostname comparison). Plus ~130 non-security lint alerts (unused imports,
+  empty excepts) — sweep opportunistically. Status: `later`.
 - **Tech-debt (from Phase 0 security review):** HIGH-risk × `always_deny` yields a
   pending approval card instead of an auto-reject — user asked never to be asked.
   Safe (nothing executes without a human) but noisy. Status: `later`.
