@@ -1,0 +1,27 @@
+{
+ "object": "page",
+ "id": "cccccccc-0000-0000-0000-000000000001",
+ "archived": false,
+ "in_trash": false,
+ "created_time": "2026-07-01T09:00:00.000Z",
+ "last_edited_time": "2026-07-08T10:00:00.000Z",
+ "parent": {
+  "type": "workspace",
+  "workspace": true
+ },
+ "properties": {
+  "title": {
+   "type": "title",
+   "title": [
+    {
+     "type": "text",
+     "text": {
+      "content": "Founder OS"
+     },
+     "plain_text": "Founder OS"
+    }
+   ]
+  }
+ },
+ "url": "https://notion.so/cccccccc000000000000000000000001"
+}

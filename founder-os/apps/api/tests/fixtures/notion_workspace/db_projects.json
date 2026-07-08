@@ -1,0 +1,26 @@
+{
+ "object": "database",
+ "id": "aaaaaaaa-0000-0000-0000-000000000003",
+ "archived": false,
+ "in_trash": false,
+ "last_edited_time": "2026-07-08T10:00:00.000Z",
+ "title": [
+  {
+   "type": "text",
+   "text": {
+    "content": "Projects"
+   },
+   "plain_text": "Projects"
+  }
+ ],
+ "parent": {
+  "type": "workspace",
+  "workspace": true
+ },
+ "properties": {
+  "Name": {
+   "type": "title",
+   "title": {}
+  }
+ }
+}

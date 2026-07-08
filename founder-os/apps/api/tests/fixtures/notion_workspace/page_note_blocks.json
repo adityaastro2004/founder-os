@@ -1,0 +1,38 @@
+{
+ "results": [
+  {
+   "object": "block",
+   "id": "f1",
+   "type": "heading_1",
+   "has_children": false,
+   "heading_1": {
+    "rich_text": [
+     {
+      "type": "text",
+      "text": {
+       "content": "Community onboarding idea"
+      },
+      "plain_text": "Community onboarding idea"
+     }
+    ]
+   }
+  },
+  {
+   "object": "block",
+   "id": "f2",
+   "type": "paragraph",
+   "has_children": false,
+   "paragraph": {
+    "rich_text": [
+     {
+      "type": "text",
+      "text": {
+       "content": "Users who join via community Slack activate at a much higher rate. Build a guided onboarding flow pairing signups with community members."
+      },
+      "plain_text": "Users who join via community Slack activate at a much higher rate. Build a guided onboarding flow pairing signups with community members."
+     }
+    ]
+   }
+  }
+ ]
+}

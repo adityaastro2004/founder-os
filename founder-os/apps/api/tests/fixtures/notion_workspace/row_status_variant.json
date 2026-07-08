@@ -1,0 +1,34 @@
+{
+ "object": "page",
+ "id": "dddddddd-0000-0000-0000-000000000010",
+ "archived": false,
+ "in_trash": false,
+ "created_time": "2026-07-01T09:00:00.000Z",
+ "last_edited_time": "2026-07-08T10:00:00.000Z",
+ "parent": {
+  "type": "database_id",
+  "database_id": "aaaaaaaa-0000-0000-0000-00000000000a"
+ },
+ "properties": {
+  "Name": {
+   "type": "title",
+   "title": [
+    {
+     "type": "text",
+     "text": {
+      "content": "Status-driven task"
+     },
+     "plain_text": "Status-driven task"
+    }
+   ]
+  },
+  "State": {
+   "type": "status",
+   "status": {
+    "name": "Done",
+    "group": "Complete"
+   }
+  }
+ },
+ "url": "https://notion.so/dddddddd000000000000000000000010"
+}
