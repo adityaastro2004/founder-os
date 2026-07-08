@@ -209,6 +209,125 @@ def event_for_object(
     )
 
 
+# ── tombstones (arch §3.6.2) ─────────────────────────────────────────────
+
+def classify_tombstone(obj: dict | None) -> str | None:
+    """None obj = confirming GET 404/restricted → 'unshared'. Flags → 'trashed'.
+    Alive object → None (no tombstone)."""
+    if obj is None:
+        return "unshared"
+    if obj.get("in_trash") or obj.get("archived"):
+        return "trashed"
+    return None
+
+
+def tombstone_event(source_id: str, kind: str, notion_uuid: str, *,
+                    reason: str, observed_at) -> ObservedEvent:
+    return ObservedEvent(
+        source="notion",
+        kind="notion.tombstone",
+        external_id=external_id_for(source_id, kind, notion_uuid),
+        payload={"tombstone": True, "reason": reason},
+        observed_at=observed_at,
+    )
+
+
+def should_reactivate(*, entity_archived_at, event_observed_at) -> bool:
+    """Restore-from-trash: a normal event NEWER than the archival reactivates;
+    stale re-walks never resurrect (arch D1)."""
+    return event_observed_at > entity_archived_at
+
+
+# ── outbound: churn-free managed rendering (arch §5) ─────────────────────
+
+STATIC_FOOTER = "> Managed by Founder OS — edits here are overwritten."
+_FOOTER_RE = re.compile(r"^> Managed by Founder OS.*$", re.M)
+_MAX_RICH_TEXT = 2000
+_MAX_BLOCKS_PER_APPEND = 100
+
+
+def prepare_managed_markdown(md: str) -> str:
+    """Swap the renderer's timestamped footer for the static one — any per-sync
+    timestamp would defeat churn-freedom by definition (arch §5)."""
+    return _FOOTER_RE.sub(STATIC_FOOTER, md)
+
+
+def _hash_of(md: str) -> str:
+    import hashlib
+
+    return hashlib.sha256(md.encode("utf-8")).hexdigest()
+
+
+def should_write(ledger: dict, key: str, prepared_md: str) -> bool:
+    """Skip entirely (zero requests) when the ledger hash matches."""
+    entry = (ledger or {}).get(key) or {}
+    return entry.get("hash") != _hash_of(prepared_md)
+
+
+should_write.hash_of = _hash_of  # exposed for ledger updates + tests
+
+
+def _rich_runs(text: str) -> list[dict]:
+    """Inline **bold**/*italic* → annotated runs; split at the 2000-char cap."""
+    runs: list[dict] = []
+    token_re = re.compile(r"(\*\*[^*]+\*\*|\*[^*]+\*)")
+    for part in token_re.split(text):
+        if not part:
+            continue
+        annotations = {}
+        content = part
+        if part.startswith("**") and part.endswith("**") and len(part) > 4:
+            content, annotations = part[2:-2], {"bold": True}
+        elif part.startswith("*") and part.endswith("*") and len(part) > 2:
+            content, annotations = part[1:-1], {"italic": True}
+        for i in range(0, len(content), _MAX_RICH_TEXT):
+            chunk = content[i:i + _MAX_RICH_TEXT]
+            run: dict = {"type": "text", "text": {"content": chunk}}
+            if annotations:
+                run["annotations"] = annotations
+            runs.append(run)
+    return runs or [{"type": "text", "text": {"content": ""}}]
+
+
+def md_to_blocks(md: str) -> list[dict]:
+    """Convert exactly the closed dialect OUR renderer emits (arch §5):
+    #/## headings, - bullets, - [ ]/- [x] to_dos, **bold**/*italic*, > quote.
+    Unknown constructs degrade to plain paragraphs."""
+    blocks: list[dict] = []
+    for raw_line in md.split("\n"):
+        line = raw_line.rstrip()
+        if not line.strip():
+            continue
+        if line.startswith("## "):
+            blocks.append({"object": "block", "type": "heading_2",
+                           "heading_2": {"rich_text": _rich_runs(line[3:])}})
+        elif line.startswith("# "):
+            blocks.append({"object": "block", "type": "heading_1",
+                           "heading_1": {"rich_text": _rich_runs(line[2:])}})
+        elif line.startswith("- [x] ") or line.startswith("- [X] "):
+            blocks.append({"object": "block", "type": "to_do",
+                           "to_do": {"rich_text": _rich_runs(line[6:]), "checked": True}})
+        elif line.startswith("- [ ] "):
+            blocks.append({"object": "block", "type": "to_do",
+                           "to_do": {"rich_text": _rich_runs(line[6:]), "checked": False}})
+        elif line.startswith("- "):
+            blocks.append({"object": "block", "type": "bulleted_list_item",
+                           "bulleted_list_item": {"rich_text": _rich_runs(line[2:])}})
+        elif line.startswith("> "):
+            blocks.append({"object": "block", "type": "quote",
+                           "quote": {"rich_text": _rich_runs(line[2:])}})
+        else:
+            blocks.append({"object": "block", "type": "paragraph",
+                           "paragraph": {"rich_text": _rich_runs(line)}})
+    return blocks
+
+
+def batch_blocks(blocks: list[dict]) -> list[list[dict]]:
+    """API limit: ≤100 blocks per append request."""
+    return [blocks[i:i + _MAX_BLOCKS_PER_APPEND]
+            for i in range(0, len(blocks), _MAX_BLOCKS_PER_APPEND)] or [[]]
+
+
 def events_for_todo_blocks(source_id: str, page: dict, blocks: list[dict]) -> list[ObservedEvent]:
     """to_do blocks inside an observed page → task events (arch §3.4)."""
     page_eid = external_id_for(source_id, "page", page["id"])
