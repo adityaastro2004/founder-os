@@ -39,11 +39,17 @@ class SyncCounters:
     updated: int = 0
     gated: int = 0
     mirrored: int = 0
+    archived: int = 0   # D1 (Phase 2): tombstone transitions
     errors: int = 0
     judge_calls: int = 0
 
     def as_dict(self) -> dict:
         return self.__dict__.copy()
+
+
+def is_tombstone(payload: dict) -> bool:
+    """D1: 'the source says gone' — a payload contract, not a Notion special case."""
+    return bool(payload.get("tombstone"))
 
 
 @dataclass
@@ -73,10 +79,21 @@ class Reconciler:
                 self.counters.unchanged += 1
                 return
 
+            if is_tombstone(event.payload):
+                await self._apply_tombstone(event, inserted)
+                await self.db.commit()
+                return
+
             entity = await self._resolve_hard(event)
             outcome = None
             if entity is not None:
-                changes = dedup_mod.merge(entity, _as_candidate(event), inserted)
+                # Hard resolution = same external identity → retitle is truth (D2)
+                changes = dedup_mod.merge(entity, _as_candidate(event), inserted,
+                                          hard_match=True)
+                # Reactivation (D1): a normal event NEWER than the archival
+                # restores it; stale re-walks never resurrect.
+                if not entity.is_active and event.observed_at > entity.last_asserted_at:
+                    changes["is_active"] = True
                 await self._apply_changes(entity, changes)
                 outcome = "updated"
                 self.counters.updated += 1
@@ -113,6 +130,28 @@ class Reconciler:
             logger.exception("reconcile failed for %s", event.external_id)
 
     # ── steps ────────────────────────────────────────────────────────────
+
+    async def _apply_tombstone(self, event: ObservedEvent, observation_row) -> None:
+        """D1: source says gone. Trail-only resolution (never title-match — too
+        risky for a destructive transition); gated-never-created ids are a
+        clean no-op (arch §13)."""
+        entity_id = await self._resolve_hint(event.external_id)
+        if entity_id is None:
+            await self._finish_observation(observation_row, "archived", None)
+            self.counters.archived += 1
+            return
+        entity = await self.db.get(CompanyStateEntity, entity_id)
+        if entity is not None and entity.user_id == self.user_id:
+            entity.is_active = False
+            if entity.entity_type != "task":
+                entity.status = "archived"
+            await self.db.flush()
+            await mirror_mod.purge_mirror(
+                self.db, user_id=self.user_id, source_id=self.source_id,
+                external_id=event.external_id,
+            )
+        await self._finish_observation(observation_row, "archived", entity_id)
+        self.counters.archived += 1
 
     async def _insert_observation(self, event: ObservedEvent, content_hash: str):
         row = (await self.db.execute(

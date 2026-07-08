@@ -15,11 +15,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
-MIRRORED_KINDS = {"obsidian.note", "obsidian.decision"}
+def kind_mirrors(kind: str) -> bool:
+    """D3 (Phase 2): suffix rule, not a per-source set — adapter #3 needs zero
+    mirror change. Only unstructured recall payloads mirror."""
+    return kind.endswith((".note", ".decision"))
 
 
 def mirror_key(source_id, external_id: str) -> str:
     return f"state://{source_id}/{external_id}"
+
+
+async def purge_mirror(db: AsyncSession, *, user_id: uuid.UUID, source_id, external_id: str) -> None:
+    """Tombstoned entities take their recall rows with them (D1)."""
+    await db.execute(
+        text("DELETE FROM knowledge_items WHERE user_id = :u AND source_url = :k"),
+        {"u": str(user_id), "k": mirror_key(source_id, external_id)},
+    )
 
 
 async def mirror_entity(
@@ -34,7 +45,7 @@ async def mirror_entity(
     body: str,
 ) -> bool:
     """Mirror one changed note/decision body. Returns True if re-ingested."""
-    if kind not in MIRRORED_KINDS or not body.strip():
+    if not kind_mirrors(kind) or not body.strip():
         return False
     key = mirror_key(source_id, external_id)
     await db.execute(

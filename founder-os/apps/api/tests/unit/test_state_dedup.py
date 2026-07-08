@@ -111,3 +111,21 @@ def test_merge_reembed_flag_only_when_summary_changed():
     assert changes["_reembed"] is True
     changes2 = merge(existing_entity(), candidate(summary=None), observation())
     assert changes2.get("_reembed", False) is False
+
+
+# ── D2 (Phase 2): hard_match retitles — a hard external-id match IS the object ──
+
+def test_hard_match_retitles_and_aliases_old():
+    ex = existing_entity()
+    changes = merge(ex, candidate(title="Ship the NEW landing page"), observation(),
+                    hard_match=True)
+    assert changes["title"] == "Ship the NEW landing page"
+    assert "Ship landing page" in changes["attributes"]["aliases"]  # old title kept
+
+
+def test_fuzzy_match_keeps_phase1_semantics():
+    ex = existing_entity()
+    changes = merge(ex, candidate(title="Ship the NEW landing page"), observation(),
+                    hard_match=False)
+    assert "title" not in changes
+    assert "Ship the NEW landing page" in changes["attributes"]["aliases"]

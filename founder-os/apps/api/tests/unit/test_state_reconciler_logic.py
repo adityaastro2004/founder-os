@@ -41,3 +41,25 @@ def test_sync_counters_roundtrip():
     d = c.as_dict()
     assert d["observed"] == 3 and d["created"] == 2 and d["gated"] == 1
     assert set(d) >= {"unchanged", "merged", "updated", "mirrored", "errors", "judge_calls"}
+
+
+def test_sync_counters_include_archived():
+    c = SyncCounters(archived=2)
+    assert c.as_dict()["archived"] == 2
+
+
+def test_tombstone_payload_detection():
+    from app.state.reconciler import is_tombstone
+
+    assert is_tombstone({"tombstone": True, "reason": "trashed"}) is True
+    assert is_tombstone({"entity_type": "note", "title": "x"}) is False
+
+
+def test_mirror_kinds_suffix_rule():
+    """D3: any adapter's .note/.decision kinds mirror — no per-source coupling."""
+    from app.state.mirror import kind_mirrors
+
+    assert kind_mirrors("obsidian.note") and kind_mirrors("obsidian.decision")
+    assert kind_mirrors("notion.note") and kind_mirrors("notion.decision")
+    assert not kind_mirrors("notion.task")
+    assert not kind_mirrors("notion.tombstone")
