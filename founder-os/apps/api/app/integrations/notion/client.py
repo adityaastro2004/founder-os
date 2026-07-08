@@ -28,6 +28,10 @@ class NotionAPIError(Exception):
         self.status = status
 
 
+class ManagedTreeViolation(Exception):
+    """A mutation attempted outside the managed-page ledger ∪ root (P0)."""
+
+
 class NotionAuthError(NotionAPIError):
     """401/403 — token invalid, revoked, or page not shared."""
 
@@ -156,3 +160,92 @@ class NotionClient:
 
     async def get_block_children(self, block_id: str) -> list[dict]:
         return await self._paginate("GET", f"/v1/blocks/{block_id}/children")
+
+    # ── managed-tree jailed write sinks (arch §4) ────────────────────────
+    # Structural rule: these three methods are the ONLY Notion mutations in
+    # the codebase. Ledger-primary jail: update/archive only ids the ledger
+    # owns; create only under root ∪ ledger; parent GET-verified before every
+    # update; founder-moved pages are dropped + recreated, NEVER followed.
+
+    async def _raw_create_page(self, parent_id: str, title: str) -> str:
+        data = await self._request("POST", "/v1/pages", {
+            "parent": {"type": "page_id", "page_id": parent_id},
+            "properties": {"title": {"title": [
+                {"type": "text", "text": {"content": title}}]}},
+        })
+        return data["id"]
+
+    async def _raw_replace_children(self, page_id: str, blocks: list[dict]) -> None:
+        existing = await self._paginate("GET", f"/v1/blocks/{page_id}/children")
+        for block in existing:
+            await self._request("DELETE", f"/v1/blocks/{block['id']}")
+        for i in range(0, len(blocks), 100):
+            await self._request("PATCH", f"/v1/blocks/{page_id}/children",
+                                {"children": blocks[i:i + 100]})
+
+    async def write_managed_page(
+        self,
+        ledger: dict,
+        managed_root_id: str,
+        key: str,
+        title: str,
+        blocks: list[dict],
+        *,
+        parent_key: str | None = None,
+        content_hash: str = "",
+    ) -> str:
+        """Create-or-update the managed page for `key`. Mutates `ledger`."""
+        if parent_key is not None:
+            parent_entry = (ledger or {}).get(parent_key)
+            if not parent_entry:
+                raise ManagedTreeViolation(
+                    f"parent key {parent_key!r} is not in the managed ledger"
+                )
+            parent_id = parent_entry["id"]
+        else:
+            parent_id = managed_root_id
+
+        entry = (ledger or {}).get(key)
+        if entry:
+            page_id = entry["id"]
+            page = None
+            try:
+                page = await self.get_page(page_id)
+            except NotionAPIError as exc:
+                if exc.status != 404:
+                    raise
+            parent = (page or {}).get("parent") or {}
+            legal_parents = {managed_root_id} | {v["id"] for v in ledger.values()}
+            if (
+                page is None
+                or page.get("archived") or page.get("in_trash")
+                or parent.get("page_id") not in legal_parents
+            ):
+                # Founder moved/trashed it: drop from ledger, log, recreate
+                # under the root. NEVER follow a page outside the tree (§4.3).
+                logger.warning(
+                    "managed page for %r moved/gone — recreating under root", key,
+                )
+                del ledger[key]
+                entry = None
+            else:
+                await self._raw_replace_children(page_id, blocks)
+                ledger[key]["hash"] = content_hash
+                return page_id
+
+        page_id = await self._raw_create_page(parent_id, title)
+        # Ledger append BEFORE any further ops (§4.1)
+        ledger[key] = {"id": page_id, "hash": content_hash}
+        if blocks:
+            await self._raw_replace_children(page_id, blocks)
+        return page_id
+
+    async def prune_managed_pages(self, ledger: dict, *, keep: set[str]) -> list[str]:
+        """Archive (never delete) ledger pages absent from the keep-set."""
+        archived: list[str] = []
+        for key in sorted(set(ledger) - set(keep)):
+            page_id = ledger[key]["id"]
+            await self._request("PATCH", f"/v1/pages/{page_id}", {"archived": True})
+            del ledger[key]
+            archived.append(key)
+        return archived
