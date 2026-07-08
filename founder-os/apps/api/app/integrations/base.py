@@ -44,6 +44,10 @@ class SyncResult:
     ok: bool
     pushed: int = 0
     errors: list[str] = field(default_factory=list)
+    # D5 (Phase 2 arch §7): outbound adapters return cursor-ish state (e.g. the
+    # Notion managed-page ledger) here; the SERVICE persists it — adapters never
+    # touch state tables (ADR-010).
+    data: dict[str, Any] = field(default_factory=dict)
 
 
 class IntegrationAdapter(ABC):

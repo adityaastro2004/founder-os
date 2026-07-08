@@ -83,6 +83,14 @@ class Settings(BaseSettings):
     STATE_OBSIDIAN_MAX_FILES: int = 5000
     STATE_OBSIDIAN_MAX_FILE_BYTES: int = 1_048_576
 
+    # ── Notion adapter (arch 2026-07-07 §11) ──
+    STATE_NOTION_MAX_RPS: float = 3.0
+    STATE_NOTION_MAX_RETRIES: int = 5
+    STATE_NOTION_TIMEOUT_S: int = 30
+    STATE_NOTION_MAX_OBJECTS: int = 2000
+    STATE_NOTION_FULL_WALK_EVERY_S: int = 86_400
+    STATE_NOTION_API_VERSION: str = "2022-06-28"
+
     # ── MCP Tool Servers ──
     # External MCP servers (stdio or SSE) to connect to.
     # Each entry: {"name": "...", "transport": "stdio"|"sse", "command": "...",
