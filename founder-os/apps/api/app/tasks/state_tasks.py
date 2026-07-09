@@ -15,14 +15,15 @@ from app.celery_app import celery
 
 logger = logging.getLogger(__name__)
 
-LOCK_TTL_S = 900
+LOCK_TTL_S = 1800  # D7: a capped 2000-object Notion first walk is ~11-15 min of paced network
 
 
 def sync_lock_key(source_id: str) -> str:
     return f"state_sync:{source_id}"
 
 
-async def _run_sync_async(source_id: str, user_id: str, direction: str) -> dict:
+async def _run_sync_async(source_id: str, user_id: str, direction: str,
+                          full_walk: bool = False) -> dict:
     from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
     import redis.asyncio as aioredis
 
@@ -36,7 +37,7 @@ async def _run_sync_async(source_id: str, user_id: str, direction: str) -> dict:
     redis_client = aioredis.from_url(settings.REDIS_URL)
     try:
         service = StateService(session, redis_client)
-        return await service.run_sync(source_id, user_id, direction)
+        return await service.run_sync(source_id, user_id, direction, full_walk=full_walk)
     finally:
         try:
             await session.close()
@@ -51,10 +52,11 @@ async def _run_sync_async(source_id: str, user_id: str, direction: str) -> dict:
     max_retries=0,          # syncs are idempotent + re-triggerable; no auto-retry storms
     acks_late=True,
     track_started=True,
-    soft_time_limit=840,    # < lock TTL so the lock always outlives the task
-    time_limit=870,
+    soft_time_limit=1740,   # < lock TTL so the lock always outlives the task (D7)
+    time_limit=1770,
 )
-def state_sync_task(self: Task, source_id: str, user_id: str, direction: str = "both") -> dict:
+def state_sync_task(self: Task, source_id: str, user_id: str, direction: str = "both",
+                    full_walk: bool = False) -> dict:
     task_id = self.request.id
     logger.info("[Task %s] state sync start: source=%s direction=%s", task_id, source_id, direction)
 
@@ -73,7 +75,7 @@ def state_sync_task(self: Task, source_id: str, user_id: str, direction: str = "
             # Direct invocations (v1.1 watcher) must go through the same
             # reserve-then-enqueue path or accept last-writer-wins.
             await redis_client.set(key, task_id, ex=LOCK_TTL_S)
-            return await _run_sync_async(source_id, user_id, direction)
+            return await _run_sync_async(source_id, user_id, direction, full_walk)
         finally:
             try:
                 await redis_client.delete(key)

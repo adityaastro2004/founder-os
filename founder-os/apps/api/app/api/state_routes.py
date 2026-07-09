@@ -10,11 +10,12 @@ import uuid
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import ClerkUser, require_auth
+from app.config import get_settings
 from app.database import get_db
 from app.redis import get_redis
 from app.state.models import CompanyStateEntity, StateObservation, StateRelation, StateSource
@@ -33,15 +34,25 @@ class ObsidianConfig(BaseModel):
     exclude_dirs: Optional[list[str]] = None
 
 
+class NotionConfig(BaseModel):
+    managed_root_page_id: str = Field(..., min_length=32, max_length=36)
+    # Token travels in the REQUEST BODY ONLY (SecretStr: repr shows '******');
+    # it is popped and upserted into the integrations table — NEVER persisted
+    # in state_sources.config (arch §2.1).
+    token: Optional[SecretStr] = None
+    database_map: Optional[dict[str, Literal["task", "goal", "project", "decision", "note"]]] = None
+    exclude_page_ids: Optional[list[str]] = None
+
+
 class SourceCreateRequest(BaseModel):
-    type: Literal["obsidian"]
+    type: Literal["obsidian", "notion"]
     name: Optional[str] = Field(None, max_length=255)
-    config: ObsidianConfig
+    config: ObsidianConfig | NotionConfig
 
 
 class SourceUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, max_length=255)
-    config: Optional[ObsidianConfig] = None
+    config: Optional[ObsidianConfig | NotionConfig] = None
     status: Optional[Literal["active", "paused"]] = None
 
 
@@ -69,6 +80,7 @@ class SourceListResponse(BaseModel):
 
 class SyncTriggerRequest(BaseModel):
     direction: Literal["both", "inbound", "outbound"] = "both"
+    full_walk: bool = False  # D6: operator escape hatch; forces archival diff (arch §6)
 
 
 class SyncSubmittedResponse(BaseModel):
@@ -155,6 +167,86 @@ async def _validated_config(config: ObsidianConfig) -> dict:
     }
 
 
+async def _upsert_notion_token(db: AsyncSession, uid: uuid.UUID, token: str) -> None:
+    from app.models import Integration
+
+    row = (await db.execute(
+        select(Integration).where(
+            Integration.user_id == uid, Integration.integration_type == "notion",
+        )
+    )).scalar_one_or_none()
+    if row:
+        row.access_token = token
+        row.is_active = True
+    else:
+        db.add(Integration(user_id=uid, integration_type="notion",
+                           display_name="Notion", access_token=token, is_active=True))
+    await db.flush()
+
+
+async def _validated_notion_config(
+    config: NotionConfig, uid: uuid.UUID, db: AsyncSession, *, token_required: bool,
+) -> dict:
+    """Pop the token → integrations upsert → ONE live validation call (arch §2.1).
+    The returned config dict NEVER contains the token."""
+    from app.integrations.credentials import CredentialsMissing, resolve_source_credentials
+    from app.integrations.notion import mapper
+    from app.integrations.notion.client import NotionAPIError, NotionAuthError, NotionClient
+
+    root_id = mapper.normalize_uuid(config.managed_root_page_id)
+    if len(root_id) != 36:
+        raise HTTPException(status_code=422, detail="managed_root_page_id is not a Notion page id")
+
+    token = config.token.get_secret_value() if config.token else None
+    if token:
+        await _upsert_notion_token(db, uid, token)
+    else:
+        class _Src:  # minimal shape for the resolver
+            type = "notion"
+            user_id = uid
+        try:
+            token = (await resolve_source_credentials(db, _Src()))["token"]
+        except CredentialsMissing:
+            if token_required:
+                raise HTTPException(status_code=422, detail="config.token is required — no active Notion integration for this user")
+            token = None
+
+    if token:
+        settings = get_settings()
+        client = NotionClient(token, api_version=settings.STATE_NOTION_API_VERSION,
+                              timeout_s=10)
+        try:
+            page = await client.get_page(root_id)
+            if page.get("archived") or page.get("in_trash"):
+                raise HTTPException(status_code=422, detail="managed root page is archived/trashed")
+        except NotionAuthError:
+            raise HTTPException(status_code=422, detail="Notion token invalid")
+        except NotionAPIError as exc:
+            if exc.status == 404:
+                raise HTTPException(status_code=422, detail="managed root page not shared with the integration")
+            raise HTTPException(status_code=422, detail=f"Notion validation failed (HTTP {exc.status})")
+        finally:
+            await client.close()
+
+    out: dict = {"managed_root_page_id": root_id}
+    if config.database_map:
+        out["database_map"] = {mapper.normalize_uuid(k): v for k, v in config.database_map.items()}
+    if config.exclude_page_ids:
+        out["exclude_page_ids"] = [mapper.normalize_uuid(x) for x in config.exclude_page_ids]
+    return out
+
+
+async def _config_for(body_config, body_type: str, uid: uuid.UUID, db: AsyncSession,
+                      *, token_required: bool) -> dict:
+    if body_type == "notion":
+        if not isinstance(body_config, NotionConfig):
+            raise HTTPException(status_code=422, detail="config shape does not match type=notion")
+        return await _validated_notion_config(body_config, uid, db, token_required=token_required)
+    if not isinstance(body_config, ObsidianConfig):
+        raise HTTPException(status_code=422, detail="config shape does not match type=obsidian")
+    return await _validated_config(body_config)
+
+
 async def _get_source_scoped(source_id: uuid.UUID, uid: uuid.UUID, db: AsyncSession) -> StateSource:
     source = (await db.execute(
         select(StateSource).where(StateSource.id == source_id, StateSource.user_id == uid)
@@ -202,8 +294,12 @@ async def create_source(
     db: AsyncSession = Depends(get_db),
 ):
     uid = await _uid(user, db)
-    config = await _validated_config(body.config)
-    name = body.name or config["vault_path"].rstrip("/").rsplit("/", 1)[-1]
+    config = await _config_for(body.config, body.type, uid, db, token_required=True)
+    if body.type == "obsidian":
+        default_name = config["vault_path"].rstrip("/").rsplit("/", 1)[-1]
+    else:
+        default_name = f"notion-{config['managed_root_page_id'][:8]}"
+    name = body.name or default_name
 
     dupe = (await db.execute(
         select(StateSource).where(
@@ -233,13 +329,27 @@ async def list_sources(
     sources = list((await db.execute(
         select(StateSource).where(StateSource.user_id == uid).order_by(StateSource.created_at)
     )).scalars())
-    adapter = registry.get("obsidian")  # ADR-010: registry, never ad-hoc instantiation
     out = []
+    has_notion_token = None
     for s in sources:
         health = None
         if s.type == "obsidian":
+            adapter = registry.get("obsidian")  # ADR-010: registry lookup
             # capped vault walk = blocking IO — off the event loop (S3)
             h = await to_thread.run_sync(adapter.check_source, s.config)
+            health = HealthOut(ok=h.ok, detail=h.detail)
+        elif s.type == "notion":
+            if has_notion_token is None:
+                from app.integrations.credentials import (
+                    CredentialsMissing, resolve_source_credentials,
+                )
+                try:
+                    await resolve_source_credentials(db, s)
+                    has_notion_token = True
+                except CredentialsMissing:
+                    has_notion_token = False
+            adapter = registry.get("notion")
+            h = adapter.check_source(s.config, has_token=has_notion_token)  # non-network (§8.2)
             health = HealthOut(ok=h.ok, detail=h.detail)
         out.append(_source_out(s, health))
     return SourceListResponse(sources=out, total=len(out))
@@ -267,7 +377,8 @@ async def update_source(
     if body.name is not None:
         source.name = body.name
     if body.config is not None:
-        source.config = await _validated_config(body.config)
+        source.config = await _config_for(body.config, source.type, uid, db,
+                                          token_required=False)
     if body.status is not None:
         source.status = body.status
     await db.commit()
@@ -311,7 +422,8 @@ async def trigger_sync(
         raise HTTPException(status_code=409, detail="A sync is already running for this source")
 
     try:
-        result = state_sync_task.delay(str(source_id), str(uid), body.direction)
+        result = state_sync_task.delay(str(source_id), str(uid), body.direction,
+                                       body.full_walk)
     except Exception as exc:
         # Broker down: release the reservation instead of 900s of false 409s.
         await redis.delete(key)
