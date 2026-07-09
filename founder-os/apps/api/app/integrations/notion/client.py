@@ -101,7 +101,12 @@ class NotionClient:
                         status=429,
                     )
                 retry_after = response.headers.get("Retry-After")
-                wait = float(retry_after) if retry_after else float(2 ** retries)
+                try:
+                    # clamp: the header is remote-controlled (N1); HTTP-date or
+                    # garbage falls back to exponential
+                    wait = min(float(retry_after), 60.0) if retry_after else float(2 ** retries)
+                except ValueError:
+                    wait = float(2 ** retries)
                 self.counters["rate_limit_waits"] += 1
                 retries += 1
                 await self._sleep(wait)
@@ -123,10 +128,14 @@ class NotionClient:
             return response.json()
 
     async def _paginate(self, method: str, path: str, payload: dict | None = None,
-                        *, counter: str | None = None) -> list[dict]:
+                        *, counter: str | None = None,
+                        max_items: int | None = None) -> list[dict]:
         results: list[dict] = []
         cursor: str | None = None
         while True:
+            if max_items is not None and len(results) >= max_items:
+                logger.warning("notion pagination stopped at cap %d on %s", max_items, path)
+                return results[:max_items]
             body = dict(payload or {})
             body["page_size"] = 100
             if cursor:
@@ -148,9 +157,10 @@ class NotionClient:
 
     # ── read endpoints (arch §3.2 complete list) ─────────────────────────
 
-    async def search_all(self, query: str = "") -> list[dict]:
+    async def search_all(self, query: str = "", *, max_objects: int | None = None) -> list[dict]:
         payload: dict = {"query": query} if query else {}
-        return await self._paginate("POST", "/v1/search", payload, counter="search_pages")
+        return await self._paginate("POST", "/v1/search", payload,
+                                    counter="search_pages", max_items=max_objects)
 
     async def get_page(self, page_id: str) -> dict:
         return await self._request("GET", f"/v1/pages/{page_id}")
@@ -240,11 +250,26 @@ class NotionClient:
             await self._raw_replace_children(page_id, blocks)
         return page_id
 
-    async def prune_managed_pages(self, ledger: dict, *, keep: set[str]) -> list[str]:
+    async def prune_managed_pages(self, ledger: dict, *, keep: set[str],
+                                  managed_root_id: str | None = None) -> list[str]:
         """Archive (never delete) ledger pages absent from the keep-set."""
         archived: list[str] = []
+        legal_parents = {v["id"] for v in ledger.values()}
+        if managed_root_id:
+            legal_parents.add(managed_root_id)  # N2 fix: root children are ours
         for key in sorted(set(ledger) - set(keep)):
             page_id = ledger[key]["id"]
+            # verify-or-drop (N2): never archive a page the founder moved out
+            try:
+                page = await self.get_page(page_id)
+            except NotionAPIError as exc:
+                if exc.status == 404:
+                    del ledger[key]
+                    continue
+                raise
+            if page.get("archived") or page.get("in_trash")                     or (page.get("parent") or {}).get("page_id") not in legal_parents:
+                del ledger[key]  # moved/gone — not ours to touch anymore
+                continue
             await self._request("PATCH", f"/v1/pages/{page_id}", {"archived": True})
             del ledger[key]
             archived.append(key)

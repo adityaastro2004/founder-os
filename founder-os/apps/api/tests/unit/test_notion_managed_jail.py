@@ -126,14 +126,32 @@ async def test_founder_moved_page_recreated_never_followed():
 
 async def test_prune_archives_only_ledger_orphans():
     fake = FakeNotion()
+    # a legitimate managed page under root that fell out of the render set
+    fake.pages["99999999-0000-0000-0000-000000000001"] = {
+        "parent": {"type": "page_id", "page_id": ROOT}, "archived": False}
     client = make(fake)
     ledger = {"Tasks.md": {"id": LEDGED, "hash": "x"},
-              "Old.md": {"id": OUTSIDE, "hash": "y"}}  # OUTSIDE is ledgered here
-    archived = await client.prune_managed_pages(ledger, keep={"Tasks.md"})
+              "Old.md": {"id": "99999999-0000-0000-0000-000000000001", "hash": "y"}}
+    archived = await client.prune_managed_pages(ledger, keep={"Tasks.md"},
+                                                managed_root_id=ROOT)
     assert archived == ["Old.md"]
-    assert fake.pages[OUTSIDE]["archived"] is True     # archived, never deleted
+    assert fake.pages["99999999-0000-0000-0000-000000000001"]["archived"] is True
     assert "Old.md" not in ledger and "Tasks.md" in ledger
     assert not any(m == "DELETE" for m, _ in fake.mutations())
+
+
+async def test_prune_drops_founder_moved_page_without_archiving():
+    """N2 verify-or-drop: a ledgered page moved OUTSIDE the tree is dropped
+    from the ledger and never mutated."""
+    fake = FakeNotion()
+    client = make(fake)
+    ledger = {"Moved.md": {"id": OUTSIDE, "hash": "y"}}  # parent = workspace
+    archived = await client.prune_managed_pages(ledger, keep=set(),
+                                                managed_root_id=ROOT)
+    assert archived == []
+    assert fake.pages[OUTSIDE]["archived"] is False
+    assert "Moved.md" not in ledger
+    assert not any(OUTSIDE in p for m, p in fake.mutations())
 
 
 async def test_zero_mutations_outside_ledger_and_root_across_session():
@@ -143,7 +161,7 @@ async def test_zero_mutations_outside_ledger_and_root_across_session():
     ledger = {"Tasks.md": {"id": LEDGED, "hash": "stale"}}
     await client.write_managed_page(ledger, ROOT, "Tasks.md", "Tasks", BLOCKS)
     await client.write_managed_page(ledger, ROOT, "Goals.md", "Goals", BLOCKS)
-    await client.prune_managed_pages(ledger, keep={"Tasks.md", "Goals.md"})
+    await client.prune_managed_pages(ledger, keep={"Tasks.md", "Goals.md"}, managed_root_id=ROOT)
     allowed = {LEDGED, ROOT} | {v["id"] for v in ledger.values()}
     for method, path in fake.mutations():
         if path == "/v1/pages":      # create — parent checked in its own test

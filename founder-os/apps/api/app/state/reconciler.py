@@ -76,6 +76,14 @@ class Reconciler:
             content_hash = canonical_content_hash(event.payload)
             inserted = await self._insert_observation(event, content_hash)
             if inserted is None:  # ON CONFLICT DO NOTHING hit → unchanged
+                # Restore-from-trash with UNCHANGED content conflicts with the
+                # pre-trash observation and would otherwise stay invisible (N6):
+                # if the latest outcome for this id was 'archived' and this is a
+                # normal (non-tombstone) event, the walk proves it is alive.
+                if not is_tombstone(event.payload) and                         await self._reactivate_if_archived(event):
+                    self.counters.updated += 1
+                    await self.db.commit()
+                    return
                 self.counters.unchanged += 1
                 return
 
@@ -313,6 +321,28 @@ class Reconciler:
                 """),
                 {"u": str(self.user_id), "s": str(src), "t": str(tgt), "r": rtype},
             )
+
+    async def _reactivate_if_archived(self, event: ObservedEvent) -> bool:
+        """N6: conflict-path restore. True iff the entity was archived and is
+        now provably alive (a normal event for its id arrived this walk)."""
+        row = (await self.db.execute(
+            text("""
+                SELECT outcome, entity_id FROM state_observations
+                WHERE source_id = :sid AND external_id = :eid
+                ORDER BY observed_at DESC LIMIT 1
+            """),
+            {"sid": str(self.source_id), "eid": event.external_id},
+        )).fetchone()
+        if not row or row.outcome != "archived" or not row.entity_id:
+            return False
+        entity = await self.db.get(CompanyStateEntity, row.entity_id)
+        if entity is None or entity.user_id != self.user_id or entity.is_active:
+            return False
+        entity.is_active = True
+        if entity.entity_type != "task":
+            entity.status = "active"
+        await self.db.flush()
+        return True
 
     async def _resolve_hint(self, external_id: str | None) -> uuid.UUID | None:
         """Resolve a relation-hint external_id to an entity id.

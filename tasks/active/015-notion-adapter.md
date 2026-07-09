@@ -178,6 +178,29 @@ that adding a second source makes the model bigger, not messier.
 - **Adapter-seam claim validated:** lands with no reconciler redesign and no (or
   architect-justified minimal) schema change — the measurable payoff of ADR-010.
 
+## Gate record (2026-07-09)
+
+- **Architecture:** [2026-07-07-phase2-notion-adapter-architecture.md](../../docs/superpowers/specs/2026-07-07-phase2-notion-adapter-architecture.md)
+  — 8 decisions, D1-D9 contract deltas, zero migration (verified). Implemented
+  without redesign.
+- **eng-security: PASS, no blockers.** The §8.4 no-ApprovalGate-on-outbound
+  decision explicitly REVIEWED AND PASSED (standing consent + proven ledger
+  jail). Should-fixes ALL applied same-day: S1 root-page-id hex/dash pattern +
+  canonical-UUID assertion; S2 transitive managed-chain observation exclusion +
+  partial-ledger persistence on outbound failure (feedback-loop prevention);
+  S3 pagination cap enforced during the walk. Nits applied: Retry-After clamp,
+  prune verify-or-drop (+ root-parent fix caught by the jail battery),
+  title whitespace normalization, validate-then-upsert ordering, conflict-path
+  restore-from-trash reactivation (the auditor caught that an un-edited restored
+  page was invisible to the hash short-circuit). N7 recorded: tokens land in the
+  pre-existing plaintext integrations.access_token column (consistent with
+  current standards; encryption-at-rest is a future hardening item).
+- **Unit tier:** 162 passed (26 Notion-specific incl. the 7-case jail battery
+  with recorded-request sweep; MockTransport fixtures, zero network).
+- **eng-reviewer / eng-qa / live E2E:** pending — the live E2E requires the
+  founder's NOTION_TEST_TOKEN + NOTION_TEST_ROOT_PAGE_ID (a skip does NOT
+  satisfy this gate).
+
 ## Out of scope (Phase 2 — explicit)
 - **OAuth public-integration flow** — v1 is a pasted internal-integration token
   (local-first; no callback server, no token exchange). OAuth is a hosted-deployment

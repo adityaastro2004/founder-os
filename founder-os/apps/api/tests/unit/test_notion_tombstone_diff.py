@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 
 from app.integrations.notion.mapper import (
     classify_tombstone,
-    should_reactivate,
     tombstone_event,
 )
 
@@ -28,8 +27,11 @@ def test_tombstone_event_shape():
     assert ev.external_id.endswith(":page:bbbbbbbb-0000-0000-0000-000000000003")
 
 
-def test_reactivation_predicate():
-    # normal event newer than archival → reactivate (restore-from-trash)
-    assert should_reactivate(entity_archived_at=T0, event_observed_at=T1) is True
-    # stale event older than archival → never resurrect
-    assert should_reactivate(entity_archived_at=T1, event_observed_at=T0) is False
+def test_reactivation_lives_in_the_reconciler():
+    """N6: reactivation is the reconciler's job — the unchanged-content restore
+    case is handled on the observation-conflict path (a restored page whose
+    content never changed produces a hash conflict with the pre-trash
+    observation, so a fresh event never fires)."""
+    from app.state import reconciler
+
+    assert hasattr(reconciler.Reconciler, "_reactivate_if_archived")

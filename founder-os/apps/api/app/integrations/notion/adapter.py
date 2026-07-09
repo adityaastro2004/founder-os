@@ -127,10 +127,7 @@ class NotionAdapter(IntegrationAdapter):
             managed_ids.add(mapper.normalize_uuid(source_config["managed_root_page_id"]))
             excludes = {mapper.normalize_uuid(x) for x in source_config.get("exclude_page_ids") or []}
 
-            objects = await client.search_all()
-            if len(objects) >= settings.STATE_NOTION_MAX_OBJECTS:
-                logger.warning("notion walk hit STATE_NOTION_MAX_OBJECTS cap")
-                objects = objects[: settings.STATE_NOTION_MAX_OBJECTS]
+            objects = await client.search_all(max_objects=settings.STATE_NOTION_MAX_OBJECTS)
 
             watermark = cursor.get("last_edited_watermark")
             cutoff = (
@@ -148,6 +145,23 @@ class NotionAdapter(IntegrationAdapter):
             for db_obj in (o for o in objects if o.get("object") == "database"):
                 db_schemas[mapper.normalize_uuid(db_obj["id"])] = db_obj
 
+            # S2: transitive exclusion — any page whose parent CHAIN reaches the
+            # managed root/ledger is engine output (or founder content placed
+            # inside it) and must never be observed (feedback loop).
+            parent_of = {
+                mapper.normalize_uuid(o["id"]):
+                    mapper.normalize_uuid((o.get("parent") or {}).get("page_id") or "")
+                for o in objects if o.get("object") == "page"
+            }
+            def _under_managed(pid: str, _seen=None) -> bool:
+                _seen = _seen or set()
+                while pid and pid not in _seen:
+                    if pid in managed_ids:
+                        return True
+                    _seen.add(pid)
+                    pid = parent_of.get(pid, "")
+                return False
+
             for page in pages:
                 pid = mapper.normalize_uuid(page["id"])
                 title = mapper._title_of(page)
@@ -155,7 +169,7 @@ class NotionAdapter(IntegrationAdapter):
                 edited = _parse_iso(page["last_edited_time"])
                 if max_edited is None or edited > max_edited:
                     max_edited = edited
-                if pid in managed_ids or pid in excludes:
+                if pid in excludes or _under_managed(pid):
                     continue
                 if page.get("archived") or page.get("in_trash"):
                     events.append(mapper.tombstone_event(
@@ -264,13 +278,15 @@ class NotionAdapter(IntegrationAdapter):
                     )
                     pushed += 1
                 keep = set(prepared) | ({"Projects"} if needs_container else set())
-                await client.prune_managed_pages(ledger, keep=keep)
+                await client.prune_managed_pages(ledger, keep=keep, managed_root_id=root)
                 ledger_out = ledger
             except ManagedTreeViolation as exc:
                 logger.error("managed-tree violation during notion sync: %s", exc)
                 errors.append(str(exc))
+                ledger_out = ledger   # S2b: persist partial appends — created ids
             except NotionAPIError as exc:
                 errors.append(str(exc))
+                ledger_out = ledger   # S2b: never orphan engine-created pages
             finally:
                 await client.close()
         return SyncResult(

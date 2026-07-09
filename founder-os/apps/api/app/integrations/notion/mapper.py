@@ -38,12 +38,18 @@ def _plain(rich: list | None) -> str:
     return "".join(r.get("plain_text", "") for r in (rich or []))
 
 
+def _oneline(text: str) -> str:
+    """Collapse whitespace incl. newlines (N3): hostile titles must not inject
+    extra markdown lines into rendered managed pages."""
+    return " ".join(text.split())
+
+
 def _title_of(obj: dict) -> str:
     for prop in (obj.get("properties") or {}).values():
         if prop.get("type") == "title":
-            return _plain(prop.get("title")) or "Untitled"
+            return _oneline(_plain(prop.get("title"))) or "Untitled"
     if obj.get("title"):  # database objects carry title at top level
-        return _plain(obj["title"]) or "Untitled"
+        return _oneline(_plain(obj["title"])) or "Untitled"
     return "Untitled"
 
 
@@ -232,12 +238,6 @@ def tombstone_event(source_id: str, kind: str, notion_uuid: str, *,
     )
 
 
-def should_reactivate(*, entity_archived_at, event_observed_at) -> bool:
-    """Restore-from-trash: a normal event NEWER than the archival reactivates;
-    stale re-walks never resurrect (arch D1)."""
-    return event_observed_at > entity_archived_at
-
-
 # ── outbound: churn-free managed rendering (arch §5) ─────────────────────
 
 STATIC_FOOTER = "> Managed by Founder OS — edits here are overwritten."
@@ -336,7 +336,7 @@ def events_for_todo_blocks(source_id: str, page: dict, blocks: list[dict]) -> li
     for b in blocks or []:
         if b.get("type") != "to_do":
             continue
-        text = _plain((b.get("to_do") or {}).get("rich_text"))
+        text = _oneline(_plain((b.get("to_do") or {}).get("rich_text")))
         if not text:
             continue
         events.append(ObservedEvent(

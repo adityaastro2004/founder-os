@@ -35,7 +35,8 @@ class ObsidianConfig(BaseModel):
 
 
 class NotionConfig(BaseModel):
-    managed_root_page_id: str = Field(..., min_length=32, max_length=36)
+    managed_root_page_id: str = Field(..., min_length=32, max_length=36,
+                                      pattern=r"^[0-9a-fA-F-]{32,36}$")  # S1: hex/dash only
     # Token travels in the REQUEST BODY ONLY (SecretStr: repr shows '******');
     # it is popped and upserted into the integrations table — NEVER persisted
     # in state_sources.config (arch §2.1).
@@ -194,13 +195,15 @@ async def _validated_notion_config(
     from app.integrations.notion.client import NotionAPIError, NotionAuthError, NotionClient
 
     root_id = mapper.normalize_uuid(config.managed_root_page_id)
-    if len(root_id) != 36:
+    # S1: post-normalize it must be a canonical dashed UUID — nothing else may
+    # ever reach a URL path.
+    import re as _re
+    if not _re.fullmatch(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", root_id):
         raise HTTPException(status_code=422, detail="managed_root_page_id is not a Notion page id")
 
     token = config.token.get_secret_value() if config.token else None
-    if token:
-        await _upsert_notion_token(db, uid, token)
-    else:
+    provided_token = token
+    if not token:
         class _Src:  # minimal shape for the resolver
             type = "notion"
             user_id = uid
@@ -227,6 +230,11 @@ async def _validated_notion_config(
             raise HTTPException(status_code=422, detail=f"Notion validation failed (HTTP {exc.status})")
         finally:
             await client.close()
+
+    # N5: upsert only AFTER live validation succeeded — no reliance on
+    # teardown rollback ordering.
+    if provided_token:
+        await _upsert_notion_token(db, uid, provided_token)
 
     out: dict = {"managed_root_page_id": root_id}
     if config.database_map:

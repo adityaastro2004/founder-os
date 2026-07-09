@@ -199,8 +199,6 @@ class StateService:
             change["credentials"] = credentials
             change["ledger"] = (source.sync_cursor or {}).get("managed_pages") or {}
         result = await adapter.sync(user_id, [change])
-        if not result.ok:
-            raise RuntimeError(f"outbound sync failed: {result.errors}")
         report = {"rendered_files": len(files)}
         if result.data:
             # D5: adapter returns the updated ledger; the SERVICE persists it
@@ -210,5 +208,10 @@ class StateService:
                 cursor = dict(source.sync_cursor or {})
                 cursor["managed_pages"] = ledger
                 source.sync_cursor = cursor
-                await self.db.flush()
+                # S2b: persist BEFORE failing — engine-created page ids must
+                # survive a partial outbound failure or the next walk observes
+                # (and duplicates) our own output.
+                await self.db.commit()
+        if not result.ok:
+            raise RuntimeError(f"outbound sync failed: {result.errors}")
         return report
