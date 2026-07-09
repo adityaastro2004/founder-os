@@ -37,7 +37,7 @@ def _env(key: str) -> str | None:
     return None
 
 
-TOKEN = _env("NOTION_TEST_TOKEN")
+TOKEN = _env("NOTION_TEST_TOKEN") or _env("NOTION_ACCESS_TOKEN")
 ROOT = _env("NOTION_TEST_ROOT_PAGE_ID")
 
 pytestmark = [
