@@ -63,7 +63,15 @@ class ObsidianAdapter(IntegrationAdapter):
                 events.extend(await self.observe_source(source.config, str(source.id)))
         return events
 
-    async def observe_source(self, source_config: dict, source_key: str) -> list[ObservedEvent]:
+    async def observe_source(
+        self,
+        source_config: dict,
+        source_key: str,
+        *,
+        credentials: dict | None = None,   # D8: uniform service call shape;
+        sync_cursor: dict | None = None,   # obsidian is credential-less and
+        full_walk: bool = False,           # always full-walk — args ignored
+    ) -> list[ObservedEvent]:
         settings = get_settings()
         vault = client.validate_vault_path(source_config["vault_path"])
         managed = source_config.get("managed_folder", "FounderOS")

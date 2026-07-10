@@ -76,3 +76,22 @@ def test_sync_result_defaults():
     r = SyncResult(ok=True)
     assert r.pushed == 0
     assert r.errors == []
+    # D5 (Phase 2): adapters return cursor-ish state (e.g. the Notion ledger)
+    # without writing state tables themselves (ADR-010).
+    assert r.data == {}
+
+
+async def test_obsidian_observe_source_accepts_uniform_kwargs(tmp_path):
+    """D8: the service calls every adapter with the same shape; obsidian
+    accepts and ignores credentials/sync_cursor/full_walk."""
+    from app.integrations.obsidian.adapter import ObsidianAdapter
+
+    (tmp_path / "n.md").write_text("# N\nbody\n")
+    events = await ObsidianAdapter().observe_source(
+        {"vault_path": str(tmp_path), "managed_folder": "FounderOS"},
+        "src-1",
+        credentials={"token": "ignored"},
+        sync_cursor={"ignored": True},
+        full_walk=True,
+    )
+    assert any(e.kind == "obsidian.note" for e in events)

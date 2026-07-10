@@ -67,9 +67,11 @@ async def lifespan(application: FastAPI):
     await init_redis()
     # Integration adapters (ADR-010): register once; callers use the registry.
     from app.integrations.google_calendar.adapter import register_adapter as register_gcal_adapter
+    from app.integrations.notion.adapter import register_adapter as register_notion_adapter
     from app.integrations.obsidian.adapter import register_adapter as register_obsidian_adapter
     register_gcal_adapter()
     register_obsidian_adapter()
+    register_notion_adapter()
     start_scheduler()
     yield
     # ── Shutdown ──

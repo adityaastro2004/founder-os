@@ -24,7 +24,7 @@
   |-------|---------|--------|
   | 0 | Foundation revamp — audit → repair → reshape (task 012) | `done` (2026-07-03) |
   | 1 | State Engine core + Obsidian sync (task 011) | `done` (2026-07-07) |
-  | 2 | Notion adapter (same engine/ABC) | `next` |
+  | 2 | Notion adapter (same engine/ABC) — [task 015](../tasks/active/015-notion-adapter.md) | `now` |
   | 3 | Hermes skills feed (`system` feed) | `later` |
   | 4 | Paperclip (paperclip.ing) via MCP | `later` |
   | 5 | Deployment — Docker images + runbook | `later` |

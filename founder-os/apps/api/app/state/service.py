@@ -56,11 +56,14 @@ class StateService:
         self.db = db
         self.redis = redis
 
-    async def run_sync(self, source_id: str, user_id: str, direction: str = "both") -> dict:
+    async def run_sync(self, source_id: str, user_id: str, direction: str = "both",
+                       full_walk: bool = False) -> dict:
         """Run one sync for one source. Returns the sync report dict."""
-        from app.integrations.obsidian.adapter import register_adapter
+        from app.integrations.notion.adapter import register_adapter as register_notion
+        from app.integrations.obsidian.adapter import register_adapter as register_obsidian
 
-        register_adapter()  # idempotent; worker processes have no lifespan
+        register_obsidian()  # idempotent; worker processes have no lifespan
+        register_notion()
         settings = get_settings()
         started = time.monotonic()
 
@@ -81,10 +84,14 @@ class StateService:
 
         report: dict = {}
         try:
+            credentials = await self._credentials_for(source)
             if direction in ("both", "inbound"):
-                report.update(await self._inbound(source, adapter, settings))
+                report.update(await self._inbound(source, adapter, settings,
+                                                  credentials=credentials,
+                                                  full_walk=full_walk))
             if direction in ("both", "outbound"):
-                report.update(await self._outbound(source, adapter, user_id))
+                report.update(await self._outbound(source, adapter, user_id,
+                                                   credentials=credentials))
             report["duration_s"] = round(time.monotonic() - started, 2)
             source.status = "active"
             source.last_error = None
@@ -99,13 +106,50 @@ class StateService:
             await self.db.commit()
             raise
 
-    async def _inbound(self, source: StateSource, adapter, settings) -> dict:
+    async def _credentials_for(self, source: StateSource) -> dict:
+        from app.integrations.credentials import resolve_source_credentials
+
+        return await resolve_source_credentials(self.db, source)
+
+    async def _seen_notion_uuids(self, source: StateSource) -> set[str]:
+        """Seen-set from the DB, not the cursor (arch §1): distinct page uuids
+        this source has fed into ACTIVE entities — the full-walk diff input."""
+        from sqlalchemy import text as sql_text
+
+        rows = (await self.db.execute(sql_text("""
+            SELECT DISTINCT o.external_id
+            FROM state_observations o
+            JOIN company_state_entities e ON e.id = o.entity_id
+            WHERE o.source_id = :sid AND e.is_active = true
+        """), {"sid": str(source.id)})).fetchall()
+        out: set[str] = set()
+        for (eid,) in rows:
+            parts = eid.split(":")
+            if len(parts) == 4 and parts[2] == "page":
+                out.add(parts[3])
+        return out
+
+    async def _inbound(self, source: StateSource, adapter, settings, *,
+                       credentials: dict, full_walk: bool = False) -> dict:
         from app.retrieval.chunker import TextChunker
         from app.retrieval.embeddings import get_default_embedder
         from app.retrieval.ingester import Ingester
         from app.retrieval.vector_store import VectorStore
 
-        events = await adapter.observe_source(source.config, str(source.id))
+        kwargs: dict = {
+            "credentials": credentials,
+            "sync_cursor": source.sync_cursor,
+            "full_walk": full_walk,
+        }
+        if source.type == "notion":
+            kwargs["seen_external_uuids"] = await self._seen_notion_uuids(source)
+        observed = await adapter.observe_source(source.config, str(source.id), **kwargs)
+        # D4: notion returns (events, new_cursor); obsidian returns a bare list
+        new_cursor_fields: dict = {}
+        if isinstance(observed, tuple):
+            events, new_cursor_fields = observed
+        else:
+            events = observed
         embedder = get_default_embedder(self.redis)
         ingester = Ingester(
             vector_store=VectorStore(self.db),
@@ -125,9 +169,28 @@ class StateService:
         )
         for event in events:
             await reconciler.reconcile_event(event)
-        return reconciler.counters.as_dict()
 
-    async def _outbound(self, source: StateSource, adapter, user_id: str) -> dict:
+        report = reconciler.counters.as_dict()
+        if new_cursor_fields:
+            api_counters = new_cursor_fields.pop("_counters", {})
+            report.update(api_counters)
+            if reconciler.counters.errors == 0:
+                # cursor persists ONLY after a fully-successful inbound pass
+                # (arch §6 + S3: a failed event's page must not be skipped
+                # behind an advanced watermark for up to 24h)
+                cursor = dict(source.sync_cursor or {})
+                cursor.update(new_cursor_fields)
+                source.sync_cursor = cursor
+                await self.db.flush()
+            else:
+                logger.warning(
+                    "cursor NOT advanced: %d reconcile error(s) this pass",
+                    reconciler.counters.errors,
+                )
+        return report
+
+    async def _outbound(self, source: StateSource, adapter, user_id: str, *,
+                        credentials: dict) -> dict:
         entities = list((await self.db.execute(
             select(CompanyStateEntity).where(
                 CompanyStateEntity.user_id == uuid.UUID(user_id),
@@ -139,7 +202,24 @@ class StateService:
         )).scalars())
 
         files = render(entities, relations, now=datetime.now(timezone.utc))
-        result = await adapter.sync(user_id, [{"config": source.config, "files": files}])
+        change: dict = {"config": source.config, "files": files}
+        if source.type == "notion":
+            change["credentials"] = credentials
+            change["ledger"] = (source.sync_cursor or {}).get("managed_pages") or {}
+        result = await adapter.sync(user_id, [change])
+        report = {"rendered_files": len(files)}
+        if result.data:
+            # D5: adapter returns the updated ledger; the SERVICE persists it
+            ledger = result.data.pop("managed_pages", None)
+            report.update(result.data)
+            if ledger is not None:
+                cursor = dict(source.sync_cursor or {})
+                cursor["managed_pages"] = ledger
+                source.sync_cursor = cursor
+                # S2b: persist BEFORE failing — engine-created page ids must
+                # survive a partial outbound failure or the next walk observes
+                # (and duplicates) our own output.
+                await self.db.commit()
         if not result.ok:
             raise RuntimeError(f"outbound sync failed: {result.errors}")
-        return {"rendered_files": len(files)}
+        return report

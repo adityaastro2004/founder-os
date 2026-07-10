@@ -51,20 +51,26 @@ async def find_similar(
     return None, float(best.similarity)
 
 
-def merge(existing: Any, candidate: Any, observation: Any) -> dict:
-    """Fold a near-duplicate candidate into the existing entity (arch §2.5).
+def merge(existing: Any, candidate: Any, observation: Any, *, hard_match: bool = False) -> dict:
+    """Fold a candidate into the existing entity (arch §2.5 + Phase 2 D2).
 
-    Returns the change-dict to apply; existing row survives. `_reembed` signals
-    the caller to refresh the embedding (only when summary changed).
+    hard_match=False (fuzzy dedup): existing title survives, incoming → alias.
+    hard_match=True (same external identity — Notion UUID, obsidian
+    founderos_id): the incoming title IS the truth → retitle, old title → alias.
+    Returns the change-dict; `_reembed` signals an embedding refresh.
     """
     changes: dict = {}
     attrs = dict(existing.attributes or {})
     aliases = list(attrs.get("aliases") or [])
 
-    # title: keep existing (stability for relations/rendering); incoming → alias
     inc_title = (candidate.title or "").strip()
-    if inc_title and inc_title != existing.title and inc_title not in aliases:
-        aliases.append(inc_title)
+    if inc_title and inc_title != existing.title:
+        if hard_match:
+            changes["title"] = inc_title            # D2: retitle is truth
+            if existing.title not in aliases:
+                aliases.append(existing.title)
+        elif inc_title not in aliases:
+            aliases.append(inc_title)
     aliases = aliases[:MAX_ALIASES]
 
     # attributes: shallow merge, incoming wins per key — except aliases (append)

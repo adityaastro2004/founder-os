@@ -1,0 +1,30 @@
+{
+ "object": "database",
+ "id": "aaaaaaaa-0000-0000-0000-00000000000b",
+ "archived": false,
+ "in_trash": false,
+ "last_edited_time": "2026-07-08T10:00:00.000Z",
+ "title": [
+  {
+   "type": "text",
+   "text": {
+    "content": "Pipeline"
+   },
+   "plain_text": "Pipeline"
+  }
+ ],
+ "parent": {
+  "type": "workspace",
+  "workspace": true
+ },
+ "properties": {
+  "Name": {
+   "type": "title",
+   "title": {}
+  },
+  "Status": {
+   "type": "select",
+   "select": {}
+  }
+ }
+}
