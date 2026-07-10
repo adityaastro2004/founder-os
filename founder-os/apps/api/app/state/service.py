@@ -174,11 +174,19 @@ class StateService:
         if new_cursor_fields:
             api_counters = new_cursor_fields.pop("_counters", {})
             report.update(api_counters)
-            # cursor persists ONLY after a successful inbound pass (arch §6)
-            cursor = dict(source.sync_cursor or {})
-            cursor.update(new_cursor_fields)
-            source.sync_cursor = cursor
-            await self.db.flush()
+            if reconciler.counters.errors == 0:
+                # cursor persists ONLY after a fully-successful inbound pass
+                # (arch §6 + S3: a failed event's page must not be skipped
+                # behind an advanced watermark for up to 24h)
+                cursor = dict(source.sync_cursor or {})
+                cursor.update(new_cursor_fields)
+                source.sync_cursor = cursor
+                await self.db.flush()
+            else:
+                logger.warning(
+                    "cursor NOT advanced: %d reconcile error(s) this pass",
+                    reconciler.counters.errors,
+                )
         return report
 
     async def _outbound(self, source: StateSource, adapter, user_id: str, *,

@@ -127,19 +127,24 @@ class NotionAdapter(IntegrationAdapter):
             managed_ids.add(mapper.normalize_uuid(source_config["managed_root_page_id"]))
             excludes = {mapper.normalize_uuid(x) for x in source_config.get("exclude_page_ids") or []}
 
-            objects = await client.search_all(max_objects=settings.STATE_NOTION_MAX_OBJECTS)
-
             watermark = cursor.get("last_edited_watermark")
             cutoff = (
                 _parse_iso(watermark) - timedelta(seconds=WATERMARK_OVERLAP_S)
                 if (watermark and not do_full) else None
             )
+            if cutoff is not None:
+                # S1: incremental = newest-first scan that STOPS at the
+                # watermark window — O(edits), not O(workspace).
+                objects = await client.search_since(
+                    _iso(cutoff), max_objects=settings.STATE_NOTION_MAX_OBJECTS)
+            else:
+                objects = await client.search_all(
+                    max_objects=settings.STATE_NOTION_MAX_OBJECTS)
 
             db_schemas: dict[str, dict] = {}
             events: list[ObservedEvent] = []
             walked_page_uuids: set[str] = set()
             max_edited: datetime | None = None
-            page_titles: dict[str, str] = {}
 
             pages = [o for o in objects if o.get("object") == "page"]
             for db_obj in (o for o in objects if o.get("object") == "database"):
@@ -153,6 +158,12 @@ class NotionAdapter(IntegrationAdapter):
                     mapper.normalize_uuid((o.get("parent") or {}).get("page_id") or "")
                 for o in objects if o.get("object") == "page"
             }
+            # S2: titles pre-pass — heuristics like "parent titled Decisions"
+            # must not depend on search iteration order.
+            page_titles = {
+                mapper.normalize_uuid(o["id"]): mapper.title_of(o)
+                for o in objects if o.get("object") == "page"
+            }
             def _under_managed(pid: str, _seen=None) -> bool:
                 _seen = _seen or set()
                 while pid and pid not in _seen:
@@ -164,8 +175,6 @@ class NotionAdapter(IntegrationAdapter):
 
             for page in pages:
                 pid = mapper.normalize_uuid(page["id"])
-                title = mapper._title_of(page)
-                page_titles[pid] = title
                 edited = _parse_iso(page["last_edited_time"])
                 if max_edited is None or edited > max_edited:
                     max_edited = edited
@@ -193,11 +202,11 @@ class NotionAdapter(IntegrationAdapter):
                 needs_body = parent.get("type") != "database_id" or (
                     (source_config.get("database_map") or {}).get(
                         mapper.normalize_uuid(parent.get("database_id", ""))) == "decision"
-                    or (schema and mapper._plain(schema.get("title")).casefold().strip()
+                    or (schema and mapper.plain_text(schema.get("title")).casefold().strip()
                         in mapper.DECISION_DB_TITLES)
                 )
                 if needs_body:
-                    blocks = await client.get_block_children(page["id"])
+                    blocks = await client.get_blocks_recursive(page["id"], depth=3)
 
                 event = mapper.event_for_object(
                     source_key, page,

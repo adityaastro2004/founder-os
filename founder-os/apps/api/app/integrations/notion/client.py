@@ -85,9 +85,21 @@ class NotionClient:
         while True:
             await self._pace()
             self.counters["api_requests"] += 1
-            response = await self._client.request(
-                method, path, json=payload, headers=self._headers,
-            )
+            try:
+                response = await self._client.request(
+                    method, path, json=payload, headers=self._headers,
+                )
+            except httpx.HTTPError as exc:
+                # S4: transport failures become typed errors (never raw httpx
+                # messages in last_error) and retry like 5xx — mid-outbound
+                # timeouts are routine against a remote API.
+                if transient_retries >= 2:
+                    raise NotionAPIError(
+                        f"Notion transport error ({type(exc).__name__}) on {method} {path}",
+                    ) from None
+                transient_retries += 1
+                await self._sleep(float(2 ** transient_retries))
+                continue
             if response.status_code in (401, 403):
                 raise NotionAuthError(
                     f"Notion auth failed ({response.status_code}) on {method} {path} "
@@ -158,9 +170,38 @@ class NotionClient:
     # ── read endpoints (arch §3.2 complete list) ─────────────────────────
 
     async def search_all(self, query: str = "", *, max_objects: int | None = None) -> list[dict]:
-        payload: dict = {"query": query} if query else {}
+        """Full enumeration, newest-first (S1): with the sort, the object cap
+        keeps the NEWEST objects — recent edits can never be silently dropped."""
+        payload: dict = {"sort": {"direction": "descending", "timestamp": "last_edited_time"}}
+        if query:
+            payload["query"] = query
         return await self._paginate("POST", "/v1/search", payload,
                                     counter="search_pages", max_items=max_objects)
+
+    async def search_since(self, cutoff_iso: str, *, max_objects: int | None = None) -> list[dict]:
+        """Incremental primitive (arch §6/S1): newest-first pagination that
+        STOPS once a page older than the cutoff appears — O(edits), not
+        O(workspace)."""
+        payload: dict = {"sort": {"direction": "descending", "timestamp": "last_edited_time"}}
+        results: list[dict] = []
+        cursor: str | None = None
+        while True:
+            body = dict(payload)
+            body["page_size"] = 100
+            if cursor:
+                body["start_cursor"] = cursor
+            data = await self._request("POST", "/v1/search", body)
+            self.counters["search_pages"] += 1
+            batch = data.get("results", [])
+            for obj in batch:
+                if (obj.get("last_edited_time") or "9999") < cutoff_iso:
+                    return results
+                results.append(obj)
+                if max_objects is not None and len(results) >= max_objects:
+                    return results
+            if not data.get("has_more") or not data.get("next_cursor"):
+                return results
+            cursor = data["next_cursor"]
 
     async def get_page(self, page_id: str) -> dict:
         return await self._request("GET", f"/v1/pages/{page_id}")
@@ -170,6 +211,19 @@ class NotionClient:
 
     async def get_block_children(self, block_id: str) -> list[dict]:
         return await self._paginate("GET", f"/v1/blocks/{block_id}/children")
+
+    async def get_blocks_recursive(self, block_id: str, *, depth: int = 3) -> list[dict]:
+        """Flattened text-bearing blocks, recursing into children (arch §3.3,
+        depth cap 3 — S8: nested to_dos/bullets under toggles must not vanish)."""
+        blocks = await self.get_block_children(block_id)
+        if depth <= 1:
+            return blocks
+        out: list[dict] = []
+        for b in blocks:
+            out.append(b)
+            if b.get("has_children") and b.get("type") not in ("child_page", "child_database"):
+                out.extend(await self.get_blocks_recursive(b["id"], depth=depth - 1))
+        return out
 
     # ── managed-tree jailed write sinks (arch §4) ────────────────────────
     # Structural rule: these three methods are the ONLY Notion mutations in

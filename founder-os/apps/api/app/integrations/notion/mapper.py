@@ -44,6 +44,16 @@ def _oneline(text: str) -> str:
     return " ".join(text.split())
 
 
+def title_of(obj: dict) -> str:
+    """Public alias — adapters must not reach for private helpers."""
+    return _title_of(obj)
+
+
+def plain_text(rich: list | None) -> str:
+    """Public alias for rich-text extraction."""
+    return _plain(rich)
+
+
 def _title_of(obj: dict) -> str:
     for prop in (obj.get("properties") or {}).values():
         if prop.get("type") == "title":
@@ -96,9 +106,9 @@ def derive_status(props: dict, schema_props: dict) -> tuple[str | None, str | No
     for name, sp in (schema_props or {}).items():
         if sp.get("type") == "status":
             group = ((props.get(name) or {}).get("status") or {}).get("group")
-            name_val = ((props.get(name) or {}).get("status") or {}).get("name", "")
-            done = group == "Complete" or name_val.casefold() in DONE_SELECT_VALUES
-            return ("done" if done else "open"), name
+            # §3.5 strict: done iff the status GROUP is Complete (name-based
+            # leniency was an undocumented deviation — reviewer nit)
+            return ("done" if group == "Complete" else "open"), name
     for name, sp in (schema_props or {}).items():
         if sp.get("type") == "select" and name.casefold() == "status":
             value = ((props.get(name) or {}).get("select") or {}).get("name", "") or ""
@@ -166,6 +176,13 @@ def event_for_object(
     if parent.get("type") == "database_id":
         db_id = parent["database_id"]
         schema = db_schemas.get(db_id) or db_schemas.get(normalize_uuid(db_id)) or {}
+        # B2: a row whose DATABASE sits under an observed page inherits that
+        # page as project context (arch §3.4: part_of_project = its title).
+        db_parent_pid = normalize_uuid(
+            ((schema.get("parent") or {}).get("page_id")) or "")
+        db_parent_title = (parent_titles or {}).get(db_parent_pid)
+        if db_parent_title:
+            hints["part_of_project"] = db_parent_title
         routed = _route_db_row(schema, database_map, db_id)
         derived, status_prop = derive_status(props, schema.get("properties") or {})
         if routed:
@@ -188,9 +205,13 @@ def event_for_object(
         if db_title:
             attributes["database"] = db_title
     else:
-        parent_title = (parent_titles or {}).get(parent.get("page_id", ""), "")
+        parent_pid = normalize_uuid(parent.get("page_id") or "")
+        parent_title = (parent_titles or {}).get(parent_pid, "")
         if parent_title.casefold() == "decisions":
             entity_type = "decision"
+        # B2: page-under-page containment → derived_from the observed parent
+        if parent_pid and parent_pid in (parent_titles or {}):
+            hints["derived_from_note"] = external_id_for(source_id, "page", parent_pid)
 
     body, has_headings = blocks_to_body(blocks or [])
     summary = (body.split("\n\n")[0] if body else "")[:500]

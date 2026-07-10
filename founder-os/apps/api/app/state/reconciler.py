@@ -80,7 +80,16 @@ class Reconciler:
                 # pre-trash observation and would otherwise stay invisible (N6):
                 # if the latest outcome for this id was 'archived' and this is a
                 # normal (non-tombstone) event, the walk proves it is alive.
-                if not is_tombstone(event.payload) and                         await self._reactivate_if_archived(event):
+                if is_tombstone(event.payload):
+                    # B3: trash→restore→trash-again re-emits an IDENTICAL
+                    # tombstone (constant payload) that conflicts with the
+                    # first one — apply it symmetrically to N6 or the entity
+                    # stays active forever.
+                    if await self._archive_if_active(event):
+                        self.counters.archived += 1
+                        await self.db.commit()
+                        return
+                elif await self._reactivate_if_archived(event):
                     self.counters.updated += 1
                     await self.db.commit()
                     return
@@ -139,6 +148,46 @@ class Reconciler:
 
     # ── steps ────────────────────────────────────────────────────────────
 
+    async def _latest_asserter(self, entity_id) -> str | None:
+        """external_id of the most recent NON-tombstone observation feeding the
+        entity (S5: dedup-merged multi-feeder entities must not be archived
+        while a surviving feeder still asserts them — architect-line decision:
+        trust the most recent asserter, recorded in task 015's gate record)."""
+        row = (await self.db.execute(
+            text("""
+                SELECT external_id FROM state_observations
+                WHERE entity_id = :e AND outcome IN ('created','merged','updated')
+                ORDER BY observed_at DESC LIMIT 1
+            """),
+            {"e": str(entity_id)},
+        )).fetchone()
+        return row.external_id if row else None
+
+    async def _archive_entity(self, entity, external_id: str) -> None:
+        entity.is_active = False
+        if entity.entity_type != "task":
+            entity.status = "archived"
+        await self.db.flush()
+        await mirror_mod.purge_mirror(
+            self.db, user_id=self.user_id, source_id=self.source_id,
+            external_id=external_id,
+        )
+
+    async def _archive_if_active(self, event: ObservedEvent) -> bool:
+        """B3 conflict-path tombstone: trail-resolve; archive iff still active
+        AND this page is the entity's latest asserter (S5)."""
+        entity_id = await self._resolve_hint(event.external_id)
+        if entity_id is None:
+            return False
+        entity = await self.db.get(CompanyStateEntity, entity_id)
+        if entity is None or entity.user_id != self.user_id or not entity.is_active:
+            return False
+        latest = await self._latest_asserter(entity_id)
+        if latest is not None and latest != event.external_id:
+            return False  # a surviving feeder still asserts it (S5)
+        await self._archive_entity(entity, event.external_id)
+        return True
+
     async def _apply_tombstone(self, event: ObservedEvent, observation_row) -> None:
         """D1: source says gone. Trail-only resolution (never title-match — too
         risky for a destructive transition); gated-never-created ids are a
@@ -150,14 +199,11 @@ class Reconciler:
             return
         entity = await self.db.get(CompanyStateEntity, entity_id)
         if entity is not None and entity.user_id == self.user_id:
-            entity.is_active = False
-            if entity.entity_type != "task":
-                entity.status = "archived"
-            await self.db.flush()
-            await mirror_mod.purge_mirror(
-                self.db, user_id=self.user_id, source_id=self.source_id,
-                external_id=event.external_id,
-            )
+            latest = await self._latest_asserter(entity_id)
+            if latest is None or latest == event.external_id:
+                await self._archive_entity(entity, event.external_id)
+            # else (S5): another feeder still asserts the merged entity —
+            # record the tombstone observation but keep the entity active.
         await self._finish_observation(observation_row, "archived", entity_id)
         self.counters.archived += 1
 

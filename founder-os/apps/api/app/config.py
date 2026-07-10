@@ -84,6 +84,13 @@ class Settings(BaseSettings):
     STATE_OBSIDIAN_MAX_FILE_BYTES: int = 1_048_576
 
     # ── Notion adapter (arch 2026-07-07 §11) ──
+    # Live-test-only credentials (B1): declared so a founder-populated .env can
+    # never crash Settings() with extra_forbidden — which would kill API boot,
+    # the worker, Alembic, AND echo the token into boot logs. The PRODUCT token
+    # is never env; it lives on the integrations table (arch §2).
+    NOTION_TEST_TOKEN: str = ""
+    NOTION_TEST_ROOT_PAGE_ID: str = ""
+    NOTION_ACCESS_TOKEN: str = ""  # founder-chosen alias accepted by the live suite
     STATE_NOTION_MAX_RPS: float = 3.0
     STATE_NOTION_MAX_RETRIES: int = 5
     STATE_NOTION_TIMEOUT_S: int = 30

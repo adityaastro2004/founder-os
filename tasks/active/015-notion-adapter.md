@@ -197,9 +197,34 @@ that adding a second source makes the model bigger, not messier.
   current standards; encryption-at-rest is a future hardening item).
 - **Unit tier:** 162 passed (26 Notion-specific incl. the 7-case jail battery
   with recorded-request sweep; MockTransport fixtures, zero network).
-- **eng-reviewer / eng-qa / live E2E:** pending — the live E2E requires the
-  founder's NOTION_TEST_TOKEN + NOTION_TEST_ROOT_PAGE_ID (a skip does NOT
-  satisfy this gate).
+- **eng-reviewer: REQUEST CHANGES → all findings fixed** (full review of
+  ffea374..HEAD; a first attempt died on a subagent session limit). Blockers:
+  B1 — a founder-populated `.env` crashed `Settings()` with `extra_forbidden`
+  AND echoed the token into boot logs (test-only fields now declared on
+  Settings; recovery live-verified — the API was actually down from this);
+  B2 — containment relations were never emitted (mapper hints now carry
+  page→parent `derived_from` and db-under-page `part_of_project`);
+  B3 — trash→restore→trash-again left entities active forever (conflict-path
+  tombstone application, symmetric to the N6 reactivation).
+  Should-fixes applied: S1 incremental sync is now the §6 primitive (sorted
+  search + watermark early-stop; the unsorted cap could silently drop recent
+  edits in >2000-object workspaces); S2 title-map pre-pass (iteration-order
+  bug in the Decisions-parent heuristic); S3 cursor no longer advances past
+  reconcile-failed events; S4 transport errors typed + retried (makes the
+  S2b partial-ledger persistence actually reachable on timeouts); S5
+  **architect-line decision recorded**: a tombstone archives a dedup-merged
+  multi-feeder entity only when the trashed page is its LATEST asserter;
+  S6 E2E hardened (seed-reuse restores mutated state, relations/external_ref/
+  mirror-purge/never-resurrected asserts, unshared-page manual control
+  documented); S7 adapter composition unit tests; S8 recursive block fetch
+  (depth 3). Nits: §3.5 status-group strictness, public mapper aliases,
+  registration-client retry cap.
+- **eng-qa / live E2E:** pending — needs the founder's root page shared with
+  the integration + `NOTION_TEST_ROOT_PAGE_ID` in `.env` (token verified valid;
+  currently ZERO objects shared). A skip does NOT satisfy this gate.
+- **Founder token rotation recommended:** the B1 crash echoed the token into
+  `logs/api.log` (gitignored, local-only) before the fix — rotate the secret in
+  Notion when convenient.
 
 ## Out of scope (Phase 2 — explicit)
 - **OAuth public-integration flow** — v1 is a pasted internal-integration token

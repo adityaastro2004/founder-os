@@ -217,7 +217,7 @@ async def _validated_notion_config(
     if token:
         settings = get_settings()
         client = NotionClient(token, api_version=settings.STATE_NOTION_API_VERSION,
-                              timeout_s=10)
+                              timeout_s=10, max_retries=1)  # a 429 storm must not hang POST /sources
         try:
             page = await client.get_page(root_id)
             if page.get("archived") or page.get("in_trash"):

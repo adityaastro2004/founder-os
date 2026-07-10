@@ -9,8 +9,16 @@ share it (and any seed pages) with the integration → put in apps/api/.env:
     NOTION_TEST_TOKEN=ntn_...
     NOTION_TEST_ROOT_PAGE_ID=<32-hex page id from the page URL>
 The suite SEEDS its own workspace content under a `E2E Seed` page beside the
-managed tree on first run (idempotent), including a tasks database and enough
-filler pages to force search pagination (arch AC).
+managed tree on first run (idempotent — reuse RESTORES mutated state), incl. a
+tasks database and enough filler pages to force search pagination (arch AC).
+
+CAUTION: NOTION_ACCESS_TOKEN is accepted as a token fallback — never point it
+at a production integration; the seeder creates 100+ pages under the root.
+
+MANUAL STEP (recorded, per US-1 consent AC): keep at least one page in the
+workspace NOT shared with the integration and confirm after a sync that it
+appears nowhere in /api/state/entities — the API cannot un-share pages, so
+this control cannot be automated. Record the check in the task gate record.
 """
 import os
 import pathlib
@@ -19,8 +27,6 @@ import uuid as uuidlib
 
 import httpx
 import pytest
-
-pytestmark = pytest.mark.live
 
 BASE = "http://localhost:8000"
 SYNC_WAIT_S = 1500  # first Notion walk is paced at ~3 req/s (arch §9)
@@ -131,11 +137,23 @@ def seed_workspace(n: Notion, root: str) -> dict:
                                if p.get("type") == "title"), {})
             title = "".join(t.get("plain_text", "") for t in title_prop.get("title", []))
             if title == "E2E Seed" and (page.get("parent") or {}).get("page_id", "").replace("-", "") == root.replace("-", ""):
-                # already seeded — locate the tasks db + note page
+                # already seeded — RESTORE state a prior run mutated (S6):
+                # the checked task row and the trashed note must reset, or
+                # run 2 fails on its own leftovers.
                 seed_id = page["id"]
-                dbs = [c for c in n.children(seed_id) if c["type"] == "child_database"]
-                notes = [c for c in n.children(seed_id) if c["type"] == "child_page"]
-                return {"seed_id": seed_id, "reused": True, "dbs": dbs, "notes": notes}
+                for p2 in n.search_all():
+                    if p2.get("object") != "page":
+                        continue
+                    t2 = ""
+                    for pr in (p2.get("properties") or {}).values():
+                        if pr.get("type") == "title":
+                            t2 = "".join(x.get("plain_text", "") for x in pr.get("title", []))
+                    if t2 == "Write the changelog" and \
+                            (p2.get("properties", {}).get("Done", {}).get("checkbox") is True):
+                        n.patch_page(p2["id"], {"properties": {"Done": {"checkbox": False}}})
+                    if t2 == "Community onboarding idea" and (p2.get("archived") or p2.get("in_trash")):
+                        n.patch_page(p2["id"], {"archived": False})
+                return {"seed_id": seed_id, "reused": True}
 
     seed = n.create_page(root, "E2E Seed")
     seed_id = seed["id"]
@@ -234,14 +252,18 @@ def test_notion_end_to_end():
     onboarding = [t for t in titles if "onboarding" in t.casefold()]
     assert len(onboarding) == 1, onboarding
 
+    # relations from Notion containment (B2 / US-1 AC)
+    rels = api.get("/api/state/relations", params={"limit": 200}).json()
+    assert rels["total"] >= 1, "no containment relations produced"
+    # provenance contract: external_ref carries the notion external id
+    assert changelog["external_ref"] and ":page:" in changelog["external_ref"]
+
     # managed tree rendered under the root
     root_children = {c.get("child_page", {}).get("title") for c in n.children(ROOT)
                      if c["type"] == "child_page"}
     assert {"Goals", "Tasks", "Decisions"} <= {t.removesuffix(".md") for t in root_children if t}
 
     # ── safety snapshot (P0): non-managed pages untouched by sync #2 ─────
-    managed_ids = set()
-    src_row = api.get(f"/api/state/sources/{source_id}").json()
     snapshot = {}
     for page in n.search_all():
         pid = page["id"]
@@ -279,8 +301,20 @@ def test_notion_end_to_end():
     assert "Community onboarding idea" not in {e["title"] for e in listed["entities"]}
     archived_listed = api.get("/api/state/entities",
                               params={"limit": 100, "include_archived": True}).json()
-    assert any("onboarding" in e["title"].casefold() and e["status"] in ("archived", "open", "active")
-               for e in archived_listed["entities"])
+    archived_note = next(e for e in archived_listed["entities"]
+                         if "onboarding" in e["title"].casefold())
+    # mirror purge (D1): the trashed note's state:// recall rows are gone
+    items_after_trash = api.get("/api/knowledge/items",
+                                params={"category": "state_mirror"}).json()
+    trashed_ref = archived_note.get("external_ref") or ""
+    assert not any(trashed_ref and trashed_ref in (i.get("source_url") or "")
+                   for i in items_after_trash), "trashed note's mirror rows survived"
+
+    # never resurrected: one more full walk keeps it archived (B3 direction)
+    report5 = trigger_and_wait(api, source_id, full_walk=True)
+    still = api.get("/api/state/entities", params={"limit": 100}).json()
+    assert "Community onboarding idea" not in {e["title"] for e in still["entities"]}, \
+        "trashed entity resurrected by a re-walk"
 
     # ── token hygiene ────────────────────────────────────────────────────
     for path in (f"/api/state/sources/{source_id}", "/api/state/sources"):
