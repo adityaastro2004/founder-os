@@ -1,5 +1,8 @@
 # Founder OS
 
+[https://myfounder.vercel.app/](https://myfounder.vercel.app/)
+
+
 **The autonomous operating system for founders.**
 
 Running a company solo means fighting fragmentation. Slack knows the conversation, GitHub knows the code, Stripe knows the revenue, Obsidian/Notion know the docs, Calendar knows the schedule — but **nothing knows the company**. So you app-switch all day, reassembling context by hand.
