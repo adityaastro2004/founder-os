@@ -363,21 +363,21 @@ def get_default_embedder(redis: aioredis.Redis | None = None) -> EmbeddingProvid
     from app.config import get_settings  # local import: avoid config↔retrieval cycle
 
     settings = get_settings()
-    if settings.LLM_PROVIDER == "ollama":
+    # EMBEDDING_* settings decide — NOT LLM_PROVIDER. Chat and embeddings are
+    # independent axes: e.g. LLM on Groq (openai_compatible) has NO embeddings
+    # endpoint, so embeddings stay on Ollama/OpenAI (founder Groq switch,
+    # 2026-07-11). Mirrors app/agents/registry.py's embedder selection.
+    if settings.EMBEDDING_PROVIDER == "openai":
         return create_embedding_provider(
-            provider="ollama", base_url=settings.OLLAMA_BASE_URL, redis=redis,
-        )
-    if settings.LLM_PROVIDER == "openai_compatible":
-        return create_embedding_provider(
-            provider="openai", api_key=settings.OPENAI_API_KEY,
-            base_url=settings.OPENAI_BASE_URL, redis=redis,
-        )
-    # anthropic/gemini have no embedding API: prefer OpenAI if keyed, else Ollama.
-    if settings.OPENAI_API_KEY:
-        return create_embedding_provider(
-            provider="openai", api_key=settings.OPENAI_API_KEY,
-            base_url=settings.OPENAI_BASE_URL, redis=redis,
+            provider="openai",
+            api_key=settings.EMBEDDING_API_KEY or settings.OPENAI_API_KEY,
+            base_url=settings.EMBEDDING_BASE_URL or "https://api.openai.com/v1",
+            model=settings.EMBEDDING_MODEL or "",
+            redis=redis,
         )
     return create_embedding_provider(
-        provider="ollama", base_url=settings.OLLAMA_BASE_URL, redis=redis,
+        provider="ollama",
+        base_url=settings.EMBEDDING_BASE_URL or settings.OLLAMA_BASE_URL,
+        model=settings.EMBEDDING_MODEL or "",
+        redis=redis,
     )

@@ -58,40 +58,13 @@ router = APIRouter(prefix="/api/knowledge", tags=["knowledge"])
 # ── Helpers ───────────────────────────────────────────────────
 
 def _get_embedder(settings=None):
-    """Create an embedding provider from app settings."""
-    settings = settings or get_settings()
-    redis = get_redis()
+    """Embedder from EMBEDDING_* settings — converged onto the shared factory
+    (Phase 1 arch §2.4 'converge later'; done during the Groq switch so an
+    OpenAI-compatible LLM provider can never drag embeddings to a host with no
+    embeddings API, e.g. Groq)."""
+    from app.retrieval.embeddings import get_default_embedder
 
-    # Use the same provider as the LLM, but for embeddings
-    if settings.LLM_PROVIDER == "ollama":
-        return create_embedding_provider(
-            provider="ollama",
-            base_url=settings.OLLAMA_BASE_URL,
-            redis=redis,
-        )
-    elif settings.LLM_PROVIDER == "openai_compatible":
-        return create_embedding_provider(
-            provider="openai",
-            api_key=settings.OPENAI_API_KEY,
-            base_url=settings.OPENAI_BASE_URL,
-            redis=redis,
-        )
-    elif settings.LLM_PROVIDER == "anthropic":
-        # Anthropic doesn't have embeddings — fall back to Ollama if available
-        # or OpenAI if key is set
-        if settings.OPENAI_API_KEY:
-            return create_embedding_provider(
-                provider="openai",
-                api_key=settings.OPENAI_API_KEY,
-                redis=redis,
-            )
-        return create_embedding_provider(
-            provider="ollama",
-            base_url=settings.OLLAMA_BASE_URL,
-            redis=redis,
-        )
-    else:
-        return create_embedding_provider(provider="ollama", redis=redis)
+    return get_default_embedder(get_redis())
 
 
 async def _user_uuid(user: ClerkUser, db) -> uuid.UUID:
