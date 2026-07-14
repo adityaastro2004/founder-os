@@ -19,6 +19,88 @@
 
 ---
 
+## ADR-011 — Re-rooted, frozen Alembic baseline (`0000_baseline`) as the single DB bootstrap
+
+- Date: 2026-07-11
+- Status: accepted (design — task 016; ships with the 016 executor diff)
+- Context: `alembic upgrade head` could not bootstrap a fresh database. Schema truth
+  was fragmented across four sources: (1) `apps/api/schema.sql` (30 base tables +
+  extensions + seed INSERTs — applied by no pipeline), (2) `apps/api/migrations/
+  002..005*.sql` (planner/memory/chat/intelligence/research tables — applied by no
+  pipeline), (3) alembic `0001` (reconciling, guarded — silently skips everything on
+  an empty DB because its FK dependencies `users`/`agents` are absent) and `0002`
+  (has `_has_table` guards but plain-creates tables with FKs to `users` and columns
+  needing `uuid-ossp`/`vector`, so it **fails** on an empty DB), (4) ORM-only columns
+  (`founder_profiles.primary_goal_description` exists only in `app/models.py`).
+  CD (`scripts/deploy-server.sh`) and `start.sh` run **only** `alembic upgrade head`.
+  Production 500'd on onboarding (2026-07-11) and was rebuilt by hand; existing prod
+  sits at revision `0002` and must see a no-op.
+- Decision:
+  1. **Topology — re-rooted baseline, not a new head.** New root revision
+     `0000_baseline` (`down_revision = None`); `0001_workflow_engine` is re-parented
+     onto it (`down_revision = "0000_baseline"` — its only edit); `0002_state_engine`
+     is untouched and **remains the sole head**, so a DB stamped at 0002 (prod) is a
+     structural no-op. Rejected: a post-0002 head — on an empty DB 0002 executes
+     *before* any new head and fails on the `users` FK / missing extensions; making
+     that work would require rewriting 0002's create semantics (forbidden: never
+     weaken existing migrations on already-migrated DBs).
+  2. **DDL source — frozen/inlined, generated once.** The baseline's DDL is
+     generated one time (ORM metadata autogenerate for the 36 ORM tables it owns +
+     verbatim SQL from `schema.sql`/`migrations/*.sql` for the rest) and then inlined
+     and **static forever**. Migrations never import `app.models` — models drift,
+     migrations are frozen history. Precedent: 0001's docstring (the migration is
+     authoritative; `schema.sql` is a secondary artifact).
+  3. **Idempotence — house guard pattern.** Every table create is wrapped in 0001's
+     `_has_table` guard (indexes created only in the same branch); known ORM-only
+     columns are reconciled with `_has_column` add-if-missing (currently
+     `founder_profiles.primary_goal_description`); `CREATE EXTENSION IF NOT EXISTS`
+     for `uuid-ossp`/`pg_trgm`/`vector`; `CREATE OR REPLACE` for the two functions
+     and three views; `CREATE OR REPLACE TRIGGER` (PG16) for the eight
+     `updated_at` triggers; seeds use `INSERT … ON CONFLICT DO NOTHING` on verified
+     unique keys (`workflow_templates.slug`, `subscription_plans.name`). `agents`
+     rows are **not** seeded — ADR-004's startup `sync_agents_to_db` owns them.
+  4. **Ownership split.** The baseline owns everything in current truth **except**
+     the four State Engine tables, which stay owned by 0002 (creates + downgrade).
+     The baseline includes the three non-ORM research tables (`research_runs`,
+     `tracked_competitors`, `research_sources`) for prod parity (flagged: dead code,
+     candidates for a future drop migration), and the load-bearing SQL function
+     `memory_temporal_score` (8 call sites in `app/memory/manager.py`) which no ORM
+     reflection check can see.
+  5. **Artifact disposition.** `migrations/002..005*.sql` are **deleted** (absorbed
+     into the baseline; git history preserves them). `schema.sql` is **kept** as the
+     human-readable secondary artifact, re-synced to full current truth and given a
+     "never applied by any pipeline — bootstrap is `alembic upgrade head`" banner
+     (CLAUDE.md §5.8 unchanged: Alembic first, schema.sql synced second).
+  6. **Verification — a `migrations` pytest tier.** New marker `migrations`
+     (deselected by default alongside `live`; the unit tier stays service-free), run
+     in the CI backend job which already provisions a `pgvector/pgvector:pg16`
+     service. It asserts: fresh DB → `upgrade head` → name-level reflection parity
+     with ORM metadata (zero missing tables/columns) + extensions + functions +
+     seeds; legacy `schema.sql`-seeded DB (pinned by a frozen fixture copy of the
+     2026-07-11 schema.sql) → `upgrade head` → no duplicate-object errors + parity +
+     no duplicated seeds; stamped-at-head DB → `upgrade head` → no-op. Tests steer
+     alembic via subprocess env vars (`DATABASE_URL`/`DATABASE_URL_SYNC` beat `.env`
+     under pydantic-settings defaults).
+  7. **`downgrade()` of `0000_baseline` is an explicit no-op** — it is the root, and
+     on guarded/pre-existing schema a destructive reverse is never safe (same
+     philosophy as 0001's downgrade).
+- Consequences: one command (`alembic upgrade head`) bootstraps any environment;
+  the 2026-07-11 incident class (ORM column with no migration) now **fails CI**
+  because parity is asserted at head on every push. Trade-offs: DDL is duplicated
+  between the ORM and the frozen baseline (accepted — parity is machine-enforced,
+  and frozen history is the point); baseline and 0001 overlap on the two workflow
+  columns (guards make both orders safe); `CREATE EXTENSION` needs superuser (true
+  for docker/CI/current prod; managed Postgres may need extensions pre-enabled —
+  documented in the migration docstring). Partially supersedes the operational note
+  in ADR-006 ("schema managed via schema.sql, no Alembic"): Alembic is now the only
+  bootstrap and migration path. Rules out: importing app models inside migrations;
+  applying `schema.sql` to any environment; hand-run SQL as a deploy step.
+- Links: [tasks/active/016](../tasks/active/016-schema-baseline-migration.md),
+  `founder-os/apps/api/alembic/versions/` (`0000_baseline.py` new, `0001` re-parent,
+  `0002` untouched), `founder-os/apps/api/schema.sql`,
+  `founder-os/apps/api/tests/migrations/`, `.github/workflows/ci.yml` (backend job),
+  ADR-004 (`sync_agents_to_db`), ADR-006, ADR-009/ADR-010 (0002's tables).
+
 ## ADR-010 — Integration adapter framework (`app/integrations/`)
 
 - Date: 2026-07-03

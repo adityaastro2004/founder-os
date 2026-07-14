@@ -158,17 +158,33 @@ Phase 0 audit) exposed through `knowledge_routes.py`.
 - **APScheduler** (`scheduler.py`) — cron jobs, e.g. weekly plan generation
   Monday 08:00 IST.
 
-## Data model — `app/models.py`, `planner_models_db.py`, `schema.sql`
+## Data model — `app/models.py`, `planner_models_db.py`, `app/state/models.py`
 
-~28 tables. Load-bearing ones:
+40 ORM tables (+3 non-ORM research tables kept for prod parity). Load-bearing ones:
 
 - `users` (Clerk auth + subscription), `founder_profiles` (business context).
 - `agents` (registry: name, system_prompt, model, capabilities),
   `user_agent_configs` (per-user overrides).
-- `tasks`, `task_feedback` (learning loop), `workflow_templates`.
-- `knowledge_items` (pgvector), `activity_log` (event history).
-- `approvals` (queue), `approval_preferences` (per-tool: always_allow / ask / always_deny).
-- Planner/memory: `business_profiles`, `weekly_plans`, `memory_pages`, `memory_links`.
+- `tasks`, `task_feedback` (learning loop), `workflow_templates`, `workflows`,
+  `workflow_executions` (approval gate lives in `tasks.requires_approval` +
+  `step_state`).
+- `knowledge_items` (pgvector RAG), `memory_pages`/`memory_links` (temporal KG;
+  SQL fn `memory_temporal_score` is load-bearing), `planner_users`/`plan_history`.
+- State Engine (ADR-009): `state_sources`, `state_observations`,
+  `company_state_entities`, `state_relations`.
+
+**Bootstrap = `alembic upgrade head` — the single path** (ADR-011). The re-rooted
+chain `0000_baseline → 0001_workflow_engine → 0002_state_engine` builds the full
+schema on an empty pgvector Postgres: extensions, all tables + indexes, the
+`update_updated_at_column` triggers, `memory_temporal_score`, views and the
+`workflow_templates`/`subscription_plans` seeds (`agents` rows come from
+`sync_agents_to_db` at startup, ADR-004). `schema.sql` is the human-readable
+**secondary** artifact only — never applied by any pipeline; the old
+`migrations/*.sql` files are absorbed into the baseline and deleted. CI's
+`migrations` pytest tier asserts ORM↔schema name-level parity at head on every
+push. Any **new model module must be imported in `alembic/env.py`** (and in
+`tests/migrations/test_schema_baseline.py`), or autogenerate and the parity test
+both go blind to it.
 
 Schema changes go through **Alembic** (`apps/api/alembic/`), not hand-edited SQL.
 

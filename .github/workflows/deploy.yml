@@ -2,10 +2,13 @@ name: Deploy
 
 # CD: deploys the backend to the EC2 host after CI succeeds on `main`.
 #
-# Transport: AWS SSM RunCommand authorized via GitHub OIDC — no SSH port open,
-# no long-lived AWS keys in secrets. The workflow assumes AWS_DEPLOY_ROLE_ARN,
-# whose trust policy is scoped to this repo's main branch through the
-# token.actions.githubusercontent.com identity provider.
+# Transport: AWS SSM RunCommand authorized via GitHub OIDC — CD itself uses no
+# SSH keys and no long-lived AWS keys in secrets. (The instance does accept SSH
+# on port 22 for manual founder ops with the EC2 key pair; that path is outside
+# CD.) The workflow assumes AWS_DEPLOY_ROLE_ARN, whose trust policy is scoped to
+# this repo's main branch through the token.actions.githubusercontent.com
+# identity provider — note the sub claim uses the immutable-ID form
+# (repo:owner@<id>/name@<id>:ref:…), so the trust condition must match that.
 #
 # The on-server steps (deps, alembic, restart, health check, rollback) live in
 # scripts/deploy-server.sh. The frontend deploys separately on Vercel.

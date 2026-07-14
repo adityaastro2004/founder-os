@@ -1,7 +1,7 @@
 """workflow engine: reconcile workflow* tables + n8n_workflow_id + step_state
 
 Revision ID: 0001_workflow_engine
-Revises:
+Revises: 0000_baseline
 Create Date: 2026-06-18
 
 ADR-008 / Track B (data layer). This migration is **idempotent / reconciling**,
@@ -30,7 +30,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "0001_workflow_engine"
-down_revision = None
+down_revision = "0000_baseline"
 branch_labels = None
 depends_on = None
 
