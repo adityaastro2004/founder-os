@@ -156,9 +156,15 @@ jobs:
         run: python -c "from app.main import app; print(f'app imports OK — {len(app.routes)} routes')"
 
       # Unit tier only: no DB/Redis/LLM needed (tests/conftest.py supplies dummy
-      # env; live tests are marked and deselected by pytest.ini addopts).
+      # env; live + migrations tests are marked and deselected by pytest.ini addopts).
       - name: Unit tests (pytest)
-        run: pytest -m "not live" -q
+        run: pytest -m "not live and not migrations" -q
+
+      # Migration tier (task 016 / ADR-011): fresh-DB bootstrap, idempotence,
+      # legacy schema.sql seed, stamped-at-head no-op — against throwaway DBs on
+      # the pg16 service above. Makes "ORM column with no migration" a CI failure.
+      - name: Migration tests (pytest -m migrations)
+        run: pytest -m migrations -q
 
       - name: Validate schema.sql against pgvector Postgres
         run: |

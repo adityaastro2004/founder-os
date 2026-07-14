@@ -3,16 +3,17 @@
 > The testing contract as of Phase 0 (2026-07-03, task 012). pytest is real now.
 > Never report unverified work as done.
 
-## The three tiers
+## The four tiers
 
 Backend tests live in `founder-os/apps/api/tests/` and run with pytest
-(`pytest.ini`: `asyncio_mode = auto`, `testpaths = tests`, live tier deselected
-by default).
+(`pytest.ini`: `asyncio_mode = auto`, `testpaths = tests`, live + migrations
+tiers deselected by default).
 
 | Tier | Where | Needs | Run |
 |------|-------|-------|-----|
 | **unit** | `tests/unit/` | nothing — no DB/Redis/LLM (`tests/conftest.py` supplies CI-mirror env defaults) | `pytest` |
 | **regression** | `tests/regression/` | one per fixed bug; unit-style when possible, `@pytest.mark.live` when the bug needs real services (e.g. F3 needed Postgres type inference) | `pytest` / `pytest -m live` |
+| **migrations** | `tests/migrations/` | a pgvector Postgres only — no app stack. Creates/drops throwaway DBs via `MIGRATIONS_ADMIN_DSN` (default `postgresql://founder:founder@localhost:5432/postgres`). Opt-in locally, **mandatory in CI** (task 016 / ADR-011) | `pytest -m migrations` |
 | **live** | `tests/live/` + live-marked regressions | the full stack on `localhost:8000` (`./start.sh`), Ollama, `APP_ENV=development` | `pytest -m live` |
 
 `tests/live/test_live_suites.py` wraps all 13 standalone `apps/api/test_*.py`
@@ -25,13 +26,14 @@ authenticate via the dev-only `x-test-user` bypass (hard-gated on
 ```bash
 cd founder-os/apps/api && source .venv/bin/activate
 pytest                    # unit + non-live regression (fast, no services)
+pytest -m migrations      # migration tier — needs a pgvector Postgres (compose one is fine)
 pytest -m live            # full live tier — start the stack first (./start.sh)
 # From the monorepo root:
 turbo test                # runs the API unit tier via apps/api package.json
 ```
 
-CI (`.github/workflows/ci.yml`, backend job) runs the unit tier on every run;
-the live tier is local-only (needs Ollama + Docker).
+CI (`.github/workflows/ci.yml`, backend job) runs the unit tier **and** the
+migrations tier on every run; the live tier is local-only (needs Ollama + Docker).
 
 ## Rules
 

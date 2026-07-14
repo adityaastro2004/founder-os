@@ -122,6 +122,7 @@
 
 | Date | Item | Task |
 |------|------|------|
+| 2026-07-14 | DB bootstrap consolidation — re-rooted frozen alembic baseline (0000_baseline): `alembic upgrade head` alone builds a complete DB on any fresh environment; retired raw migrations/002–005; schema.sql demoted to banner-marked secondary artifact; new `migrations` CI test tier asserts ORM parity at head (the 2026-07-11 prod-500 incident class now fails CI) | [tasks/completed/016](../tasks/completed/016-schema-baseline-migration.md) |
 | 2026-07-07 | Phase 1 — Company State Engine slice 1: 4-table canonical state + reconciler (write-gate, dedup, provenance) + Obsidian adapter with jailed bidirectional sync + /api/state; live E2E proven (observe→reconcile→render loop, idempotent) | [tasks/completed/011](../tasks/completed/011-company-state-engine.md) |
 | 2026-07-03 | Phase 0 foundation revamp — full-system audit (11 subsystems, live-verified), F1–F3 fixed with regression tests, pytest 3-tier harness + turbo test + CI unit tier, integration adapter framework (ADR-010) with Google Calendar as first adapter | [tasks/completed/012](../tasks/completed/012-phase0-foundation-revamp.md) |
 | 2026-06-10 | Founder-aware agent specialization (Evolution Engine MVP) | [tasks/completed/001](../tasks/completed/001-founder-aware-agent-specialization.md) |
