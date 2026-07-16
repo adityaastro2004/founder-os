@@ -20,6 +20,11 @@ name: Deploy
 # (rotate here, then re-run this workflow — see sync_env in deploy-server.sh):
 #   GROQ_API_KEY         → OPENAI_API_KEY (Groq is the OpenAI-compatible provider)
 #   GEMINI_API_KEY       → GEMINI_API_KEY
+#   GOOGLE_CLIENT_ID     → GOOGLE_CLIENT_ID     (Google Calendar OAuth client)
+#   GOOGLE_CLIENT_SECRET → GOOGLE_CLIENT_SECRET
+#   GOOGLE_REDIRECT_URI  → GOOGLE_REDIRECT_URI  (public callback, must also be
+#                          whitelisted on the OAuth client in Google Console)
+#   OAUTH_STATE_SECRET   → OAUTH_STATE_SECRET
 
 on:
   workflow_run:
@@ -66,7 +71,7 @@ jobs:
                 "sudo -u ubuntu git -C /home/ubuntu/founder-os fetch -q origin main",
                 "sudo -u ubuntu git -C /home/ubuntu/founder-os checkout -q main",
                 "sudo -u ubuntu git -C /home/ubuntu/founder-os reset -q --hard origin/main",
-                "FOS_OPENAI_API_KEY=${{ secrets.GROQ_API_KEY }} FOS_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} bash /home/ubuntu/founder-os/scripts/deploy-server.sh \"$PREV\""
+                "FOS_OPENAI_API_KEY=${{ secrets.GROQ_API_KEY }} FOS_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} FOS_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} FOS_GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} FOS_GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }} FOS_OAUTH_STATE_SECRET=${{ secrets.OAUTH_STATE_SECRET }} bash /home/ubuntu/founder-os/scripts/deploy-server.sh \"$PREV\""
               ]
             }' \
             --query 'Command.CommandId' --output text)
