@@ -16,6 +16,10 @@ name: Deploy
 # Required repository secrets (Settings → Secrets and variables → Actions):
 #   AWS_DEPLOY_ROLE_ARN  IAM role assumed via OIDC (SendCommand on the instance)
 #   EC2_INSTANCE_ID      target instance id (i-…)
+# Optional secrets, synced into the server's apps/api/.env on every deploy
+# (rotate here, then re-run this workflow — see sync_env in deploy-server.sh):
+#   GROQ_API_KEY         → OPENAI_API_KEY (Groq is the OpenAI-compatible provider)
+#   GEMINI_API_KEY       → GEMINI_API_KEY
 
 on:
   workflow_run:
@@ -62,7 +66,7 @@ jobs:
                 "sudo -u ubuntu git -C /home/ubuntu/founder-os fetch -q origin main",
                 "sudo -u ubuntu git -C /home/ubuntu/founder-os checkout -q main",
                 "sudo -u ubuntu git -C /home/ubuntu/founder-os reset -q --hard origin/main",
-                "bash /home/ubuntu/founder-os/scripts/deploy-server.sh \"$PREV\""
+                "FOS_OPENAI_API_KEY=${{ secrets.GROQ_API_KEY }} FOS_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} bash /home/ubuntu/founder-os/scripts/deploy-server.sh \"$PREV\""
               ]
             }' \
             --query 'Command.CommandId' --output text)
