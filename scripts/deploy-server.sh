@@ -22,6 +22,35 @@ install_deps() {
   sudo -u ubuntu bash -c "cd $API && source .venv/bin/activate && pip install -q -r requirements.txt"
 }
 
+# Sync selected secrets from the caller's environment into the server .env.
+# The workflow passes them as FOS_-prefixed vars sourced from GitHub Actions
+# secrets — rotate a key there and the next deploy applies it. Values are
+# never echoed; empty/unset vars are skipped so old deploys stay compatible.
+# Runs before install/migrate/restart so a refused value aborts with the box
+# untouched. Values are restricted to a safe charset because they pass through
+# sed and an unquoted env assignment — anything else is refused, not written.
+sync_env() {
+  local envfile=$API/.env synced=""
+  [ -f "$envfile" ] || sudo -u ubuntu install -m 600 /dev/null "$envfile"
+  patch_var() {
+    local name=$1 value=$2
+    [ -n "$value" ] || return 0
+    if ! [[ "$value" =~ ^[A-Za-z0-9._-]+$ ]]; then
+      echo "sync_env: refusing ${name}: unexpected characters in value" >&2
+      return 1
+    fi
+    if sudo -u ubuntu grep -q "^${name}=" "$envfile"; then
+      sudo -u ubuntu sed -i "s|^${name}=.*|${name}=${value}|" "$envfile"
+    else
+      printf '%s=%s\n' "$name" "$value" | sudo -u ubuntu tee -a "$envfile" >/dev/null
+    fi
+    synced="$synced $name"
+  }
+  patch_var OPENAI_API_KEY "${FOS_OPENAI_API_KEY:-}"
+  patch_var GEMINI_API_KEY "${FOS_GEMINI_API_KEY:-}"
+  if [ -n "$synced" ]; then echo "env synced:$synced"; fi
+}
+
 migrate() {
   sudo -u ubuntu bash -c "cd $API && source .venv/bin/activate && alembic upgrade head"
 }
@@ -37,6 +66,7 @@ restart_and_check() {
   return 1
 }
 
+sync_env
 install_deps
 migrate
 if restart_and_check; then
