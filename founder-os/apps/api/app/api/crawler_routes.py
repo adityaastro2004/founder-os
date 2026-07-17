@@ -46,8 +46,13 @@ router = APIRouter(prefix="/api/research", tags=["research"])
 # ============================================================================
 
 class RunResearchRequest(BaseModel):
-    """Request to trigger a research cycle."""
-    user_id: Optional[str] = Field(None, description="User ID (defaults to current user)")
+    """Request to trigger a research cycle.
+
+    Note: the target user is ALWAYS the authenticated caller. There is
+    deliberately no `user_id` field — accepting one would let a caller run a
+    research cycle scoped to another user's data (IDOR). See standards/security.md.
+    """
+    pass
 
 
 class ResearchStatusResponse(BaseModel):
@@ -122,7 +127,8 @@ async def trigger_research_cycle(
       - customer_signals: list of customer sentiment findings
     """
     try:
-        user_id = request.user_id or user.user_id
+        # Identity is always the verified caller — never a body-supplied id.
+        user_id = user.user_id
 
         # Initialize research engine
         crawl_engine = get_crawler_engine()

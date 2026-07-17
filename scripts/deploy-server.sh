@@ -46,6 +46,12 @@ sync_env() {
     fi
     synced="$synced $name"
   }
+  # Pin the runtime to production posture. This is the authoritative gate for
+  # the dev-only x-test-user auth bypass + unauthenticated test routes (app/
+  # auth.py, app/main.py): they are LIVE whenever APP_ENV != production, so a
+  # fresh/empty server .env must never be left at the development default.
+  patch_var APP_ENV "production"
+  patch_var DEBUG "false"
   patch_var OPENAI_API_KEY "${FOS_OPENAI_API_KEY:-}"
   patch_var GEMINI_API_KEY "${FOS_GEMINI_API_KEY:-}"
   if [ -n "$synced" ]; then echo "env synced:$synced"; fi
