@@ -64,6 +64,9 @@ export async function apiFetch(
       throw new Error(body.detail || `API error ${res.status}`);
     }
 
+    // 204 No Content (e.g. DELETE /api/state/sources/{id}, /api/knowledge/items/{id})
+    // has an empty body — res.json() would throw and turn a success into an error.
+    if (res.status === 204) return null;
     return res.json();
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
