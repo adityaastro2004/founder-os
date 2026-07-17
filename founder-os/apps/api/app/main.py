@@ -82,8 +82,38 @@ async def lifespan(application: FastAPI):
 
 app = FastAPI(title="Founder OS API", lifespan=lifespan)
 
-# ── CORS (needed for Clerk frontend → FastAPI calls) ────
 settings = get_settings()
+
+# ── Fail-loud on a production misconfig ─────────────────
+# When APP_ENV != "production" the unauthenticated dev test routes are mounted
+# and the `x-test-user` auth bypass in app/auth.py is LIVE — anyone could
+# impersonate any user. The deploy script pins APP_ENV=production; this warning
+# makes an accidental dev-mode boot in a real environment impossible to miss.
+if settings.APP_ENV != "production":
+    logging.getLogger(__name__).warning(
+        "APP_ENV=%r — dev test routes + x-test-user auth bypass are ACTIVE. "
+        "This MUST be 'production' in any deployed environment.",
+        settings.APP_ENV,
+    )
+
+# ── Security headers + rate limiting (app/security_middleware.py) ──
+# CORS is added last and so stays the outermost layer; a 429 or a header-stamped
+# error response therefore still gets CORS applied and is readable by the browser.
+if settings.RATE_LIMIT_ENABLED:
+    from app.security_middleware import RateLimitMiddleware
+
+    app.add_middleware(
+        RateLimitMiddleware,
+        max_requests=settings.RATE_LIMIT_REQUESTS,
+        window_seconds=settings.RATE_LIMIT_WINDOW_SECONDS,
+        trust_proxy=settings.TRUST_PROXY,
+    )
+if settings.SECURITY_HEADERS_ENABLED:
+    from app.security_middleware import SecurityHeadersMiddleware
+
+    app.add_middleware(SecurityHeadersMiddleware)
+
+# ── CORS (needed for Clerk frontend → FastAPI calls) ────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,

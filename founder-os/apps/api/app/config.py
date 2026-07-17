@@ -66,6 +66,16 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
 
+    # ── Security middleware (app/security_middleware.py) ──
+    SECURITY_HEADERS_ENABLED: bool = True
+    RATE_LIMIT_ENABLED: bool = True
+    RATE_LIMIT_REQUESTS: int = 240      # per client per window
+    RATE_LIMIT_WINDOW_SECONDS: int = 60
+    # The prod deployment sits behind a trusted front proxy (Vercel rewrite /
+    # Caddy), so derive the client IP from X-Forwarded-For. Set False only when
+    # the API is directly internet-exposed (XFF would then be attacker-spoofable).
+    TRUST_PROXY: bool = True
+
     # ── Google Calendar Integration ──
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
