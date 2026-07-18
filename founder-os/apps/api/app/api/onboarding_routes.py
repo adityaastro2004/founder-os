@@ -195,6 +195,17 @@ async def create_founder_profile(
 
     ph = get_posthog()
     if ph is not None:
+        ph.set(
+            distinct_id=clerk_user.user_id,
+            properties={
+                "business_type": payload.business_type,
+                "industry": payload.industry,
+                "business_stage": payload.business_stage,
+                "primary_goal": payload.primary_goal,
+                "team_size": payload.team_size,
+                "preferred_communication": payload.preferred_communication,
+            },
+        )
         ph.capture(
             distinct_id=clerk_user.user_id,
             event="onboarding_completed",
