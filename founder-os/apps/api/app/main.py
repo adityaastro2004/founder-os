@@ -1,8 +1,12 @@
+import atexit
 from contextlib import asynccontextmanager
 import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from posthog import Posthog
+
+from app.posthog_client import _set_posthog
 
 from app.api.routes import router
 from app.api.agent_routes import router as agent_router
@@ -59,9 +63,23 @@ async def _sync_agent_definitions() -> None:
         logging.getLogger(__name__).exception("Agent definition sync failed at startup")
 
 
+_posthog_client: Posthog | None = None
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    global _posthog_client
     # ── Startup ──
+    _settings = get_settings()
+    if not _settings.POSTHOG_DISABLED and _settings.POSTHOG_PROJECT_TOKEN:
+        _posthog_client = Posthog(
+            api_key=_settings.POSTHOG_PROJECT_TOKEN,
+            host=_settings.POSTHOG_HOST,
+            enable_exception_autocapture=True,
+        )
+        _set_posthog(_posthog_client)
+        atexit.register(_posthog_client.shutdown)
+
     await init_db()
     await _sync_agent_definitions()
     await init_redis()
@@ -78,6 +96,8 @@ async def lifespan(application: FastAPI):
     stop_scheduler()
     await close_redis()
     await close_db()
+    if _posthog_client is not None:
+        _posthog_client.shutdown()
 
 
 app = FastAPI(title="Founder OS API", lifespan=lifespan)

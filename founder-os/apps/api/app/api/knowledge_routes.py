@@ -41,6 +41,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import ClerkUser, require_auth
 from app.config import get_settings
 from app.database import get_db
+from app.posthog_client import get_posthog
 from app.models import FounderProfile, KnowledgeItem
 
 logger = logging.getLogger(__name__)
@@ -259,6 +260,19 @@ async def ingest_text(
     finally:
         await embedder.close()
 
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user.user_id,
+            event="knowledge_ingested",
+            properties={
+                "source_type": "text",
+                "chunks_created": result.chunks_created,
+                "total_tokens": result.total_tokens,
+                "has_category": bool(result.category),
+            },
+        )
+
     return IngestionResponse(
         document_id=result.document_id,
         chunks_created=result.chunks_created,
@@ -296,6 +310,19 @@ async def ingest_url(
         raise HTTPException(status_code=422, detail=str(exc))
     finally:
         await embedder.close()
+
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user.user_id,
+            event="knowledge_ingested",
+            properties={
+                "source_type": "url",
+                "chunks_created": result.chunks_created,
+                "total_tokens": result.total_tokens,
+                "has_category": bool(result.category),
+            },
+        )
 
     return IngestionResponse(
         document_id=result.document_id,
@@ -530,6 +557,19 @@ async def search_knowledge(
         )
     finally:
         await embedder.close()
+
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user.user_id,
+            event="knowledge_searched",
+            properties={
+                "search_type": body.search_type,
+                "results_count": len(results),
+                "has_results": len(results) > 0,
+                "has_category_filter": bool(body.category),
+            },
+        )
 
     return SearchResponse(
         results=[

@@ -34,6 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import require_auth, ClerkUser
 from app.config import get_settings
 from app.database import get_db
+from app.posthog_client import get_posthog
 from app.user_store import (
     UserProfile,
     get_user,
@@ -333,6 +334,14 @@ async def connect_callback(code: str, state: str):
     from app.integrations.google_calendar.client import store_tokens
     store_tokens(user_id, tokens)
 
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user_id,
+            event="calendar_connected",
+            properties={"calendar_provider": "google"},
+        )
+
     # Return an HTML page that shows success and auto-closes the popup
     from fastapi.responses import HTMLResponse
     display_name = user.business_name or user_id
@@ -543,6 +552,19 @@ async def generate_now(body: GenerateRequest, clerk: ClerkUser = Depends(require
         )
     except Exception as mem_exc:
         logger.warning("Memory store for plan failed (non-fatal): %s", mem_exc)
+
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=clerk.user_id,
+            event="plan_generated",
+            properties={
+                "tasks_generated": task_count,
+                "events_created": result.get("events_created", 0),
+                "duration_seconds": round(duration, 1),
+                "triggered_manually": True,
+            },
+        )
 
     return {
         "status": "completed",

@@ -29,6 +29,7 @@ from app.user_store import get_user as get_planner_user
 from app.users import get_or_create_user_id
 from app.models import AgentRun, ChatMessage as ChatMessageModel
 from app.log_sanitize import sl
+from app.posthog_client import get_posthog
 
 logger = logging.getLogger(__name__)
 
@@ -344,6 +345,23 @@ async def run_agent(
         session_id=body.session_id,
     ))
 
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user.user_id,
+            event="agent_run_completed",
+            properties={
+                "agent_name": agent_name,
+                "model": result.model,
+                "tokens_used": result.tokens_used,
+                "tool_calls_count": len(result.tool_calls_made),
+                "duration_seconds": round(result.duration_seconds, 2),
+                "stop_reason": result.stop_reason,
+                "llm_provider": settings.LLM_PROVIDER,
+                "has_session": bool(body.session_id),
+            },
+        )
+
     return AgentRunResponse(
         content=result.content,
         agent=agent_name,
@@ -483,6 +501,23 @@ async def chat_with_agent(
         session_id=session_id,
     ))
 
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user.user_id,
+            event="agent_chat_completed",
+            properties={
+                "agent_name": agent_name,
+                "model": result.model,
+                "tokens_used": result.tokens_used,
+                "tool_calls_count": len(result.tool_calls_made),
+                "duration_seconds": duration,
+                "stop_reason": result.stop_reason,
+                "llm_provider": settings.LLM_PROVIDER,
+                "clarification_needed": result.stop_reason == "clarification",
+            },
+        )
+
     return {
         "status": status,
         "reply": result.content,
@@ -613,6 +648,24 @@ async def orchestrate(
         agent_response=result.content or "",
         session_id=body.session_id,
     ))
+
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user.user_id,
+            event="orchestration_completed",
+            properties={
+                "model": result.model,
+                "tokens_used": result.tokens_used,
+                "delegations_made": len(result.delegations) if result.delegations else 0,
+                "agents_used": agents_used,
+                "tool_calls_count": len(result.tool_calls_made),
+                "duration_seconds": round(result.duration_seconds, 2),
+                "stop_reason": result.stop_reason,
+                "llm_provider": settings.LLM_PROVIDER,
+                "has_session": bool(body.session_id),
+            },
+        )
 
     return OrchestrationResponse(
         content=result.content,

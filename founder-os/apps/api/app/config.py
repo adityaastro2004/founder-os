@@ -108,6 +108,11 @@ class Settings(BaseSettings):
     STATE_NOTION_FULL_WALK_EVERY_S: int = 86_400
     STATE_NOTION_API_VERSION: str = "2022-06-28"
 
+    # ── PostHog Analytics ──
+    POSTHOG_PROJECT_TOKEN: str = ""
+    POSTHOG_HOST: str = "https://us.i.posthog.com"
+    POSTHOG_DISABLED: bool = False
+
     # ── MCP Tool Servers ──
     # External MCP servers (stdio or SSE) to connect to.
     # Each entry: {"name": "...", "transport": "stdio"|"sse", "command": "...",
