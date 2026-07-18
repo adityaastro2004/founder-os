@@ -22,7 +22,7 @@ from sqlalchemy import select
 
 from app.auth import ClerkUser, require_auth
 from app.config import get_settings
-from app.database import get_db
+from app.database import async_session, get_db
 from app.redis import get_redis
 from app.agents.registry import AgentRegistry
 from app.user_store import get_user as get_planner_user
@@ -638,6 +638,11 @@ def _sse(data: dict) -> str:
     return f"data: {json.dumps(data, default=str)}\n\n"
 
 
+# Strong refs so in-flight background orchestrations are never GC'd
+# (asyncio only keeps weak references to tasks).
+_background_runs: set[asyncio.Task] = set()
+
+
 # ── Streaming orchestrate — SSE with intermediate events ──
 
 @router.post("/orchestrate/stream")
@@ -661,59 +666,157 @@ async def orchestrate_stream(
       - thinking    — heartbeat / agent is processing
       - done        — final response with full payload
       - error       — an error occurred
+
+    The run itself executes as a detached background task with its own DB
+    session: if the client disconnects (tab switch, navigation, reload) the
+    orchestration still finishes and persists to chat history. Agent-creation
+    errors surface as an SSE ``error`` event rather than a 503.
     """
     settings = get_settings()
     redis = get_redis()
-    registry = AgentRegistry(db=db, redis=redis, settings=settings)
 
     user_uuid = await get_or_create_user_id(user.user_id, db, email=user.email)
     planner_uid = _resolve_planner_user_id(user.user_id)
-
-    try:
-        agent = await registry.get(
-            "orchestrator",
-            user_id=user_uuid,
-            session_id=body.session_id,
-            planner_user_id=planner_uid,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=503, detail=str(exc))
-
-    # Load prior conversation history from DB into agent memory
     stream_session = body.session_id or ""
-    if stream_session:
-        await _load_session_history(agent, db, user.user_id, stream_session, "orchestrator")
+
+    result_future: asyncio.Future = asyncio.get_event_loop().create_future()
+    # Mark any exception as retrieved — the client may disconnect before the
+    # run finishes, leaving no consumer to await the future.
+    result_future.add_done_callback(
+        lambda f: f.exception() if not f.cancelled() else None
+    )
+
+    async def _run_and_persist() -> None:
+        # The request-scoped session dies when the client disconnects, so the
+        # run (and its persistence) must use its own session end to end.
+        try:
+            async with async_session() as bg_db:
+                registry = AgentRegistry(db=bg_db, redis=redis, settings=settings)
+                agent = await registry.get(
+                    "orchestrator",
+                    user_id=user_uuid,
+                    session_id=body.session_id,
+                    planner_user_id=planner_uid,
+                )
+                if stream_session:
+                    await _load_session_history(
+                        agent, bg_db, user.user_id, stream_session, "orchestrator"
+                    )
+
+                # Persist the user message up-front (after the history load so
+                # it is not double-counted in agent memory) so the conversation
+                # survives a page reload while the run is still in flight.
+                try:
+                    bg_db.add(ChatMessageModel(
+                        user_id=user.user_id,
+                        session_id=stream_session,
+                        agent_name="orchestrator",
+                        role="user",
+                        content=body.message,
+                    ))
+                    await bg_db.commit()
+                except Exception:
+                    await bg_db.rollback()
+
+                result = await agent.run(body.message, extra_context=body.extra_context)
+
+                agents_used = (
+                    list({d.to_agent for d in result.delegations})
+                    if result.delegations else []
+                )
+                tool_names = list({
+                    tc.get("tool", "")
+                    for tc in result.tool_calls_made
+                    if tc.get("tool")
+                })
+                deleg_details = [
+                    {
+                        "agent": d.to_agent,
+                        "task": d.task[:200],
+                        "success": d.success,
+                        "tokens": d.tokens_used,
+                        "duration": round(d.duration_seconds, 2) if d.duration_seconds else None,
+                        "error": d.error,
+                    }
+                    for d in (result.delegations or [])
+                ]
+
+                try:
+                    bg_db.add(AgentRun(
+                        user_id=user.user_id,
+                        agent_name="orchestrator",
+                        session_id=body.session_id,
+                        user_message=body.message,
+                        agent_response=result.content or "",
+                        model=result.model,
+                        tokens_used=result.tokens_used,
+                        cost_usd=result.cost_usd,
+                        duration_seconds=round(result.duration_seconds, 2),
+                        stop_reason=result.stop_reason,
+                        tool_names=tool_names,
+                        tool_calls_count=len(result.tool_calls_made),
+                        agents_used=agents_used,
+                        delegations_made=len(result.delegations) if result.delegations else 0,
+                        delegation_details=deleg_details,
+                    ))
+                    bg_db.add(ChatMessageModel(
+                        user_id=user.user_id,
+                        session_id=stream_session,
+                        agent_name="orchestrator",
+                        role="assistant",
+                        content=result.content or "",
+                        model=result.model,
+                        tokens_used=result.tokens_used,
+                        duration_seconds=round(result.duration_seconds, 2),
+                        tool_names=tool_names,
+                        agents_used=agents_used,
+                        delegations_made=len(result.delegations) if result.delegations else 0,
+                    ))
+                    await bg_db.commit()
+                except Exception:
+                    await bg_db.rollback()
+
+            # Fire-and-forget insight extraction
+            asyncio.create_task(_extract_insights_background(
+                user_id=user.user_id,
+                agent_name="orchestrator",
+                user_message=body.message,
+                agent_response=result.content or "",
+                session_id=body.session_id,
+            ))
+
+            if not result_future.done():
+                result_future.set_result(result)
+        except Exception as exc:
+            logger.exception("orchestrate/stream background run failed")
+            if not result_future.done():
+                result_future.set_exception(exc)
+
+    # Subscribe before starting the run so no early events are missed
+    pubsub = redis.pubsub()
+    await pubsub.psubscribe(
+        "fos:events:tool.*",
+        "fos:events:agent.*",
+        "fos:events:delegation.*",
+        "fos:events:orchestration.*",
+    )
+
+    run_task = asyncio.create_task(_run_and_persist())
+    _background_runs.add(run_task)
+    run_task.add_done_callback(_background_runs.discard)
 
     async def event_generator():
         from app.agents.event_bus import Event
 
-        pubsub = redis.pubsub()
-        await pubsub.psubscribe(
-            "fos:events:tool.*",
-            "fos:events:agent.*",
-            "fos:events:delegation.*",
-            "fos:events:orchestration.*",
-        )
-
         yield _sse({"type": "started", "timestamp": time.time()})
 
-        result_future: asyncio.Future = asyncio.get_event_loop().create_future()
-
-        async def _run_agent():
-            try:
-                res = await agent.run(body.message, extra_context=body.extra_context)
-                if not result_future.done():
-                    result_future.set_result(res)
-            except Exception as exc:
-                if not result_future.done():
-                    result_future.set_exception(exc)
-
-        task = asyncio.create_task(_run_agent())
+        heartbeats = 0
 
         try:
             while not result_future.done():
                 if await request.is_disconnected():
-                    task.cancel()
+                    # Client navigated away or reloaded — stop streaming but
+                    # let the background run finish and persist to history.
                     break
 
                 msg = await pubsub.get_message(ignore_subscribe_messages=True, timeout=0.5)
@@ -806,10 +909,8 @@ async def orchestrate_stream(
                         pass
                 else:
                     # Send periodic heartbeat, not every 500ms
-                    if not hasattr(event_generator, '_hb_count'):
-                        event_generator._hb_count = 0
-                    event_generator._hb_count += 1
-                    if event_generator._hb_count % 10 == 0:
+                    heartbeats += 1
+                    if heartbeats % 10 == 0:
                         yield _sse({"type": "thinking", "timestamp": time.time()})
 
             # Final result
@@ -859,67 +960,6 @@ async def orchestrate_stream(
                         "pending_approvals": result.pending_approvals,
                         "timestamp": time.time(),
                     })
-
-                    # Persist streaming orchestrator run to DB
-                    try:
-                        _tool_names = list({
-                            tc.get("tool", "")
-                            for tc in result.tool_calls_made
-                            if tc.get("tool")
-                        })
-                        run_record = AgentRun(
-                            user_id=user.user_id,
-                            agent_name="orchestrator",
-                            session_id=body.session_id,
-                            user_message=body.message,
-                            agent_response=result.content or "",
-                            model=result.model,
-                            tokens_used=result.tokens_used,
-                            cost_usd=result.cost_usd,
-                            duration_seconds=round(result.duration_seconds, 2),
-                            stop_reason=result.stop_reason,
-                            tool_names=_tool_names,
-                            tool_calls_count=len(result.tool_calls_made),
-                            agents_used=agents_used,
-                            delegations_made=len(result.delegations) if result.delegations else 0,
-                            delegation_details=_deleg_details,
-                        )
-                        db.add(run_record)
-                        # Save chat messages for persistence
-                        user_cm = ChatMessageModel(
-                            user_id=user.user_id,
-                            session_id=body.session_id or "",
-                            agent_name="orchestrator",
-                            role="user",
-                            content=body.message,
-                        )
-                        assistant_cm = ChatMessageModel(
-                            user_id=user.user_id,
-                            session_id=body.session_id or "",
-                            agent_name="orchestrator",
-                            role="assistant",
-                            content=result.content or "",
-                            model=result.model,
-                            tokens_used=result.tokens_used,
-                            duration_seconds=round(result.duration_seconds, 2),
-                            tool_names=_tool_names,
-                            agents_used=agents_used,
-                            delegations_made=len(result.delegations) if result.delegations else 0,
-                        )
-                        db.add(user_cm)
-                        db.add(assistant_cm)
-                        await db.commit()
-                    except Exception:
-                        await db.rollback()
-
-                    # Fire-and-forget insight extraction
-                    asyncio.create_task(_extract_insights_background(
-                        user_id=user.user_id,
-                        agent_name="orchestrator",
-                        user_message=body.message,
-                        agent_response=result.content or "",
-                        session_id=body.session_id,
-                    ))
         finally:
             await pubsub.punsubscribe()
             await pubsub.close()

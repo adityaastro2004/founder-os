@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
+import { useChatStore } from "@/lib/chat-store";
 import {
   LayoutDashboard,
   Bot,
@@ -45,6 +46,14 @@ export function Sidebar({
   onClose: () => void;
 }) {
   const pathname = usePathname();
+  const { orchestratorPending, agentChatPending } = useChatStore();
+
+  // A chat run is still in flight — show a pulse so the user knows they can
+  // browse anywhere and come back.
+  const runningDot: Record<string, boolean> = {
+    Chat: orchestratorPending,
+    Agents: agentChatPending,
+  };
 
   return (
     <aside
@@ -100,6 +109,12 @@ export function Sidebar({
                 )}
               />
               {item.name}
+              {runningDot[item.name] && (
+                <span
+                  className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse"
+                  title="Agent run in progress"
+                />
+              )}
             </Link>
           );
         })}
