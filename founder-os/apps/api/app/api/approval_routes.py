@@ -21,6 +21,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import ClerkUser, require_auth
 from app.database import get_db
+from app.posthog_client import get_posthog
 from app.redis import get_redis
 from app.agents.approval import (
     ApprovalGate,
@@ -166,6 +167,18 @@ async def approve_action(
     if not result:
         raise HTTPException(status_code=404, detail="Approval not found or expired")
 
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user.user_id,
+            event="tool_approved",
+            properties={
+                "tool_name": result.tool_name,
+                "risk_level": approval.risk_level,
+                "agent_name": approval.agent_name,
+            },
+        )
+
     return ApprovalResolveResponse(
         id=result.id,
         tool_name=result.tool_name,
@@ -198,6 +211,18 @@ async def reject_action(
     result = await gate.reject(approval_id, note=body.note or "")
     if not result:
         raise HTTPException(status_code=404, detail="Approval not found or expired")
+
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user.user_id,
+            event="tool_denied",
+            properties={
+                "tool_name": result.tool_name,
+                "risk_level": approval.risk_level,
+                "agent_name": approval.agent_name,
+            },
+        )
 
     return ApprovalResolveResponse(
         id=result.id,

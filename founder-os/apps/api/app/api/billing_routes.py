@@ -19,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import ClerkUser, require_auth
 from app.config import get_settings
 from app.database import get_db
+from app.posthog_client import get_posthog
 from app.models import SubscriptionPlan, User
 from app.stripe import (
     create_checkout_session,
@@ -172,6 +173,14 @@ async def create_checkout(
         logger.error("Stripe checkout error: %s", exc)
         raise HTTPException(status_code=502, detail="Stripe error — please try again.")
 
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=clerk_user.user_id,
+            event="checkout_initiated",
+            properties={"plan": body.plan},
+        )
+
     return CheckoutOut(checkout_url=url)
 
 
@@ -232,4 +241,25 @@ async def stripe_webhook(
         raise HTTPException(status_code=400, detail="Invalid signature")
 
     await handle_webhook_event(event, db)
+
+    ph = get_posthog()
+    if ph is not None:
+        event_type = event["type"]
+        data = event["data"]["object"]
+        if event_type in (
+            "checkout.session.completed",
+            "customer.subscription.updated",
+            "customer.subscription.deleted",
+        ):
+            clerk_user_id = data.get("metadata", {}).get("clerk_user_id") or data.get("customer", "unknown")
+            ph.capture(
+                distinct_id=clerk_user_id,
+                event="subscription_changed",
+                properties={
+                    "stripe_event_type": event_type,
+                    "subscription_status": data.get("status"),
+                    "plan": data.get("metadata", {}).get("plan"),
+                },
+            )
+
     return {"status": "ok"}

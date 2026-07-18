@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import ClerkUser, require_auth
 from app.database import get_db
+from app.posthog_client import get_posthog
 from app.models import FounderProfile, User
 
 logger = logging.getLogger(__name__)
@@ -191,6 +192,21 @@ async def create_founder_profile(
     # and stage regenerated agent-definition proposals. Runs after the response is sent
     # and the request session has committed.
     background_tasks.add_task(_evolve_in_background, user.id, clerk_user.user_id)
+
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=clerk_user.user_id,
+            event="onboarding_completed",
+            properties={
+                "business_type": payload.business_type,
+                "industry": payload.industry,
+                "business_stage": payload.business_stage,
+                "primary_goal": payload.primary_goal,
+                "team_size": payload.team_size,
+                "preferred_communication": payload.preferred_communication,
+            },
+        )
 
     return FounderProfileResponse(
         id=str(profile.id),
