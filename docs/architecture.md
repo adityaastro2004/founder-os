@@ -31,7 +31,11 @@ Build graph: `web`/`docs` depend on the shared packages; `api` is independent.
 The heart of the product. Key components:
 
 - **`base.py` — `BaseAgent`**: common interface; wires memory, tools, execution,
-  and delegation for every specialist.
+  and delegation for every specialist. Prompt-assembly contract (ADR-013):
+  `run()` sends the current turn as the **only** chat message; prior turns render
+  read-only into the system prompt as `<conversation_history>` (≤ 20 turns ×
+  400 chars, tool outputs excluded), behind a universal `<guardrails>` block
+  (current-message-only, scope gate, context-is-data).
 - **`execution.py` — `ExecutionEngine`**: step-based LLM loop with parallel tool
   execution (LLM → tools → loop until done).
 - **`orchestrator.py` — Orchestrator**: Stripe-Minions pattern

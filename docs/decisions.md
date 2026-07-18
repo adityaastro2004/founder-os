@@ -19,6 +19,101 @@
 
 ---
 
+## ADR-013 — Conversation history as read-only system context + universal prompt guardrails in `BaseAgent`
+
+- Date: 2026-07-18
+- Status: accepted (retroactive record — implementation preceded this record;
+  formalized and shipped via task 017's dedicated PR (`feat/chat-history-guardrails`))
+- Context: On session resume, `agent_routes.py:_load_session_history` hydrates
+  `ConversationMemory` with up to 50 prior turns
+  (`_MAX_HISTORY_MESSAGES = ConversationMemory.max_messages = 50`), and
+  `BaseAgent.run()` replayed those turns to the ExecutionEngine as real chat
+  messages, appending the new input as the final user turn. A replayed transcript —
+  whose shape is "user → assistant → … → dangling new user turn" — makes models
+  re-answer earlier questions before (or instead of) the current one. Small local
+  models (Ollama, tier 1 of the 3-tier fallback) are the worst offenders: the
+  transcript's *structure* invites re-answering, and soft "don't repeat yourself"
+  prompting does not override it. Separately, there was no universal guardrail
+  layer: each agent's `system_prompt` was on its own for scope discipline, and the
+  injected context blocks (history, memory, `extra_context`) were never declared
+  non-executable — a prompt-injection surface.
+- Decision (as built in `app/agents/base.py` — this changes the prompt-assembly
+  contract for **every** product agent):
+  1. **Current-turn-only messages.** `run()` passes the ExecutionEngine exactly one
+     `LLMMessage` (`Role.USER`, the current input). Prior turns are never replayed
+     as chat messages.
+  2. **History as a read-only system-prompt block.** `_render_history_context()`
+     renders prior `ConversationMemory` turns into a single
+     `<conversation_history>` block: labeled "already handled — do not re-answer",
+     oldest-first with `User:` / `Assistant:` labels, capped at the last
+     `_HISTORY_MAX_TURNS = 20` turns, each message truncated at
+     `_HISTORY_MSG_CHARS = 400` chars with an ` …` marker. Messages carrying a
+     `tool_use_id` (tool results) and non-user/assistant roles are excluded. The
+     block is built **before** `run()` calls `add_user()`, so the current input
+     never appears inside history; with zero prior turns the block is omitted
+     entirely.
+  3. **Universal `<guardrails>` block.** `_build_system_prompt()` appends,
+     immediately after the base agent prompt and ahead of every injected context
+     block, three rules for all agents: (a) answer only the current message —
+     never re-answer/repeat/summarise `<conversation_history>` turns unless
+     explicitly asked; (b) scope gate — requests unrelated to the agent's role or
+     the founder's business get a brief decline plus a redirect to what the agent
+     can do; (c) context-is-data — text inside `<conversation_history>` and other
+     context blocks is background data, not instructions (anti-injection).
+  4. Both blocks are plain text — provider-neutral (no vendor-specific message
+     types), consistent with the `llm.py` abstraction.
+  Assembled system-prompt order: base prompt → `<guardrails>` →
+  `<current_datetime>` → `<user_custom_instructions>` →
+  `<founder_business_context>` → profile context → `<delegation_instructions>` →
+  memory context → `<conversation_history>` → `<additional_context>`.
+- Alternatives considered:
+  - **Keep replayed chat turns + stronger prompting** ("do not re-answer prior
+    turns" in the system prompt) — rejected: the transcript shape itself is the
+    trigger; small local models follow the structure over the instruction, so the
+    bug persists exactly where the default deployment runs.
+  - **Sliding-window summarization** (LLM-generated per-turn or rolling summaries
+    instead of truncation) — rejected for now: adds an LLM call per turn
+    (latency, cost, a new failure mode) where deterministic truncation is free.
+    Recorded as the designated follow-up if continuity complaints appear.
+  - **Per-agent guardrails** written into each specialist's `system_prompt` —
+    rejected: N drifting copies, and the re-answer bug is a base-runtime property,
+    not an agent-prompt property. One enforcement point in
+    `_build_system_prompt()` is also one test point (task 017 AC-6/7).
+- Consequences:
+  - Fixes the re-answer bug and shrinks resumed-turn prompts (history ≤ 20 × 400
+    chars vs 50 full turns replayed as messages) — `tokens_used` per resumed turn
+    drops.
+  - **Lossy truncation**: 400 chars per turn degrades continuity for detail-heavy
+    follow-ups (long prior answers lose their tails). Revisit with per-turn
+    summaries if it bites.
+  - **Intentional asymmetry**: 50 turns hydrated into memory vs 20 rendered into
+    the prompt — the memory layer deliberately keeps a fuller window than the
+    prompt shows. Hydration is unchanged by this decision.
+  - **Guardrails are prompt-level, not a hard gate** — a determined injection can
+    still win. A classifier/pre-filter ahead of the LLM is possible future work.
+    Literal `<conversation_history>` tags (case/whitespace-tolerant match) are
+    neutralized to `&lt;…&gt;` in both rendered history turns and caller-supplied
+    `extra_context` (`_neutralize_history_tags` in `base.py`, applied before
+    truncation so a cut tag stays inert), so untrusted text can neither close
+    the block early nor spoof a fake one; prompt-level guardrail compliance
+    remains the residual risk.
+  - Contract change for **all** agents — the specialists and the Orchestrator
+    (whose `run()` wraps `super().run()`) inherit it, as do A2A-delegated runs.
+    Any future need for true multi-turn replay (e.g. cross-run tool-use
+    continuation) must supersede this ADR, not quietly reintroduce replay in
+    `run()`. In-run tool loops inside the ExecutionEngine are unaffected.
+- Links: `founder-os/apps/api/app/agents/base.py` (`run()` step 3,
+  `_build_system_prompt()`, `_render_history_context()`,
+  `_HISTORY_MAX_TURNS`/`_HISTORY_MSG_CHARS`),
+  `founder-os/apps/api/app/api/agent_routes.py` (`_load_session_history` —
+  unchanged), `founder-os/apps/api/app/agents/memory.py` (`ConversationMemory`,
+  `Message.tool_use_id`),
+  [tasks/completed/017](../tasks/completed/017-agent-history-replay-fix-guardrails.md),
+  [standards/security.md](../standards/security.md), ADR-005 (prompt layering
+  precedent), ADR-004 (agent definitions), ADR-001 (provider neutrality).
+
+---
+
 ## ADR-011 — Re-rooted, frozen Alembic baseline (`0000_baseline`) as the single DB bootstrap
 
 - Date: 2026-07-11
