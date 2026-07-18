@@ -33,6 +33,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { useChatStore, EMPTY_SESSION } from "@/lib/chat-store";
 
 /* ── Types ───────────────────────────────────────────── */
 interface ActivityEvent {
@@ -63,17 +64,6 @@ interface ActivityStats {
   agents: AgentStatus[];
   total_events_today: number;
   pending_approvals: number;
-}
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  toolsUsed?: string[];
-  tokensUsed?: number;
-  durationSeconds?: number;
-  status?: "sending" | "completed" | "error" | "clarification";
 }
 
 interface HistoryRun {
@@ -182,13 +172,11 @@ function AgentChatPanel({
   agent: AgentStatus;
   onClose: () => void;
 }) {
-  const { getToken } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { sessions, ensureHistory, sendAgentChat, resetSession } = useChatStore();
   const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sessionIdRef = useRef(() => {
+  const [sessionId, setSessionId] = useState(() => {
     if (typeof window === "undefined") return `${agent.agent_name}-chat-${Date.now()}`;
     const key = `agent-chat-session-${agent.agent_name}`;
     const stored = localStorage.getItem(key);
@@ -197,44 +185,19 @@ function AgentChatPanel({
     localStorage.setItem(key, id);
     return id;
   });
-  const sessionId = typeof sessionIdRef.current === "function" ? sessionIdRef.current() : sessionIdRef.current;
-  // Ensure ref stores the resolved string for future reads
-  if (typeof sessionIdRef.current === "function") sessionIdRef.current = sessionId as unknown as () => string;
   const gradient = agentColors[agent.agent_name] || agentColors.system;
   const suggestions = agentSuggestions[agent.agent_name] || [];
 
-  // Load persisted agent chat messages on mount
+  // Chat state and the in-flight run live in ChatProvider (dashboard layout),
+  // so closing this panel or switching tabs never interrupts a running agent.
+  const session = sessions[sessionId] ?? EMPTY_SESSION;
+  const messages = session.messages;
+  const sending = session.pending;
+
+  // Load persisted agent chat messages (once per session, provider-cached)
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const token = await getToken();
-        const res = await fetch(
-          `${DIRECT_API_URL}/api/history/chat/${encodeURIComponent(sessionId)}`,
-          {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          }
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        if (cancelled || !Array.isArray(data) || data.length === 0) return;
-        const restored: ChatMessage[] = data.map((m: Record<string, unknown>) => ({
-          id: (m.id as string) || `restored-${Date.now()}-${Math.random()}`,
-          role: m.role as "user" | "assistant",
-          content: m.content as string,
-          timestamp: new Date(m.created_at as string),
-          toolsUsed: (m.tool_names as string[]) || undefined,
-          tokensUsed: (m.tokens_used as number) || undefined,
-          durationSeconds: (m.duration_seconds as number) || undefined,
-          status: "completed" as const,
-        }));
-        setMessages(restored);
-      } catch {
-        // Silently ignore
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [agent.agent_name, getToken, sessionId]);
+    ensureHistory(sessionId, agent.agent_name);
+  }, [sessionId, agent.agent_name, ensureHistory]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -244,88 +207,11 @@ function AgentChatPanel({
     inputRef.current?.focus();
   }, []);
 
-  const handleSend = async (text?: string) => {
+  const handleSend = (text?: string) => {
     const userMessage = (text || input).trim();
     if (!userMessage || sending) return;
-    setSending(true);
     setInput("");
-
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: "user",
-      content: userMessage,
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
-
-    const assistantId = `assistant-${Date.now()}`;
-    const pendingMsg: ChatMessage = {
-      id: assistantId,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-      status: "sending",
-    };
-    setMessages((prev) => [...prev, pendingMsg]);
-
-    try {
-      const token = await getToken();
-      const res = await fetch(
-        `${DIRECT_API_URL}/api/agents/${agent.agent_name}/chat`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            message: userMessage,
-            session_id: sessionId,
-          }),
-        }
-      );
-
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail || `API error ${res.status}`);
-      }
-
-      const data = await res.json();
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? {
-                ...m,
-                content: data.reply || data.content || "Done.",
-                status:
-                  data.status === "clarification_needed"
-                    ? "clarification"
-                    : "completed",
-                toolsUsed: data.tool_names || [],
-                tokensUsed: data.tokens_used,
-                durationSeconds: data.duration_seconds,
-              }
-            : m
-        )
-      );
-    } catch (err) {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? {
-                ...m,
-                content:
-                  err instanceof Error
-                    ? err.message
-                    : "Something went wrong.",
-                status: "error",
-              }
-            : m
-        )
-      );
-    } finally {
-      setSending(false);
-    }
+    void sendAgentChat(agent.agent_name, sessionId, userMessage);
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -334,12 +220,12 @@ function AgentChatPanel({
   };
 
   const clearChat = () => {
-    setMessages([]);
+    resetSession(sessionId);
     const newId = `${agent.agent_name}-chat-${Date.now()}`;
-    sessionIdRef.current = newId as unknown as () => string;
     if (typeof window !== "undefined") {
       localStorage.setItem(`agent-chat-session-${agent.agent_name}`, newId);
     }
+    setSessionId(newId);
   };
 
   return (

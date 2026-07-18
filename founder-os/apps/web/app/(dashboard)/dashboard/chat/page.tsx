@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect, FormEvent } from "react";
-import { useApi } from "@/lib/use-api";
-import { useAuth } from "@clerk/nextjs";
-import { DIRECT_API_URL } from "@/lib/api";
+import {
+  useChatStore,
+  EMPTY_SESSION,
+  type ChatMessage,
+} from "@/lib/chat-store";
 import {
   MessageSquare,
   Send,
@@ -19,62 +21,8 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 
-/* ── Types ─────────────────────────────────────────── */
-interface OrchestrationResponse {
-  content: string;
-  model: string;
-  tokens_used: number;
-  tool_calls_made: number;
-  tool_names: string[];
-  delegations_made: number;
-  agents_used: string[];
-  duration_seconds: number;
-  stop_reason: string;
-  cost_usd: number;
-  llm_provider: string;
-  pending_approvals: unknown[];
-}
-
-interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
-  meta?: {
-    model: string;
-    tokens: number;
-    duration: number;
-    agents_used: string[];
-    delegations: number;
-    tool_calls: number;
-    tool_names: string[];
-  };
-  error?: boolean;
-}
-
-/** Intermediate streaming event from the SSE endpoint */
-interface StreamingEvent {
-  type: string;
-  tool_name?: string;
-  agent?: string;
-  is_error?: boolean;
-  duration_ms?: number;
-  timestamp?: number;
-  // done-event fields
-  content?: string;
-  model?: string;
-  tokens_used?: number;
-  tool_calls_made?: number;
-  tool_names?: string[];
-  delegations_made?: number;
-  agents_used?: string[];
-  duration_seconds?: number;
-  stop_reason?: string;
-  cost_usd?: number;
-  llm_provider?: string;
-  pending_approvals?: unknown[];
-  error?: string;
-}
+// Chat state and the in-flight run live in ChatProvider (dashboard layout),
+// so navigating to another tab never interrupts a running agent.
 
 /* ── Suggested Prompts ─────────────────────────────── */
 const SUGGESTIONS = [
@@ -146,12 +94,8 @@ function MessageBubble({ message }: { message: ChatMessage }) {
 
 /* ── Chat Page ────────────────────────────────────── */
 export default function ChatPage() {
-  const api = useApi();
-  const { getToken } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { sessions, ensureHistory, sendOrchestrator } = useChatStore();
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [streamingEvents, setStreamingEvents] = useState<StreamingEvent[]>([]);
   const [sessionId] = useState(() => {
     if (typeof window === "undefined") return crypto.randomUUID();
     const key = "orchestrator-chat-session-id";
@@ -163,7 +107,14 @@ export default function ChatPage() {
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const abortRef = useRef<AbortController | null>(null);
+
+  const session = sessions[sessionId] ?? EMPTY_SESSION;
+  const { messages, pending: loading, streamingEvents } = session;
+
+  // Load persisted chat messages (once per session, provider-cached)
+  useEffect(() => {
+    ensureHistory(sessionId, "orchestrator");
+  }, [sessionId, ensureHistory]);
 
   // Prefill from an "Add automation" hand-off (Automations tab → Chat).
   useEffect(() => {
@@ -174,57 +125,6 @@ export default function ChatPage() {
       setInput(pending);
       inputRef.current?.focus();
     }
-  }, []);
-
-  // Load persisted chat messages on mount
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const token = await getToken();
-        const res = await fetch(
-          `${DIRECT_API_URL}/api/history/chat/${encodeURIComponent(sessionId)}`,
-          {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          }
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        // API returns a plain array of ChatMessageOut, not {messages: [...]}
-        const msgs = Array.isArray(data) ? data : data.messages;
-        if (cancelled || !Array.isArray(msgs) || msgs.length === 0) return;
-        const restored: ChatMessage[] = msgs.map((m: Record<string, unknown>) => ({
-          id: (m.id as string) || crypto.randomUUID(),
-          role: m.role as "user" | "assistant",
-          content: m.content as string,
-          timestamp: new Date(m.created_at as string),
-          ...(m.role === "assistant" && m.tokens_used
-            ? {
-                meta: {
-                  model: (m.model as string) || "",
-                  tokens: (m.tokens_used as number) || 0,
-                  duration: (m.duration_seconds as number) || 0,
-                  agents_used: (m.agents_used as string[]) || [],
-                  delegations: (m.delegations_made as number) || 0,
-                  tool_calls: 0,
-                  tool_names: (m.tool_names as string[]) || [],
-                },
-              }
-            : {}),
-        }));
-        setMessages(restored);
-      } catch {
-        // Silently ignore — first load or API unavailable
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [sessionId, getToken]);
-
-  // Abort any in-flight request on unmount
-  useEffect(() => {
-    return () => {
-      abortRef.current?.abort();
-    };
   }, []);
 
   // Auto-scroll on new messages or streaming events
@@ -241,143 +141,13 @@ export default function ChatPage() {
     }
   };
 
-  const sendMessage = async (text: string) => {
+  const sendMessage = (text: string) => {
     if (!text.trim() || loading) return;
-
-    const userMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: text.trim(),
-      timestamp: new Date(),
-    };
-    setMessages((prev) => [...prev, userMsg]);
     setInput("");
     if (inputRef.current) inputRef.current.style.height = "auto";
-    setLoading(true);
-    setStreamingEvents([]);
-
-    // Cancel any previous request
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
-
-    try {
-      const token = await getToken();
-
-      // Try SSE streaming endpoint first
-      const res = await fetch(`${DIRECT_API_URL}/api/agents/orchestrate/stream`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          message: text.trim(),
-          session_id: sessionId,
-        }),
-        signal: controller.signal,
-      });
-
-      if (!res.ok) {
-        // Fallback to non-streaming endpoint
-        const data: OrchestrationResponse = await api("/api/agents/orchestrate", {
-          method: "POST",
-          body: JSON.stringify({
-            message: text.trim(),
-            session_id: sessionId,
-          }),
-        });
-        addAssistantMessage(data);
-        return;
-      }
-
-      // Parse SSE stream
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No readable stream");
-
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || ""; // Keep incomplete line in buffer
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-          try {
-            const event: StreamingEvent = JSON.parse(line.slice(6));
-
-            if (event.type === "done") {
-              // Final response — create the assistant message
-              addAssistantMessage({
-                content: event.content || "",
-                model: event.model || "",
-                tokens_used: event.tokens_used || 0,
-                tool_calls_made: event.tool_calls_made || 0,
-                tool_names: event.tool_names || [],
-                delegations_made: event.delegations_made || 0,
-                agents_used: event.agents_used || [],
-                duration_seconds: event.duration_seconds || 0,
-                stop_reason: event.stop_reason || "",
-                cost_usd: event.cost_usd || 0,
-                llm_provider: event.llm_provider || "",
-                pending_approvals: event.pending_approvals || [],
-              });
-              setStreamingEvents([]);
-            } else if (event.type === "error") {
-              throw new Error(event.error || "Agent error");
-            } else if (event.type !== "thinking") {
-              // Show intermediate events (tool_call, tool_result, agent_started, etc.)
-              setStreamingEvents((prev) => [...prev, event]);
-            }
-          } catch (parseErr) {
-            // Ignore non-JSON SSE lines
-            if (parseErr instanceof SyntaxError) continue;
-            throw parseErr;
-          }
-        }
-      }
-    } catch (err) {
-      if ((err as Error).name === "AbortError") return;
-      const errorMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content:
-          err instanceof Error
-            ? `Sorry, something went wrong: ${err.message}`
-            : "Sorry, something went wrong. Please try again.",
-        timestamp: new Date(),
-        error: true,
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-      setStreamingEvents([]);
-    } finally {
-      setLoading(false);
+    void sendOrchestrator(sessionId, text).finally(() => {
       inputRef.current?.focus();
-    }
-  };
-
-  const addAssistantMessage = (data: OrchestrationResponse) => {
-    const assistantMsg: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "assistant",
-      content: data.content,
-      timestamp: new Date(),
-      meta: {
-        model: data.model,
-        tokens: data.tokens_used,
-        duration: data.duration_seconds,
-        agents_used: data.agents_used,
-        delegations: data.delegations_made,
-        tool_calls: data.tool_calls_made,
-        tool_names: data.tool_names || [],
-      },
-    };
-    setMessages((prev) => [...prev, assistantMsg]);
+    });
   };
 
   const handleSubmit = (e: FormEvent) => {

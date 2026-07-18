@@ -26,12 +26,27 @@ Build graph: `web`/`docs` depend on the shared packages; `api` is independent.
 4. Lifespan (`app/main.py`) runs `init_db → init_redis → start_scheduler` on
    startup and the reverse on shutdown.
 
+### Chat streaming — detached runs
+
+`POST /api/agents/orchestrate/stream` (SSE) executes the orchestration as a
+**detached asyncio task with its own DB session** (`agent_routes.py`): the SSE
+generator only relays event-bus progress + the final `done` event. A client
+disconnect (tab switch, reload) stops the stream but **never cancels the run** —
+the user message is persisted up-front and the assistant reply + `AgentRun` are
+persisted by the background task on completion, so the conversation always lands
+in `/api/history/chat/{session_id}`. Agent-creation errors surface as an SSE
+`error` event (not a 503).
+
 ## Agent system (product runtime) — `app/agents/`
 
 The heart of the product. Key components:
 
 - **`base.py` — `BaseAgent`**: common interface; wires memory, tools, execution,
-  and delegation for every specialist.
+  and delegation for every specialist. Prompt-assembly contract (ADR-013):
+  `run()` sends the current turn as the **only** chat message; prior turns render
+  read-only into the system prompt as `<conversation_history>` (≤ 20 turns ×
+  400 chars, tool outputs excluded), behind a universal `<guardrails>` block
+  (current-message-only, scope gate, context-is-data).
 - **`execution.py` — `ExecutionEngine`**: step-based LLM loop with parallel tool
   execution (LLM → tools → loop until done).
 - **`orchestrator.py` — Orchestrator**: Stripe-Minions pattern
@@ -195,6 +210,15 @@ pages: overview, chat (SSE streaming), agents (live status), planner, tasks,
 knowledge, memory, content-ideas, settings. Shared client utilities in `lib/`:
 `useApi` (stable, ref-based token), `useEventSource` (SSE with backoff),
 `useStreamingFetch` (POST-based SSE for chat). See [standards/coding.md](../standards/coding.md).
+
+**Chat state is layout-scoped, not page-scoped.** `lib/chat-store.tsx`
+(`ChatProvider`, mounted in the `(dashboard)` layout) owns every chat session —
+the orchestrator Chat page and the per-agent chat panels — including in-flight
+SSE fetches, so navigating between tabs never aborts a running agent chat; the
+sidebar shows a pulse dot on Chat/Agents while a run is in flight. Pages are
+thin views over `useChatStore()`. The provider also restores persisted history
+per session and, after a reload that lands mid-run, briefly polls history until
+the assistant reply arrives.
 
 ## Infrastructure
 
