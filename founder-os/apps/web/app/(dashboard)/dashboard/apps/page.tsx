@@ -26,6 +26,13 @@ import {
   Loader2,
   Plug,
 } from "lucide-react";
+import {
+  PageHeader,
+  Card,
+  Button,
+  Badge,
+  Textarea,
+} from "@/app/_components/ui";
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -63,15 +70,15 @@ interface FounderProfile {
 
 /* ── Constants ─────────────────────────────────────── */
 
-const GOAL_LABELS: Record<string, { label: string; emoji: string }> = {
-  grow_revenue: { label: "Grow Revenue", emoji: "💸" },
-  acquire_users: { label: "Acquire Users", emoji: "👥" },
-  launch_product: { label: "Launch Product", emoji: "🚀" },
-  raise_funding: { label: "Raise Funding", emoji: "🤝" },
-  build_team: { label: "Build Team", emoji: "🧑‍🤝‍🧑" },
-  automate_ops: { label: "Automate Operations", emoji: "⚡" },
-  improve_retention: { label: "Improve Retention", emoji: "🔄" },
-  expand_market: { label: "Expand to New Markets", emoji: "🌍" },
+const GOAL_LABELS: Record<string, string> = {
+  grow_revenue: "Grow revenue",
+  acquire_users: "Acquire users",
+  launch_product: "Launch product",
+  raise_funding: "Raise funding",
+  build_team: "Build team",
+  automate_ops: "Automate operations",
+  improve_retention: "Improve retention",
+  expand_market: "Expand to new markets",
 };
 
 const iconMap: Record<string, React.ElementType> = {
@@ -89,35 +96,31 @@ const iconMap: Record<string, React.ElementType> = {
 
 const statusConfig: Record<
   string,
-  { label: string; color: string; bgColor: string; Icon: React.ElementType }
+  { label: string; color: string; Icon: React.ElementType }
 > = {
   connected: {
     label: "Connected",
-    color: "text-[var(--color-success)]",
-    bgColor: "bg-green-50",
+    color: "text-success",
     Icon: CheckCircle2,
   },
   disconnected: {
     label: "Not connected",
-    color: "text-[var(--color-text-muted)]",
-    bgColor: "bg-[var(--color-surface-subtle)]",
+    color: "text-ink-secondary",
     Icon: Plug,
   },
   error: {
     label: "Error",
-    color: "text-red-500",
-    bgColor: "bg-red-50",
+    color: "text-danger",
     Icon: AlertCircle,
   },
   coming_soon: {
     label: "Coming soon",
-    color: "text-[var(--color-text-muted)]",
-    bgColor: "bg-[var(--color-surface-subtle)]",
+    color: "text-ink-secondary",
     Icon: Clock,
   },
 };
 
-/* ── Primary Goal Card ─────────────────────────────── */
+/* ── Primary goal card ─────────────────────────────── */
 
 function PrimaryGoalCard({
   profile,
@@ -159,30 +162,29 @@ function PrimaryGoalCard({
     setEditing(false);
   };
 
-  const goalInfo = goalType ? GOAL_LABELS[goalType] : null;
+  const goalLabel = goalType ? GOAL_LABELS[goalType] : null;
 
   return (
-    <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-6">
-      <div className="flex items-start justify-between mb-4">
+    <Card className="p-6">
+      <div className="mb-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[var(--color-accent)] flex items-center justify-center">
-            <Target className="w-5 h-5 text-[var(--color-accent-foreground)]" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent">
+            <Target className="h-5 w-5 text-white" aria-hidden="true" />
           </div>
           <div>
-            <h2 className="text-base font-semibold">Primary Goal</h2>
-            <p className="text-xs text-[var(--color-text-muted)]">
+            <h2 className="font-serif text-base font-semibold text-ink">
+              Primary goal
+            </h2>
+            <p className="text-xs text-ink-secondary">
               Your company&apos;s north star — every agent aligns to this
             </p>
           </div>
         </div>
         {!editing && (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-muted)] rounded-lg transition-colors"
-          >
-            <Pencil className="w-3.5 h-3.5" />
+          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
             Edit
-          </button>
+          </Button>
         )}
       </div>
 
@@ -190,22 +192,22 @@ function PrimaryGoalCard({
         <div className="space-y-4">
           {/* Goal type selector */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-2">
-              Goal Type
+            <label className="mb-2 block text-xs font-medium text-ink-secondary">
+              Goal type
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {Object.entries(GOAL_LABELS).map(([key, { label, emoji }]) => (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {Object.entries(GOAL_LABELS).map(([key, label]) => (
                 <button
                   key={key}
+                  type="button"
                   onClick={() => setGoalType(key)}
                   className={clsx(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all",
+                    "rounded-control border px-3 py-2 text-left text-xs font-medium transition-colors duration-150",
                     goalType === key
-                      ? "border-[var(--color-accent)] bg-[var(--color-surface-muted)] text-[var(--color-text)]"
-                      : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-text-muted)]"
+                      ? "border-accent bg-accent-soft/50 text-ink"
+                      : "border-line text-ink-secondary hover:border-ink-muted hover:text-ink"
                   )}
                 >
-                  <span>{emoji}</span>
                   {label}
                 </button>
               ))}
@@ -214,17 +216,20 @@ function PrimaryGoalCard({
 
           {/* Goal description */}
           <div>
-            <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-2">
+            <label
+              htmlFor="goal-description"
+              className="mb-2 block text-xs font-medium text-ink-secondary"
+            >
               Describe your goal in detail
             </label>
-            <textarea
+            <Textarea
+              id="goal-description"
               value={goalDesc}
               onChange={(e) => setGoalDesc(e.target.value)}
               rows={4}
-              placeholder="e.g. We're focused on growing monthly recurring revenue from $5K to $50K by Q4 2026. Our main strategy is converting free trial users to paid plans through better onboarding and feature discovery..."
-              className="w-full px-3 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-1 focus:ring-[var(--color-text)] resize-none transition-all"
+              placeholder="e.g. We're focused on growing monthly recurring revenue from $5K to $50K by Q4 2026. Our main strategy is converting free trial users to paid plans through better onboarding and feature discovery."
             />
-            <p className="text-[11px] text-[var(--color-text-muted)] mt-1.5">
+            <p className="mt-1.5 text-[11px] text-ink-secondary">
               Be specific — this context helps all agents understand your
               business priorities and make better decisions.
             </p>
@@ -232,59 +237,52 @@ function PrimaryGoalCard({
 
           {/* Actions */}
           <div className="flex items-center gap-2 pt-1">
-            <button
+            <Button
+              size="sm"
               onClick={handleSave}
-              disabled={saving || !goalType}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-[var(--color-accent)] text-[var(--color-accent-foreground)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
+              disabled={!goalType}
+              loading={saving}
             >
-              {saving ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Check className="w-3.5 h-3.5" />
-              )}
-              Save Goal
-            </button>
-            <button
-              onClick={handleCancel}
-              className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] rounded-lg transition-colors"
-            >
-              <X className="w-3.5 h-3.5" />
+              {!saving && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
+              Save goal
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleCancel}>
+              <X className="h-3.5 w-3.5" aria-hidden="true" />
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <div>
-          {goalInfo ? (
+          {goalLabel ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{goalInfo.emoji}</span>
-                <span className="text-lg font-semibold">{goalInfo.label}</span>
-              </div>
+              <span className="font-serif text-lg font-semibold text-ink">
+                {goalLabel}
+              </span>
               {profile?.primary_goal_description ? (
-                <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed whitespace-pre-wrap">
+                <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-secondary">
                   {profile.primary_goal_description}
                 </p>
               ) : (
-                <p className="text-sm text-[var(--color-text-muted)] italic">
-                  No description yet — click Edit to add details about your goal
+                <p className="text-sm italic text-ink-secondary">
+                  No description yet — click edit to add details about your goal
                   so agents can better help you.
                 </p>
               )}
             </div>
           ) : (
-            <p className="text-sm text-[var(--color-text-muted)] italic">
-              No primary goal set — click Edit to define your company&apos;s
+            <p className="text-sm italic text-ink-secondary">
+              No primary goal set — click edit to define your company&apos;s
               north star.
             </p>
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
-/* ── Business Info Card ────────────────────────────── */
+/* ── Business info card ────────────────────────────── */
 
 function BusinessInfoCard({ profile }: { profile: FounderProfile | null }) {
   if (!profile) return null;
@@ -301,23 +299,23 @@ function BusinessInfoCard({ profile }: { profile: FounderProfile | null }) {
   if (info.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-6">
-      <h2 className="text-base font-semibold mb-4">Business Profile</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+    <Card className="p-6">
+      <h2 className="mb-4 font-serif text-base font-semibold text-ink">
+        Business profile
+      </h2>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {info.map(({ label, value }) => (
           <div key={label}>
-            <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">
-              {label}
-            </p>
-            <p className="text-sm font-medium mt-0.5">{value}</p>
+            <p className="text-[11px] font-medium text-ink-secondary">{label}</p>
+            <p className="mt-0.5 text-sm font-medium text-ink">{value}</p>
           </div>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
-/* ── App Card ──────────────────────────────────────── */
+/* ── App card ──────────────────────────────────────── */
 
 function AppCard({
   app,
@@ -335,57 +333,52 @@ function AppCard({
   return (
     <div
       className={clsx(
-        "bg-white rounded-lg border p-5 transition-all",
-        app.status === "connected"
-          ? "border-green-200"
-          : "border-[var(--color-border-subtle)]",
-        app.status === "coming_soon" ? "opacity-60" : ""
+        "rounded-card border bg-surface p-5 transition-colors duration-150",
+        app.status === "connected" ? "border-success/30" : "border-line",
+        app.status === "coming_soon" && "opacity-60"
       )}
     >
-      <div className="flex items-start justify-between mb-3">
+      <div className="mb-3 flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div
             className={clsx(
-              "w-10 h-10 rounded-lg flex items-center justify-center",
-              app.status === "connected"
-                ? "bg-green-50"
-                : "bg-[var(--color-surface-muted)]"
+              "flex h-10 w-10 items-center justify-center rounded-lg",
+              app.status === "connected" ? "bg-success-soft" : "bg-surface-muted"
             )}
           >
             <Icon
               className={clsx(
-                "w-5 h-5",
-                app.status === "connected"
-                  ? "text-green-600"
-                  : "text-[var(--color-text-muted)]"
+                "h-5 w-5",
+                app.status === "connected" ? "text-success" : "text-ink-muted"
               )}
+              aria-hidden="true"
             />
           </div>
           <div>
-            <h3 className="text-sm font-semibold">{app.display_name}</h3>
+            <h3 className="text-sm font-semibold text-ink">{app.display_name}</h3>
             <span
               className={clsx(
                 "inline-flex items-center gap-1 text-[11px] font-medium",
                 status.color
               )}
             >
-              <StatusIcon className="w-3 h-3" />
+              <StatusIcon className="h-3 w-3" aria-hidden="true" />
               {status.label}
             </span>
           </div>
         </div>
       </div>
 
-      <p className="text-xs text-[var(--color-text-secondary)] mb-4 leading-relaxed">
+      <p className="mb-4 text-xs leading-relaxed text-ink-secondary">
         {app.description}
       </p>
 
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">
+        <span className="text-[10px] font-medium capitalize text-ink-secondary">
           {app.category}
         </span>
         {app.status === "connected" ? (
-          <span className="text-[11px] text-[var(--color-text-muted)]">
+          <span className="text-[11px] text-ink-secondary">
             {app.last_sync_at
               ? `Synced ${new Date(app.last_sync_at).toLocaleDateString()}`
               : "Active"}
@@ -395,17 +388,17 @@ function AppCard({
             type="button"
             onClick={() => onConnect?.(app)}
             disabled={connecting}
-            className="flex items-center gap-1 px-3 py-1.5 text-[11px] font-medium bg-[var(--color-accent)] text-[var(--color-accent-foreground)] rounded-md hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-60"
+            className="flex items-center gap-1 rounded-control bg-accent px-3 py-1.5 text-[11px] font-medium text-white transition-colors duration-150 hover:bg-accent-hover disabled:opacity-60"
           >
             {connecting ? (
               <>
-                <Loader2 className="w-3 h-3 animate-spin" />
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
                 Connecting
               </>
             ) : (
               <>
                 Connect
-                <ExternalLink className="w-3 h-3" />
+                <ExternalLink className="h-3 w-3" aria-hidden="true" />
               </>
             )}
           </button>
@@ -415,7 +408,7 @@ function AppCard({
   );
 }
 
-/* ── Main Page ─────────────────────────────────────── */
+/* ── Main page ─────────────────────────────────────── */
 
 export default function AppsPage() {
   const api = useApi();
@@ -564,48 +557,43 @@ export default function AppsPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-6 h-6 text-[var(--color-text-muted)] animate-spin" />
-          <p className="text-xs text-[var(--color-text-muted)]">Loading...</p>
+          <Loader2 className="h-6 w-6 animate-spin text-ink-muted" aria-hidden="true" />
+          <p className="text-xs text-ink-secondary">Loading</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 max-w-5xl">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Apps & Goals</h1>
-        <p className="text-[var(--color-text-secondary)] mt-1">
-          Manage your connected tools and company direction
-        </p>
-      </div>
+    <div className="max-w-5xl space-y-8">
+      <PageHeader
+        title="Apps"
+        description="Manage your connected tools and company direction"
+      />
 
       {connectError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-control border border-danger/20 bg-danger-soft px-4 py-3 text-sm text-danger">
           {connectError}
         </div>
       )}
 
-      {/* Primary Goal */}
+      {/* Primary goal */}
       <PrimaryGoalCard profile={profile} onUpdate={handleUpdateProfile} />
 
-      {/* Business Info */}
+      {/* Business info */}
       <BusinessInfoCard profile={profile} />
 
-      {/* Company State Sources (Notion / Obsidian sync) */}
+      {/* Company state sources (Notion / Obsidian sync) */}
       <StateSourcesSection />
 
-      {/* Connected Apps */}
+      {/* Connected apps */}
       {connectedApps.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-base font-semibold">Connected</h2>
-            <span className="px-2 py-0.5 text-[11px] font-medium bg-green-50 text-green-700 rounded-full">
-              {connectedApps.length}
-            </span>
+          <div className="mb-4 flex items-center gap-2">
+            <h2 className="font-serif text-base font-semibold text-ink">Connected</h2>
+            <Badge tone="success">{connectedApps.length}</Badge>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {connectedApps.map((app) => (
               <AppCard key={app.key} app={app} />
             ))}
@@ -613,12 +601,12 @@ export default function AppsPage() {
         </div>
       )}
 
-      {/* Available Apps */}
+      {/* Available apps */}
       <div>
-        <h2 className="text-base font-semibold mb-4">
-          {connectedApps.length > 0 ? "Available Apps" : "Apps & Integrations"}
+        <h2 className="mb-4 font-serif text-base font-semibold text-ink">
+          {connectedApps.length > 0 ? "Available apps" : "Apps and integrations"}
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {availableApps.map((app) => (
             <AppCard
               key={app.key}
