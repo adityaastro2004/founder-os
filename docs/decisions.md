@@ -19,6 +19,40 @@
 
 ---
 
+## ADR-014 — Claude-style design system with owned UI kit (no component library)
+
+- Date: 2026-07-19
+- Status: accepted
+- Context: The dashboard shipped on a generic monochrome Tailwind look — 53
+  hardcoded `bg-white`s, stock grays, per-page ad-hoc styling, an unused `.dark`
+  token block, and a fragile `.cl-internal-*` Clerk override. The founder asked
+  for a full revamp onto a warm, human, Claude/Anthropic-style aesthetic
+  (approved decisions: full Claude look · whole app · light-only · design system
+  + full sweep; spec:
+  `docs/superpowers/specs/2026-07-19-frontend-revamp-claude-design.md`).
+- Decision: Design tokens live in Tailwind 4 `@theme` in `app/globals.css`
+  (warm paper/ink palette, terracotta accent with an AA-safe `accent-text`
+  variant, soft semantic tints, `rounded-card`/`rounded-control` radii,
+  serif/sans/mono font tokens). Display type is Source Serif 4 via
+  `next/font/google`; the font variable classes sit on `<html>` because `@theme`
+  font tokens are defined on `:root` and nested `var()`s resolve at the defining
+  element — putting them on `<body>` silently invalidates every font token. A
+  small owned kit in `app/_components/ui/` (Button, Card, Input, Badge,
+  PageHeader, EmptyState, Skeleton, StatCard, Dialog, Tabs, Kbd, Spinner)
+  replaces ad-hoc markup; no shadcn or other component dependency. Clerk is
+  themed via the `appearance` prop on `ClerkProvider`. Light theme only; the
+  dead `.dark` block and all `dark:` variants were removed. `apps/web/brand.md`
+  is the brand source of truth.
+- Consequences: Pages compose kit primitives and token utilities
+  (`bg-paper`, `text-ink`, `border-line`…); raw hex, stock Tailwind grays, and
+  `var(--color-*)` arbitrary values are banned in components (grep-enforced in
+  task 020's acceptance). Rules out per-page palettes and a dark mode until
+  tokens are extended deliberately. Purely presentational — no behavior, hook,
+  SSE, or routing changes.
+- Links: tasks/active/020-frontend-revamp-claude-design.md ·
+  docs/superpowers/plans/2026-07-19-frontend-revamp-claude-design.md ·
+  founder-os/apps/web/brand.md
+
 ## ADR-013 — Conversation history as read-only system context + universal prompt guardrails in `BaseAgent`
 
 - Date: 2026-07-18

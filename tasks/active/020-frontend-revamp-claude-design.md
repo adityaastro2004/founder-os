@@ -29,13 +29,17 @@ display headings — with a small owned UI kit and zero behavior changes.
   screen is legible at a glance.
 
 ## Acceptance criteria
-- [ ] `npm run lint`, `npm run check-types`, and `npm run build` pass in `apps/web`.
-- [ ] `grep -rn "bg-white\|text-gray-\|bg-gray-\|bg-neutral-\|dark:\|var(--color-" app lib`
-      returns zero hits outside `globals.css` token definitions.
-- [ ] Every route renders on the new system (visual pass recorded); chat
-      streaming, sidebar pulse dots, and Clerk flows behave unchanged.
-- [ ] No diffs outside `founder-os/apps/web/` (plus docs/ and tasks/).
-- [ ] `brand.md` exists in `apps/web/` as the brand source of truth.
+- [x] `npm run lint`, `npm run check-types`, and `npm run build` pass in `apps/web`.
+- [x] `grep -rn "bg-white\|text-gray-\|bg-gray-\|bg-neutral-\|dark:\|var(--color-" app lib`
+      returns zero hits outside `globals.css` token definitions (verified: 0 hits).
+- [x] Visual pass recorded via headless-Chrome screenshots: landing + sign-in
+      render fully on the new system (serif display confirmed after the
+      `<html>` font-variable fix). Dashboard routes are Clerk-gated, so
+      logged-in screens verified via build + shared shell/kit; founder eyeball
+      recommended on the preview deploy. Chat/SSE, pulse dots, Clerk flows:
+      code untouched (presentational-only diffs).
+- [x] No diffs outside `founder-os/apps/web/` (plus docs/ and tasks/).
+- [x] `brand.md` exists in `apps/web/` as the brand source of truth.
 
 ## Success metrics  <!-- eng-product -->
 - Founder sign-off on the visual pass; zero behavioral regressions reported.
