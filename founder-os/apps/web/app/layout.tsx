@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Source_Serif_4 } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
@@ -11,10 +12,26 @@ const geistMono = localFont({
   src: "./fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
 });
+const sourceSerif = Source_Serif_4({
+  subsets: ["latin"],
+  variable: "--font-source-serif",
+});
 
 export const metadata: Metadata = {
   title: "Founder OS",
   description: "AI-powered operating system for founders",
+};
+
+const clerkAppearance = {
+  variables: {
+    colorPrimary: "#c96442",
+    colorText: "#1f1e1d",
+    colorTextSecondary: "#63605b",
+    colorBackground: "#ffffff",
+    colorInputBackground: "#ffffff",
+    borderRadius: "8px",
+    fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
+  },
 };
 
 export default function RootLayout({
@@ -26,9 +43,11 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable} antialiased`}
+      >
         {hasClerk ? (
-          <ClerkProvider>{children}</ClerkProvider>
+          <ClerkProvider appearance={clerkAppearance}>{children}</ClerkProvider>
         ) : (
           children
         )}
