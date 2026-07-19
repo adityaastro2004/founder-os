@@ -115,8 +115,16 @@ class MemoryManager:
         """Generate an embedding vector for text using the configured provider."""
         if self._embedding_provider is None:
             try:
-                from app.retrieval.embeddings import OllamaEmbeddings
-                self._embedding_provider = OllamaEmbeddings()
+                # Settings-driven factory (honors EMBEDDING_PROVIDER/MODEL) with
+                # a best-effort Redis cache — a raw OllamaEmbeddings() here
+                # ignored the configured provider (task 020 / ADR-014 Q4 fix).
+                from app.retrieval.embeddings import get_default_embedder
+                try:
+                    from app.redis import get_redis
+                    redis = get_redis()
+                except Exception:
+                    redis = None  # uncached fallback, never fatal
+                self._embedding_provider = get_default_embedder(redis=redis)
             except Exception as exc:
                 logger.warning("Could not init embedding provider: %s", exc)
                 return None
@@ -401,14 +409,19 @@ class MemoryManager:
         until: datetime | None = None,
         include_pinned: bool = True,
         auto_embed_query: bool = True,
+        query_embedding: list[float] | None = None,
     ) -> list[MemoryHit]:
-        """Async composite-scored recall with auto-embedding of query."""
+        """Async composite-scored recall with auto-embedding of query.
+
+        ``query_embedding`` mirrors the sync ``recall()``: when the caller
+        already holds an embedding (e.g. BaseAgent.run()'s auto-embed step,
+        ADR-014), pass it to skip the auto-embed and use the semantic branch.
+        """
         from sqlalchemy import text as sa_text
         from app.database import async_session
 
         now = datetime.now(timezone.utc)
-        query_embedding = None
-        if query and auto_embed_query:
+        if query_embedding is None and query and auto_embed_query:
             query_embedding = await self._get_embedding(query)
 
         params: dict[str, Any] = {"user_id": user_id, "lim": limit * 3}

@@ -77,8 +77,8 @@
   `task_feedback`→insight→`UserProfileIntel`→prompt; populate `LearningInsight`; feed
   the specialization engine. Highest-leverage adaptation loop. Status: `next`.
   See [agent-evolution.md](agent-evolution.md) §1.
-- **Agent Evolution — temporal memory injection** (task 005): inject composite-scored
-  `memory_pages` into agent prompts. Status: `next`. See [agent-evolution.md](agent-evolution.md) §2.
+- **Agent Evolution — temporal memory injection** (task 005): Status: `done`
+  (2026-07-19 — subsumed by task 020, ADR-014; see Shipped).
 - **Agent Evolution Engine — increment 2:** feedback-driven re-tuning (mine
   `task_feedback`/`learning_insights` to refine the specialization overlay). Builds on
   task 001 (overlaps task 003). Status: `next`.
@@ -133,6 +133,7 @@
 | 2026-06-11 | Production hardening — 10 bug classes fixed; agents+RAG+A2A proven live (RAG 16/16, A2A delegation, memory ALL, units 120/120) | [tasks/completed/008](../tasks/completed/008-prod-hardening-core.md) |
 | 2026-06-12 | PDF → RAG ingestion + blank-only primary_goal auto-fill (live-verified; + fixed a BackgroundTasks request-rollback bug) | [tasks/completed/009](../tasks/completed/009-pdf-rag-goal-autofill.md) |
 | 2026-06-12 | Knowledge tab File/PDF upload UI (+ apiFetch FormData fix) | [tasks/completed/010](../tasks/completed/010-knowledge-tab-file-upload.md) |
+| 2026-07-19 | Chat semantic memory (task 020, ADR-014): every chat turn auto-captured to `memory_pages` (embedding-only, zero LLM completions) + composite-scored `<memories>` recall injected into all agent prompts (reuses run()'s embedding; same-session excluded; stored-injection neutralized). Subsumes 005; fixes `get_memory_manager` ignoring `EMBEDDING_PROVIDER`. 19 unit tests; tier 196 green | [tasks/completed/020](../tasks/completed/020-chat-semantic-memory.md) |
 
 > Known technical-debt items live alongside the roadmap so prioritization sees the
 > full picture. Significant architectural choices are recorded in

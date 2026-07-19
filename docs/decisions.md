@@ -19,6 +19,144 @@
 
 ---
 
+## ADR-014 — Chat semantic memory: background capture to `memory_pages` + `<memories>` recall injection
+
+- Date: 2026-07-19
+- Status: accepted (design — task 020; ships with the 020 executor diff)
+- Context: Chat is amnesiac across sessions. `memory_pages` (the temporal KG /
+  composite-scored recall substrate, ADR-009's "Remember" layer) is written by the
+  crawler, planner-reflection, and memory-API paths but **never by chat**, and its
+  recall reaches prompts only in `planner_routes` — never in the agent chat loop
+  (backlog 005 sketched this gap). Constraints: free-tier infra (**zero added LLM
+  completions**, ≤1 added embedding call per turn), chat responses must never be
+  blocked or failed by memory, no schema change (`memory_pages` already has
+  `source`/`tags`/`metadata_`/`is_pinned`/decay), and the ADR-013 prompt contract
+  is the surface the recall block must slot into. Known gap folded in (Q4):
+  `get_memory_manager()` lazy-inits a raw `OllamaEmbeddings()`
+  (`manager.py:118-119`), ignoring `settings.EMBEDDING_PROVIDER` and the
+  Redis-cached embedder every other path uses.
+- Decision:
+  1. **WRITE — fire-and-forget capture at the four chat exits.** A module-level
+     helper `_store_chat_memory_background(user_id, agent_name, user_message,
+     agent_response, session_id)` in `agent_routes.py`, directly beside its
+     precedent `_extract_insights_background`, scheduled with its own
+     `asyncio.create_task(...)` immediately after the existing insights task at
+     all four sites (`/{agent_name}/run`, `/{agent_name}/chat`, `/orchestrate`,
+     `/orchestrate/stream` inside `_run_and_persist`). Skip-trivial guard
+     (input < 10 chars trimmed, or empty/whitespace response → no store); every
+     exception logged and swallowed; store via
+     `MemoryManager.async_store(auto_embed=True)` — embedding only, zero
+     completions; `_get_embedding` returning `None` still inserts the page with a
+     NULL embedding (existing behavior, locked by test). Only the user message
+     and the final assistant text are persisted — never tool outputs.
+  2. **Identity = the Clerk user id** (`user.user_id`), passed exactly like the
+     insights helper. Rationale: `memory_pages.user_id` is `String(100)` with no
+     FK; the established key for this table-family is the Clerk id — the memory
+     dashboard (`memory_routes.py` store/recall), planner recall
+     (`planner_routes.py:743`), and crawler routes all use it. ADR-007's "one
+     real identity" here means one *consistent* key per store: writing chat pages
+     under the DB UUID would make them invisible to the dashboard and to every
+     existing recall path. The READ side queries the same key
+     (`self.clerk_user_id or str(self.user_id)` — the profile-loader precedent in
+     `base.py`; the registry sets `clerk_user_id` on every chat-built agent).
+  3. **Page shape (documented constants, `agent_routes.py`).**
+     `page_type="conversation"`, `source="chat"`, `chapter="conversations"`,
+     `tags=["chat", <agent_name>]`, `metadata={"session_id": <sid or "">,
+     "agent": <agent_name>}`; title = `Chat (<agent>): <user-message excerpt>`
+     capped at `_CHAT_MEMORY_TITLE_CHARS = 100`; content =
+     `User: …\n\nAssistant: …` capped at `_CHAT_MEMORY_USER_CHARS = 600` /
+     `_CHAT_MEMORY_RESPONSE_CHARS = 1400` with ` …` markers; defaults otherwise
+     (importance 0.5, decay 0.001, `is_pinned=False`, `review_in_days=None`).
+     `source="chat"` / `page_type="conversation"` are the filterable provenance
+     keys the Curator and the State Engine `system` feed depend on.
+  4. **READ — `<memories>` injection in `BaseAgent._build_system_prompt`.** New
+     `_render_memories_context(query, query_embedding)` helper (base.py), called
+     between the AgentMemory context and `<conversation_history>`; the assembled
+     order becomes … → memory context → **`<memories>`** → `<conversation_history>`
+     → `<additional_context>` (satisfies "after `<guardrails>`, before history").
+     Recall: `async_recall(user_id=<clerk id>, query=query,
+     query_embedding=query_embedding, auto_embed_query=False,
+     limit=_MEMORY_RECALL_LIMIT=8, min_importance=_MEMORY_MIN_IMPORTANCE=0.2)` —
+     it **reuses the embedding `run()` already computed**; `auto_embed_query=False`
+     guarantees zero extra embedding even when that embedding is absent (recall
+     degrades to temporal+importance ranking). **No `page_type` filter** — chat,
+     crawler, and planner memories all surface (cross-source recall is the point).
+     Same-session exclusion: drop hits whose `metadata_["session_id"]` equals the
+     agent's current session (those turns already render in
+     `<conversation_history>`); the registry sets `agent.session_id` beside
+     `clerk_user_id` to enable it. Render the top `_MEMORY_RENDER_LIMIT = 5`
+     survivors via the existing `format_for_llm(max_chars=6000)` — called **only
+     when hits remain** (its `[]` input returns a "No relevant memories found"
+     placeholder that must never be injected; the formatter itself is unchanged —
+     other callers at `planner_routes.py:755/1641`). Empty recall, recall failure,
+     or missing identity → no block at all. Injection-hardening mirror of 017:
+     recalled title/content/summary/chapter/tags are passed through tag
+     neutralizers for **both** `<memories>` and `<conversation_history>` (sibling
+     regex + helper beside `_neutralize_history_tags`) before formatting, and
+     guardrail rule 3 adds `<memories>` to its named data-not-instructions blocks.
+  5. **Surgical enablers (allowed edits outside the two main files).**
+     (a) `MemoryManager.async_recall` gains a keyword-only
+     `query_embedding: list[float] | None = None` parameter (mirrors the sync
+     `recall()` which already has it; when provided, auto-embed is skipped and
+     the semantic SQL branch is used; existing callers pass nothing → behavior
+     identical). (b) `MemoryManager._get_embedding` lazy-init switches from raw
+     `OllamaEmbeddings()` to `get_default_embedder(redis=<best-effort
+     get_redis()>)` (`app/retrieval/embeddings.py:356` — the existing
+     settings-driven factory with the Redis cache), fixing the Q4 gap for every
+     manager caller; failure still logs and returns `None` (NULL-embedding path).
+     (c) `registry.get()` sets `agent.session_id = session_id or ""` next to the
+     existing `agent.clerk_user_id` assignment (`registry.py:350`).
+  6. **Placement rationale vs backlog 005's sketch.** 005 proposed injecting
+     inside `AgentMemory.build_context`; rejected: the recall needs the Clerk
+     identity, the session-exclusion filter, the tag escaping, and the
+     skip-on-empty rule — all BaseAgent/prompt-contract concerns (and
+     `AgentMemory` holds neither `clerk_user_id` nor `session_id`).
+     `build_context` stays working/shared/RAG only. 005 closes as subsumed.
+- Alternatives considered:
+  - **LLM-summarized turn memories** (store a distilled summary instead of capped
+    raw text) — rejected: violates the zero-completion constraint; capped raw
+    text + embedding is enough for recall, and the Curator / State Engine
+    `system` feed can distill later because chat pages are provenance-filterable.
+  - **Injection inside `AgentMemory.build_context`** — rejected (point 6).
+  - **Restrict recall to chat pages** (`page_type="conversation"` filter) —
+    rejected: cross-source recall (research findings, planner reflections, chat)
+    is the founder value; the caps bound the block size either way.
+  - **Celery task for the write** — rejected: the in-process
+    `asyncio.create_task` precedent (insights) is proven at these exact four
+    sites; a queue round-trip adds broker dependency to a best-effort write.
+- Consequences:
+  - The chat memory loop closes at zero completion cost: ≤1 embedding per turn
+    (the write's `auto_embed`); the read reuses `run()`'s query embedding.
+  - **New stored-prompt-injection surface**: chat text persists and re-enters
+    future system prompts across sessions. Mitigations: guardrail rule 3 names
+    `<memories>`, tag neutralization on recalled text, no tool outputs stored.
+    Prompt-level, not a hard gate — eng-security (M4) audits; classifier
+    pre-filter remains ADR-013's future-work note.
+  - `memory_pages` growth is bounded by skip-trivial + unpinned default decay;
+    follow-ups if it bloats: faster `decay_rate` for chat pages, Curator
+    merge/archive (ADR-009 hygiene).
+  - Recall adds 1–2 DB queries (+ the access-counter UPDATE) per chat turn —
+    latency is a live-smoke check (task 019 extension), not unit-testable.
+  - Fixes a real Q4 defect for all manager callers (embedder now honors
+    `EMBEDDING_PROVIDER` + Redis cache); write-path embeds cannot reuse the
+    run()'s cache entry (different text: `title\ncontent` vs raw input) — the
+    ≤1-embed budget already accounts for this.
+  - Flagged, not fixed (pre-existing): the research engine stores pages under
+    `str(user_uuid)` (`registry.py:955` → `run_research_cycle(str(user_id))`),
+    invisible to Clerk-id recall — backlog candidate, out of 020's scope.
+  - Rules out: changing `format_for_llm`'s shape or the scoring/decay internals;
+    schema changes; memory writes that can fail a chat response.
+- Links: [tasks/active/020](../tasks/active/020-chat-semantic-memory.md),
+  `founder-os/apps/api/app/api/agent_routes.py` (helper + 4 hook sites),
+  `founder-os/apps/api/app/agents/base.py` (`_render_memories_context`, guardrail
+  rule 3, tag neutralizers), `founder-os/apps/api/app/memory/manager.py`
+  (`async_recall` param, `_get_embedding` factory swap),
+  `founder-os/apps/api/app/agents/registry.py` (`agent.session_id`),
+  `founder-os/apps/api/app/retrieval/embeddings.py` (`get_default_embedder`),
+  ADR-013 (prompt contract this extends), ADR-009 (memory-layer taxonomy),
+  ADR-007 (identity precedent), tasks/backlog/005 (subsumed),
+  tasks/backlog/019 (live checks).
+
 ## ADR-013 — Conversation history as read-only system context + universal prompt guardrails in `BaseAgent`
 
 - Date: 2026-07-18
@@ -66,6 +204,8 @@
   `<current_datetime>` → `<user_custom_instructions>` →
   `<founder_business_context>` → profile context → `<delegation_instructions>` →
   memory context → `<conversation_history>` → `<additional_context>`.
+  (Extended by ADR-014: a `<memories>` recall block slots between memory context
+  and `<conversation_history>`, and rule (c) names `<memories>`.)
 - Alternatives considered:
   - **Keep replayed chat turns + stronger prompting** ("do not re-answer prior
     turns" in the system prompt) — rejected: the transcript shape itself is the

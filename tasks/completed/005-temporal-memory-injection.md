@@ -1,8 +1,8 @@
 ---
 id: 005
 title: Agent Evolution — temporal memory injection into prompts
-status: backlog
-stage: product
+status: done
+stage: done
 owner: eng-product
 created: 2026-06-10
 dependencies: []
@@ -10,6 +10,8 @@ links: [docs/agent-evolution.md, docs/decisions.md]
 ---
 
 # 005 — Temporal memory injection
+
+> **Closed 2026-07-19 — subsumed by [task 020](020-chat-semantic-memory.md)** (ADR-014): `<memories>` recall injection shipped in `BaseAgent._render_memories_context`, reusing run()'s query embedding; chat capture (the write side 005 assumed existed) shipped with it.
 
 ## Objective
 The temporal knowledge graph (`memory_pages`/`memory_links`, composite-scored recall)
