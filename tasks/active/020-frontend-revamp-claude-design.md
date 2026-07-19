@@ -1,9 +1,9 @@
 ---
 id: 020
 title: Frontend revamp — Claude-style design system
-status: in-progress
-stage: executor
-owner: eng-executor
+status: review
+stage: qa
+owner: eng-qa
 created: 2026-07-19
 dependencies: []
 links:
@@ -53,3 +53,49 @@ display headings — with a small owned UI kit and zero behavior changes.
   + full sweep. See spec for tokens and page treatments.
 - Base: origin/main @ 67810f9 (includes background-chat-runs and PR #19
   state-sources.tsx, which joins the Task 14 sweep).
+
+## Review — eng-reviewer (2026-07-19)
+
+Method: `git diff origin/main...HEAD` (44 files, +3268/−2352). Logic verified by
+className-stripped logic digests of all 24 changed app files vs origin/main, plus
+raw-diff reads of chat, agents, tasks, planner, apps, state-sources, onboarding,
+sidebar, layouts, globals.css. Re-ran `npm run lint` (pass, 0 warnings) and
+`npm run check-types` (pass) in `apps/web`.
+
+Verified invariants:
+- Behavior: hooks, fetch/API calls, SSE/EventSource, chat-store wiring, routing,
+  and all disabled/loading gating are logic-equivalent to origin/main. Chat page
+  streaming code untouched (indentation-only diffs); sidebar pulse-dot map and
+  all 12 nav hrefs identical; onboarding `canNext`/`handleSubmit` byte-identical;
+  every action button's disabled semantics preserved (moved to kit `Button
+  loading` which sets `disabled`).
+- Security: middleware untouched; ClerkProvider `appearance` is cosmetic
+  variables only; `hasClerk` fallback and landing `auth()` redirect intact; no
+  secrets; package.json/lockfile untouched (no new deps); fragile
+  `.cl-internal-b3fm6y` override removed.
+- Containment: zero diffs outside `founder-os/apps/web/`, `docs/`, `tasks/`.
+- Acceptance greps re-verified: 0 banned utilities, 0 `var(--color-*)` outside
+  globals.css, no dangling references to removed tokens (`--color-border`,
+  `--color-text*`, `--radius`, …).
+
+Findings:
+- **should-fix** — `app/_components/ui/index.ts:2,9,10,12` — `CardHeader`,
+  `Dialog`, `Tabs`, `Spinner` are exported but used nowhere. Spec §3 says Dialog
+  replaces hand-rolled modals, yet `workflows/page.tsx:282` still rolls its own
+  modal and `knowledge/page.tsx` rolls its own ingest tabs. Fix: adopt them
+  (workflows modal → Dialog, knowledge ingest tabs → Tabs, Loader2 → Spinner) or
+  remove from the kit until first use.
+- **nit** — `app/_components/ui/dialog.tsx:24-32` — Escape + initial focus, but
+  no focus trap, no focus-restore on close, no body scroll lock. Address when
+  Dialog is first adopted.
+- **nit** — `app/_components/ui/tabs.tsx:18,28` — `role="tablist"/"tab"` without
+  arrow-key roving focus or `aria-controls`; add keyboard support or drop the
+  ARIA tab roles.
+- **nit** — `tasks/active/020-frontend-revamp-claude-design.md:5-6` — still
+  `stage: executor`; update stage/owner as it moves through review → QA.
+- **nit** — `app/(dashboard)/_components/header.tsx` — search input `type`
+  changed `text`→`search` (WebKit renders a native clear affordance). Cosmetic;
+  the field is not wired to logic in either version.
+
+Verdict: **Approve** (no blockers) — hand to eng-qa. Dead-export cleanup
+(should-fix) can land as a small follow-up before task close.

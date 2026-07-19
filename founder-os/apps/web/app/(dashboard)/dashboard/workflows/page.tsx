@@ -18,7 +18,6 @@ import {
   ChevronRight,
   CircleDot,
   Plus,
-  X,
   Sparkles,
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -27,7 +26,13 @@ import {
   formatRelative,
   successRatio,
 } from "./types";
-import { PageHeader, Button, EmptyState, Textarea } from "@/app/_components/ui";
+import {
+  PageHeader,
+  Button,
+  EmptyState,
+  Textarea,
+  Dialog,
+} from "@/app/_components/ui";
 
 /* ── Run-now button (per-row, optimistic-safe) ─────────── */
 function RunNowButton({
@@ -279,60 +284,40 @@ export default function WorkflowsPage() {
       )}
 
       {/* Add-automation modal: describe it → hand off to the Orchestrator. */}
-      {showAdd && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-ink/30 p-4"
-          onClick={() => setShowAdd(false)}
-        >
-          <div
-            className="w-full max-w-lg rounded-card border border-line bg-surface p-6 shadow-xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="mb-1 flex items-start justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-accent" aria-hidden="true" />
-                <h2 className="font-serif text-lg font-semibold text-ink">
-                  New automation
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAdd(false)}
-                className="-m-1 rounded-control p-2 transition-colors duration-150 hover:bg-surface-muted"
-                title="Close"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
-              </button>
-            </div>
-            <p className="mb-4 text-sm text-ink-secondary">
-              Describe what should happen, when, and which specialist handles it.
-              The Orchestrator turns this into a runnable automation.
-            </p>
-            <Textarea
-              autoFocus
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if ((e.metaKey || e.ctrlKey) && e.key === "Enter")
-                  startAutomation();
-              }}
-              rows={4}
-              aria-label="Automation description"
-              placeholder="e.g. Every Monday at 8am, summarise last week's support tickets and email me the highlights."
-            />
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <Button variant="secondary" onClick={() => setShowAdd(false)}>
-                Cancel
-              </Button>
-              <Button onClick={startAutomation} disabled={!draft.trim()}>
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                Continue in chat
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <Dialog
+        open={showAdd}
+        onClose={() => setShowAdd(false)}
+        title="New automation"
+        className="max-w-lg"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setShowAdd(false)}>
+              Cancel
+            </Button>
+            <Button onClick={startAutomation} disabled={!draft.trim()}>
+              <Sparkles className="h-4 w-4" aria-hidden="true" />
+              Continue in chat
+            </Button>
+          </>
+        }
+      >
+        <p className="mb-4 text-sm text-ink-secondary">
+          Describe what should happen, when, and which specialist handles it.
+          The Orchestrator turns this into a runnable automation.
+        </p>
+        <Textarea
+          autoFocus
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === "Enter")
+              startAutomation();
+          }}
+          rows={4}
+          aria-label="Automation description"
+          placeholder="e.g. Every Monday at 8am, summarise last week's support tickets and email me the highlights."
+        />
+      </Dialog>
     </div>
   );
 }

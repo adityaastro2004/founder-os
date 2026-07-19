@@ -14,16 +14,14 @@ import {
   Database,
   ExternalLink,
   X,
-  Upload,
-  Globe,
 } from "lucide-react";
-import { clsx } from "clsx";
 import {
   PageHeader,
   Card,
   Button,
   Input,
   Textarea,
+  Tabs,
 } from "@/app/_components/ui";
 
 /* ── Types ─────────────────────────────────────────── */
@@ -189,9 +187,9 @@ export default function KnowledgePage() {
   };
 
   const ingestTabs = [
-    { id: "text" as const, label: "Text", icon: Upload },
-    { id: "url" as const, label: "URL", icon: Globe },
-    { id: "file" as const, label: "File / PDF", icon: FileUp },
+    { id: "text", label: "Text" },
+    { id: "url", label: "URL" },
+    { id: "file", label: "File / PDF" },
   ];
 
   return (
@@ -237,23 +235,12 @@ export default function KnowledgePage() {
       {/* Ingest panel */}
       {showIngest && (
         <Card className="p-5">
-          <div className="mb-4 flex gap-2">
-            {ingestTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setIngestMode(tab.id)}
-                className={clsx(
-                  "flex items-center gap-2 rounded-control px-3 py-1.5 text-sm transition-colors duration-150",
-                  ingestMode === tab.id
-                    ? "bg-surface-muted font-medium text-ink"
-                    : "text-ink-secondary hover:bg-surface-muted/60"
-                )}
-              >
-                <tab.icon className="h-3.5 w-3.5" aria-hidden="true" />
-                {tab.label}
-              </button>
-            ))}
+          <div className="mb-4">
+            <Tabs
+              tabs={ingestTabs}
+              active={ingestMode}
+              onChange={(id) => setIngestMode(id as "text" | "url" | "file")}
+            />
           </div>
           <form onSubmit={handleIngest} className="space-y-3">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
