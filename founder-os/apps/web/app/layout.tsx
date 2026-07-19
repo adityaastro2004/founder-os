@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
+import { PostHogIdentify } from "./_components/posthog-identify";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -28,7 +29,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {hasClerk ? (
-          <ClerkProvider>{children}</ClerkProvider>
+          <ClerkProvider>
+            {children}
+            <PostHogIdentify />
+          </ClerkProvider>
         ) : (
           children
         )}
