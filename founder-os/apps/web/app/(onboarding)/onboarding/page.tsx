@@ -11,10 +11,10 @@ import {
   Settings2,
   ChevronRight,
   ChevronLeft,
-  Rocket,
   Check,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
+import { Button, Input, Textarea } from "@/app/_components/ui";
 
 /* ── Types ─────────────────────────────────────────── */
 interface FormData {
@@ -62,17 +62,16 @@ const STEPS = [
   { label: "Preferences", icon: Settings2 },
 ];
 
-/* ── Option Cards ─────────────────────────────────── */
 const BUSINESS_TYPES = [
-  { value: "saas", label: "SaaS", emoji: "💻" },
-  { value: "ecommerce", label: "E-Commerce", emoji: "🛒" },
-  { value: "agency", label: "Agency / Services", emoji: "🏢" },
-  { value: "marketplace", label: "Marketplace", emoji: "🔄" },
-  { value: "content", label: "Content / Media", emoji: "📝" },
-  { value: "fintech", label: "FinTech", emoji: "💰" },
-  { value: "healthtech", label: "HealthTech", emoji: "🏥" },
-  { value: "edtech", label: "EdTech", emoji: "📚" },
-  { value: "other", label: "Other", emoji: "✨" },
+  { value: "saas", label: "SaaS" },
+  { value: "ecommerce", label: "E-commerce" },
+  { value: "agency", label: "Agency / services" },
+  { value: "marketplace", label: "Marketplace" },
+  { value: "content", label: "Content / media" },
+  { value: "fintech", label: "Fintech" },
+  { value: "healthtech", label: "Healthtech" },
+  { value: "edtech", label: "Edtech" },
+  { value: "other", label: "Other" },
 ];
 
 const INDUSTRIES = [
@@ -81,61 +80,59 @@ const INDUSTRIES = [
   "Healthcare",
   "Education",
   "Retail",
-  "Real Estate",
+  "Real estate",
   "Marketing",
   "Legal",
   "Entertainment",
-  "Food & Beverage",
+  "Food & beverage",
   "Travel",
   "Other",
 ];
 
 const STAGES = [
-  { value: "idea", label: "Idea Stage", desc: "Validating the concept", emoji: "💡" },
-  { value: "pre_launch", label: "Pre-Launch", desc: "Building the MVP", emoji: "🔨" },
-  { value: "launched", label: "Just Launched", desc: "Finding first customers", emoji: "🚀" },
-  { value: "growth", label: "Growing", desc: "Scaling revenue & team", emoji: "📈" },
-  { value: "scaling", label: "Scaling", desc: "$10K+ MRR, expanding", emoji: "🏗️" },
-  { value: "established", label: "Established", desc: "Profitable & optimizing", emoji: "🏆" },
+  { value: "idea", label: "Idea stage", desc: "Validating the concept" },
+  { value: "pre_launch", label: "Pre-launch", desc: "Building the MVP" },
+  { value: "launched", label: "Just launched", desc: "Finding first customers" },
+  { value: "growth", label: "Growing", desc: "Scaling revenue and team" },
+  { value: "scaling", label: "Scaling", desc: "$10K+ MRR, expanding" },
+  { value: "established", label: "Established", desc: "Profitable and optimizing" },
 ];
 
 const GOALS = [
-  { value: "grow_revenue", label: "Grow Revenue", emoji: "💸" },
-  { value: "acquire_users", label: "Acquire Users", emoji: "👥" },
-  { value: "launch_product", label: "Launch Product", emoji: "🚀" },
-  { value: "raise_funding", label: "Raise Funding", emoji: "🤝" },
-  { value: "build_team", label: "Build Team", emoji: "🧑‍🤝‍🧑" },
-  { value: "automate_ops", label: "Automate Operations", emoji: "⚡" },
-  { value: "improve_retention", label: "Improve Retention", emoji: "🔄" },
-  { value: "expand_market", label: "Expand to New Markets", emoji: "🌍" },
+  { value: "grow_revenue", label: "Grow revenue" },
+  { value: "acquire_users", label: "Acquire users" },
+  { value: "launch_product", label: "Launch product" },
+  { value: "raise_funding", label: "Raise funding" },
+  { value: "build_team", label: "Build team" },
+  { value: "automate_ops", label: "Automate operations" },
+  { value: "improve_retention", label: "Improve retention" },
+  { value: "expand_market", label: "Expand to new markets" },
 ];
 
 const COMMUNICATION = [
-  { value: "email", label: "Email", emoji: "📧" },
-  { value: "slack", label: "Slack", emoji: "💬" },
-  { value: "sms", label: "SMS", emoji: "📱" },
-  { value: "in_app", label: "In-App", emoji: "🔔" },
+  { value: "email", label: "Email" },
+  { value: "slack", label: "Slack" },
+  { value: "sms", label: "SMS" },
+  { value: "in_app", label: "In-app" },
 ];
 
 const VOICE_OPTIONS = [
-  { value: "professional", label: "Professional & Formal" },
-  { value: "friendly", label: "Friendly & Casual" },
-  { value: "concise", label: "Concise & Direct" },
-  { value: "storytelling", label: "Storytelling & Narrative" },
-  { value: "technical", label: "Technical & Detailed" },
+  { value: "professional", label: "Professional and formal" },
+  { value: "friendly", label: "Friendly and casual" },
+  { value: "concise", label: "Concise and direct" },
+  { value: "storytelling", label: "Storytelling and narrative" },
+  { value: "technical", label: "Technical and detailed" },
 ];
 
-/* ── Reusable Components ──────────────────────────── */
+/* ── Reusable pieces ──────────────────────────────── */
 function OptionCard({
   selected,
   onClick,
-  emoji,
   label,
   desc,
 }: {
   selected: boolean;
   onClick: () => void;
-  emoji?: string;
   label: string;
   desc?: string;
 }) {
@@ -144,58 +141,41 @@ function OptionCard({
       type="button"
       onClick={onClick}
       className={clsx(
-        "flex items-center gap-3 p-4 rounded-lg border-2 text-left transition-all duration-150",
+        "flex items-center gap-3 rounded-control border p-4 text-left transition-colors duration-150",
         selected
-          ? "border-[var(--color-text)] bg-[var(--color-surface-subtle)] shadow-sm"
-          : "border-[var(--color-border)] bg-[var(--color-surface)] hover:border-[var(--color-text-muted)]"
+          ? "border-accent bg-accent-soft/50"
+          : "border-line bg-surface hover:border-ink-muted"
       )}
     >
-      {emoji && <span className="text-2xl shrink-0">{emoji}</span>}
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm">{label}</p>
-        {desc && (
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
-            {desc}
-          </p>
-        )}
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-ink">{label}</p>
+        {desc && <p className="mt-0.5 text-xs text-ink-secondary">{desc}</p>}
       </div>
       {selected && (
-        <div className="w-5 h-5 rounded-full bg-[var(--color-accent)] flex items-center justify-center shrink-0">
-          <Check className="w-3 h-3 text-[var(--color-accent-foreground)]" />
+        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent">
+          <Check className="h-3 w-3 text-white" aria-hidden="true" />
         </div>
       )}
     </button>
   );
 }
 
-function InputField({
+function Field({
   label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
+  children,
 }: {
   label: string;
-  value: string | number;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
+  children: React.ReactNode;
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium mb-1.5">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
-      />
+      <label className="mb-1.5 block text-sm font-medium text-ink">{label}</label>
+      {children}
     </div>
   );
 }
 
-/* ── Main Component ───────────────────────────────── */
+/* ── Main component ───────────────────────────────── */
 export default function OnboardingPage() {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState<FormData>(INITIAL);
@@ -254,34 +234,33 @@ export default function OnboardingPage() {
   return (
     <div className="w-full max-w-2xl">
       {/* Progress */}
-      <div className="flex items-center justify-center gap-2 mb-8">
+      <div className="mb-8 flex items-center justify-center gap-2">
         {STEPS.map((s, i) => (
           <div key={s.label} className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => i < step && setStep(i)}
               className={clsx(
-                "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all",
+                "flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium transition-colors duration-150",
                 i === step
-                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-semibold"
+                  ? "bg-accent-soft text-accent-text"
                   : i < step
-                    ? "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] cursor-pointer"
-                    : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
+                    ? "cursor-pointer bg-surface-muted text-ink-secondary"
+                    : "bg-surface-muted text-ink-muted"
               )}
             >
               {i < step ? (
-                <Check className="w-3.5 h-3.5" />
+                <Check className="h-3.5 w-3.5" aria-hidden="true" />
               ) : (
-                <s.icon className="w-3.5 h-3.5" />
+                <s.icon className="h-3.5 w-3.5" aria-hidden="true" />
               )}
               <span className="hidden sm:inline">{s.label}</span>
             </button>
             {i < STEPS.length - 1 && (
               <div
                 className={clsx(
-                  "w-8 h-0.5 rounded-full",
-                  i < step
-                    ? "bg-[var(--color-text-muted)]"
-                    : "bg-[var(--color-border)]"
+                  "h-0.5 w-8 rounded-full",
+                  i < step ? "bg-accent" : "bg-line"
                 )}
               />
             )}
@@ -290,35 +269,38 @@ export default function OnboardingPage() {
       </div>
 
       {/* Card */}
-      <div className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] shadow-xl shadow-black/5 p-6 md:p-8">
-        {/* ── Step 0: Business Info ────────────────────── */}
+      <div className="rounded-card border border-line bg-surface p-6 md:p-8">
+        {/* ── Step 0: Business info ────────────────────── */}
         {step === 0 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold">Tell us about your business</h2>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+              <h2 className="font-serif text-xl font-semibold text-ink">
+                Tell us about your business
+              </h2>
+              <p className="mt-1 text-sm text-ink-secondary">
                 This helps your AI agents understand your context.
               </p>
             </div>
 
-            <InputField
-              label="Business Name"
-              value={form.business_name}
-              onChange={(v) => update("business_name", v)}
-              placeholder="Acme Inc."
-            />
+            <Field label="Business name">
+              <Input
+                value={form.business_name}
+                onChange={(e) => update("business_name", e.target.value)}
+                placeholder="Acme Inc."
+                autoComplete="organization"
+              />
+            </Field>
 
             <div>
-              <label className="block text-sm font-medium mb-3">
-                Business Type
+              <label className="mb-3 block text-sm font-medium text-ink">
+                Business type
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {BUSINESS_TYPES.map((t) => (
                   <OptionCard
                     key={t.value}
                     selected={form.business_type === t.value}
                     onClick={() => update("business_type", t.value)}
-                    emoji={t.emoji}
                     label={t.label}
                   />
                 ))}
@@ -326,18 +308,20 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-3">Industry</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <label className="mb-3 block text-sm font-medium text-ink">
+                Industry
+              </label>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {INDUSTRIES.map((ind) => (
                   <button
                     key={ind}
                     type="button"
                     onClick={() => update("industry", ind.toLowerCase())}
                     className={clsx(
-                      "px-3 py-2 rounded-lg border text-sm font-medium transition-all",
+                      "rounded-control border px-3 py-2 text-sm font-medium transition-colors duration-150",
                       form.industry === ind.toLowerCase()
-                        ? "border-[var(--color-text)] bg-[var(--color-surface-subtle)] text-[var(--color-text)] font-medium"
-                        : "border-[var(--color-border)] hover:border-[var(--color-text-muted)]"
+                        ? "border-accent bg-accent-soft/50 text-ink"
+                        : "border-line text-ink-secondary hover:border-ink-muted hover:text-ink"
                     )}
                   >
                     {ind}
@@ -346,42 +330,39 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1.5">
-                Who is your target audience?
-              </label>
-              <textarea
+            <Field label="Who is your target audience?">
+              <Textarea
                 value={form.target_audience}
                 onChange={(e) => update("target_audience", e.target.value)}
-                placeholder="e.g., SaaS founders with $1K-$50K MRR looking to automate growth..."
+                placeholder="e.g. SaaS founders with $1K–$50K MRR looking to automate growth"
                 rows={3}
-                className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all resize-none"
               />
-            </div>
+            </Field>
           </div>
         )}
 
-        {/* ── Step 1: Stage & Goals ────────────────────── */}
+        {/* ── Step 1: Stage and goals ──────────────────── */}
         {step === 1 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold">Stage & Goals</h2>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
-                Where are you now and where do you want to go?
+              <h2 className="font-serif text-xl font-semibold text-ink">
+                Stage and goals
+              </h2>
+              <p className="mt-1 text-sm text-ink-secondary">
+                Where are you now, and where do you want to go?
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-3">
+              <label className="mb-3 block text-sm font-medium text-ink">
                 What stage is your business at?
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {STAGES.map((s) => (
                   <OptionCard
                     key={s.value}
                     selected={form.business_stage === s.value}
                     onClick={() => update("business_stage", s.value)}
-                    emoji={s.emoji}
                     label={s.label}
                     desc={s.desc}
                   />
@@ -390,16 +371,15 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-3">
+              <label className="mb-3 block text-sm font-medium text-ink">
                 What is your primary goal right now?
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {GOALS.map((g) => (
                   <OptionCard
                     key={g.value}
                     selected={form.primary_goal === g.value}
                     onClick={() => update("primary_goal", g.value)}
-                    emoji={g.emoji}
                     label={g.label}
                   />
                 ))}
@@ -407,25 +387,18 @@ export default function OnboardingPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  Team Size
-                </label>
-                <input
+              <Field label="Team size">
+                <Input
                   type="number"
                   min={1}
                   value={form.team_size}
                   onChange={(e) =>
                     update("team_size", Math.max(1, parseInt(e.target.value) || 1))
                   }
-                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1.5">
-                  Team Roles
-                </label>
-                <input
+              </Field>
+              <Field label="Team roles">
+                <Input
                   type="text"
                   value={form.team_roles.join(", ")}
                   onChange={(e) =>
@@ -437,10 +410,9 @@ export default function OnboardingPage() {
                         .filter(Boolean)
                     )
                   }
-                  placeholder="e.g., CTO, Designer"
-                  className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] placeholder:text-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
+                  placeholder="e.g. CTO, designer"
                 />
-              </div>
+              </Field>
             </div>
           </div>
         )}
@@ -449,20 +421,26 @@ export default function OnboardingPage() {
         {step === 2 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold">Current Metrics</h2>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+              <h2 className="font-serif text-xl font-semibold text-ink">
+                Current metrics
+              </h2>
+              <p className="mt-1 text-sm text-ink-secondary">
                 Help your AI agents track your progress. These are optional.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-[var(--color-surface-subtle)] rounded-lg border border-[var(--color-border)] p-4">
-                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                  Monthly Recurring Revenue
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="rounded-card border border-line bg-surface-muted/50 p-4">
+                <label
+                  htmlFor="onboarding-mrr"
+                  className="mb-1 block text-xs font-medium text-ink-secondary"
+                >
+                  Monthly recurring revenue
                 </label>
                 <div className="flex items-center gap-1">
-                  <span className="text-lg font-bold text-[var(--color-text-muted)]">$</span>
+                  <span className="text-lg font-semibold text-ink-secondary">$</span>
                   <input
+                    id="onboarding-mrr"
                     type="number"
                     min={0}
                     value={form.current_mrr || ""}
@@ -470,17 +448,21 @@ export default function OnboardingPage() {
                       update("current_mrr", parseFloat(e.target.value) || 0)
                     }
                     placeholder="0"
-                    className="w-full text-2xl font-bold bg-transparent focus:outline-none"
+                    className="w-full bg-transparent text-2xl font-semibold text-ink placeholder:text-ink-muted focus:outline-none"
                   />
                 </div>
-                <p className="text-xs text-[var(--color-text-muted)] mt-1">MRR</p>
+                <p className="mt-1 text-xs text-ink-secondary">MRR</p>
               </div>
 
-              <div className="bg-[var(--color-surface-subtle)] rounded-lg border border-[var(--color-border)] p-4">
-                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                  Active Users / Customers
+              <div className="rounded-card border border-line bg-surface-muted/50 p-4">
+                <label
+                  htmlFor="onboarding-users"
+                  className="mb-1 block text-xs font-medium text-ink-secondary"
+                >
+                  Active users / customers
                 </label>
                 <input
+                  id="onboarding-users"
                   type="number"
                   min={0}
                   value={form.current_users || ""}
@@ -488,18 +470,20 @@ export default function OnboardingPage() {
                     update("current_users", parseInt(e.target.value) || 0)
                   }
                   placeholder="0"
-                  className="w-full text-2xl font-bold bg-transparent focus:outline-none"
+                  className="w-full bg-transparent text-2xl font-semibold text-ink placeholder:text-ink-muted focus:outline-none"
                 />
-                <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                  Users
-                </p>
+                <p className="mt-1 text-xs text-ink-secondary">Users</p>
               </div>
 
-              <div className="bg-[var(--color-surface-subtle)] rounded-lg border border-[var(--color-border)] p-4">
-                <label className="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
-                  Monthly Website Traffic
+              <div className="rounded-card border border-line bg-surface-muted/50 p-4">
+                <label
+                  htmlFor="onboarding-traffic"
+                  className="mb-1 block text-xs font-medium text-ink-secondary"
+                >
+                  Monthly website traffic
                 </label>
                 <input
+                  id="onboarding-traffic"
                   type="number"
                   min={0}
                   value={form.monthly_traffic || ""}
@@ -507,18 +491,16 @@ export default function OnboardingPage() {
                     update("monthly_traffic", parseInt(e.target.value) || 0)
                   }
                   placeholder="0"
-                  className="w-full text-2xl font-bold bg-transparent focus:outline-none"
+                  className="w-full bg-transparent text-2xl font-semibold text-ink placeholder:text-ink-muted focus:outline-none"
                 />
-                <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                  Visitors / mo
-                </p>
+                <p className="mt-1 text-xs text-ink-secondary">Visitors / mo</p>
               </div>
             </div>
 
-            <div className="bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-lg p-4">
-              <p className="text-sm text-[var(--color-text-secondary)]">
-                💡 Don&apos;t worry if you don&apos;t have these yet. Your AI agents will learn
-                and adapt as your business grows.
+            <div className="rounded-card border border-line bg-surface-muted/50 p-4">
+              <p className="text-sm text-ink-secondary">
+                Don&apos;t worry if you don&apos;t have these yet. Your AI agents
+                will learn and adapt as your business grows.
               </p>
             </div>
           </div>
@@ -528,23 +510,24 @@ export default function OnboardingPage() {
         {step === 3 && (
           <div className="space-y-6">
             <div>
-              <h2 className="text-xl font-bold">Your Preferences</h2>
-              <p className="text-sm text-[var(--color-text-secondary)] mt-1">
+              <h2 className="font-serif text-xl font-semibold text-ink">
+                Your preferences
+              </h2>
+              <p className="mt-1 text-sm text-ink-secondary">
                 Customize how your AI agents communicate and operate.
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-3">
-                Preferred Communication Channel
+              <label className="mb-3 block text-sm font-medium text-ink">
+                Preferred communication channel
               </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {COMMUNICATION.map((c) => (
                   <OptionCard
                     key={c.value}
                     selected={form.preferred_communication === c.value}
                     onClick={() => update("preferred_communication", c.value)}
-                    emoji={c.emoji}
                     label={c.label}
                   />
                 ))}
@@ -552,20 +535,20 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-3">
-                Writing Voice for AI
+              <label className="mb-3 block text-sm font-medium text-ink">
+                Writing voice
               </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {VOICE_OPTIONS.map((v) => (
                   <button
                     key={v.value}
                     type="button"
                     onClick={() => update("writing_voice", v.value)}
                     className={clsx(
-                      "px-4 py-3 rounded-lg border-2 text-sm font-medium text-left transition-all",
+                      "rounded-control border px-4 py-3 text-left text-sm font-medium transition-colors duration-150",
                       form.writing_voice === v.value
-                        ? "border-[var(--color-text)] bg-[var(--color-surface-subtle)] text-[var(--color-text)] font-medium"
-                        : "border-[var(--color-border)] hover:border-[var(--color-text-muted)]"
+                        ? "border-accent bg-accent-soft/50 text-ink"
+                        : "border-line text-ink-secondary hover:border-ink-muted hover:text-ink"
                     )}
                   >
                     {v.label}
@@ -575,15 +558,19 @@ export default function OnboardingPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-3">
-                Working Hours
+              <label className="mb-3 block text-sm font-medium text-ink">
+                Working hours
               </label>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs text-[var(--color-text-secondary)] mb-1">
+                  <label
+                    htmlFor="onboarding-hours-start"
+                    className="mb-1 block text-xs text-ink-secondary"
+                  >
                     Start
                   </label>
-                  <input
+                  <Input
+                    id="onboarding-hours-start"
                     type="time"
                     value={form.working_hours.start}
                     onChange={(e) =>
@@ -592,14 +579,17 @@ export default function OnboardingPage() {
                         start: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-[var(--color-text-secondary)] mb-1">
+                  <label
+                    htmlFor="onboarding-hours-end"
+                    className="mb-1 block text-xs text-ink-secondary"
+                  >
                     End
                   </label>
-                  <input
+                  <Input
+                    id="onboarding-hours-end"
                     type="time"
                     value={form.working_hours.end}
                     onChange={(e) =>
@@ -608,7 +598,6 @@ export default function OnboardingPage() {
                         end: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-text-muted)]/20 focus:border-[var(--color-text-muted)] transition-all"
                   />
                 </div>
               </div>
@@ -618,65 +607,38 @@ export default function OnboardingPage() {
 
         {/* ── Error ────────────────────────────────────── */}
         {error && (
-          <div className="mt-4 p-3 rounded-lg bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20">
-            <p className="text-sm text-[var(--color-danger)]">{error}</p>
+          <div className="mt-4 rounded-control border border-danger/20 bg-danger-soft p-3">
+            <p className="text-sm text-danger">{error}</p>
           </div>
         )}
 
         {/* ── Navigation ───────────────────────────────── */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-[var(--color-border)]">
+        <div className="mt-8 flex items-center justify-between border-t border-line-subtle pt-6">
           {step > 0 ? (
-            <button
-              onClick={() => setStep(step - 1)}
-              className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text)] rounded-lg hover:bg-[var(--color-surface-muted)] transition-all"
-            >
-              <ChevronLeft className="w-4 h-4" />
+            <Button variant="ghost" onClick={() => setStep(step - 1)}>
+              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
               Back
-            </button>
+            </Button>
           ) : (
             <div />
           )}
 
           {step < STEPS.length - 1 ? (
-            <button
-              onClick={() => canNext() && setStep(step + 1)}
-              disabled={!canNext()}
-              className={clsx(
-                "flex items-center gap-2 px-6 py-2.5 text-sm font-semibold rounded-lg transition-all",
-                canNext()
-                  ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:bg-[var(--color-accent-hover)]"
-                  : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)] cursor-not-allowed"
-              )}
-            >
+            <Button onClick={() => canNext() && setStep(step + 1)} disabled={!canNext()}>
               Continue
-              <ChevronRight className="w-4 h-4" />
-            </button>
+              <ChevronRight className="h-4 w-4" aria-hidden="true" />
+            </Button>
           ) : (
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="flex items-center gap-2 px-6 py-2.5 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Setting up...
-                </>
-              ) : (
-                <>
-                  <Rocket className="w-4 h-4" />
-                  Launch Founder OS
-                </>
-              )}
-            </button>
+            <Button onClick={handleSubmit} loading={submitting}>
+              {submitting ? "Setting up" : "Launch Founder OS"}
+            </Button>
           )}
         </div>
       </div>
 
       {/* Step hint */}
-      <p className="text-center text-xs text-[var(--color-text-muted)] mt-4">
-        Step {step + 1} of {STEPS.length} — You can always update this later in
-        Settings
+      <p className="mt-4 text-center text-xs text-ink-secondary">
+        Step {step + 1} of {STEPS.length} — you can update this later in settings
       </p>
     </div>
   );
