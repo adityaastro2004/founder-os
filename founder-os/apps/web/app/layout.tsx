@@ -42,10 +42,13 @@ export default function RootLayout({
   const hasClerk = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable} antialiased`}
-      >
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable}`}
+    >
+      {/* Font variable classes live on <html>: the @theme font tokens are
+          defined on :root and resolve nested var()s there, not on <body>. */}
+      <body className="antialiased">
         {hasClerk ? (
           <ClerkProvider appearance={clerkAppearance}>{children}</ClerkProvider>
         ) : (
