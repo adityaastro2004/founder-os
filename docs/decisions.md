@@ -254,6 +254,37 @@
 
 ---
 
+## ADR-012 — PostHog for web analytics (env-gated, no proxy, Clerk-identified)
+
+- Date: 2026-07-18
+- Status: accepted
+- Context: the dashboard had zero product analytics — no visibility into sign-ups,
+  page usage, or feature adoption. Constraints: OSS/local-first posture (analytics
+  must be a no-op in local dev), the leaked-keys incident (no keys in code, ever),
+  the strict `--max-warnings 0` lint gate, and Vercel deploys built `--prebuilt`
+  from the laptop (dashboard env vars never reach the client bundle).
+- Decision: `posthog-js` initialized from `apps/web/instrumentation-client.ts`
+  (Next 16's client instrumentation hook) **only when `NEXT_PUBLIC_POSTHOG_KEY`
+  is set** — unset key = analytics fully off. `defaults: "2025-05-24"` gives
+  automatic App-Router pageview/pageleave capture; `person_profiles:
+  "identified_only"` keeps anonymous traffic in the cheap tier. A
+  `<PostHogIdentify>` null component inside `<ClerkProvider>` identifies events
+  by Clerk user id (email + name as person props) and resets on sign-out.
+  Deliberately **no** ingest reverse-proxy rewrite (ad-blocker evasion): the
+  rewrites layer already caused the 2026-07-11 localhost-rewrite 500 incident,
+  and lost ad-blocked events aren't worth re-touching it. No CSP change needed —
+  the web CSP only sets `frame-ancestors`.
+- Consequences: zero-config local dev stays clean; some events lost to
+  ad-blockers (accepted). The key must live in the laptop `.env.local` used for
+  `vercel build` — dashboard-only env vars silently ship a no-analytics bundle.
+  Follow-up if ever needed: custom event capture via `posthog.capture()` at
+  feature boundaries.
+- Links: `apps/web/instrumentation-client.ts`,
+  `apps/web/app/_components/posthog-identify.tsx`, `apps/web/app/layout.tsx`,
+  ADR-001 (stack baseline).
+
+---
+
 ## ADR-011 — Re-rooted, frozen Alembic baseline (`0000_baseline`) as the single DB bootstrap
 
 - Date: 2026-07-11
