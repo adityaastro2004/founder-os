@@ -18,6 +18,13 @@ import {
   Globe,
 } from "lucide-react";
 import { clsx } from "clsx";
+import {
+  PageHeader,
+  Card,
+  Button,
+  Input,
+  Textarea,
+} from "@/app/_components/ui";
 
 /* ── Types ─────────────────────────────────────────── */
 interface KnowledgeItem {
@@ -52,7 +59,7 @@ interface SearchResult {
   source_url: string | null;
 }
 
-/* ── Knowledge Page ───────────────────────────────── */
+/* ── Knowledge page ───────────────────────────────── */
 export default function KnowledgePage() {
   const api = useApi();
   const [items, setItems] = useState<KnowledgeItem[]>([]);
@@ -181,138 +188,122 @@ export default function KnowledgePage() {
     }
   };
 
+  const ingestTabs = [
+    { id: "text" as const, label: "Text", icon: Upload },
+    { id: "url" as const, label: "URL", icon: Globe },
+    { id: "file" as const, label: "File / PDF", icon: FileUp },
+  ];
+
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Knowledge Base</h1>
-          <p className="text-[var(--color-text-secondary)] mt-1">
-            Documents and data your agents can reference
-          </p>
-        </div>
-        <button
-          onClick={() => setShowIngest(!showIngest)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
-        >
-          {showIngest ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showIngest ? "Cancel" : "Add Knowledge"}
-        </button>
-      </div>
+      <PageHeader
+        title="Knowledge"
+        description="Documents and data your agents can reference"
+        actions={
+          <Button
+            variant={showIngest ? "secondary" : "primary"}
+            onClick={() => setShowIngest(!showIngest)}
+          >
+            {showIngest ? (
+              <X className="h-4 w-4" aria-hidden="true" />
+            ) : (
+              <Plus className="h-4 w-4" aria-hidden="true" />
+            )}
+            {showIngest ? "Cancel" : "Add knowledge"}
+          </Button>
+        }
+      />
 
-      {/* Stats Row */}
+      {/* Stats row */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: "Total Items", value: stats.total_items, icon: Database },
-            { label: "With Embeddings", value: stats.items_with_embeddings, icon: FileText },
+            { label: "Total items", value: stats.total_items, icon: Database },
+            { label: "With embeddings", value: stats.items_with_embeddings, icon: FileText },
             { label: "Pending", value: stats.items_without_embeddings, icon: Loader2 },
             { label: "Model", value: stats.embedding_model.split("/").pop() || stats.embedding_model, icon: Tag },
           ].map((s) => (
-            <div
-              key={s.label}
-              className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3"
-            >
-              <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] mb-1">
-                <s.icon className="w-3.5 h-3.5" />
+            <Card key={s.label} className="p-3">
+              <div className="mb-1 flex items-center gap-2 text-xs text-ink-secondary">
+                <s.icon className="h-3.5 w-3.5" aria-hidden="true" />
                 {s.label}
               </div>
-              <p className="text-lg font-bold">{s.value}</p>
-            </div>
+              <p className="truncate text-lg font-semibold text-ink">{s.value}</p>
+            </Card>
           ))}
         </div>
       )}
 
-      {/* Ingest Panel */}
+      {/* Ingest panel */}
       {showIngest && (
-        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
-          <div className="flex gap-2 mb-4">
-            <button
-              onClick={() => setIngestMode("text")}
-              className={clsx(
-                "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors",
-                ingestMode === "text"
-                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
-              )}
-            >
-              <Upload className="w-3.5 h-3.5" />
-              Text
-            </button>
-            <button
-              onClick={() => setIngestMode("url")}
-              className={clsx(
-                "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors",
-                ingestMode === "url"
-                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
-              )}
-            >
-              <Globe className="w-3.5 h-3.5" />
-              URL
-            </button>
-            <button
-              onClick={() => setIngestMode("file")}
-              className={clsx(
-                "flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors",
-                ingestMode === "file"
-                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
-              )}
-            >
-              <FileUp className="w-3.5 h-3.5" />
-              File / PDF
-            </button>
+        <Card className="p-5">
+          <div className="mb-4 flex gap-2">
+            {ingestTabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setIngestMode(tab.id)}
+                className={clsx(
+                  "flex items-center gap-2 rounded-control px-3 py-1.5 text-sm transition-colors duration-150",
+                  ingestMode === tab.id
+                    ? "bg-surface-muted font-medium text-ink"
+                    : "text-ink-secondary hover:bg-surface-muted/60"
+                )}
+              >
+                <tab.icon className="h-3.5 w-3.5" aria-hidden="true" />
+                {tab.label}
+              </button>
+            ))}
           </div>
           <form onSubmit={handleIngest} className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Input
                 type="text"
                 value={ingestTitle}
                 onChange={(e) => setIngestTitle(e.target.value)}
                 placeholder="Title (optional)"
-                className="px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
+                aria-label="Title"
               />
-              <input
+              <Input
                 type="text"
                 value={ingestCategory}
                 onChange={(e) => setIngestCategory(e.target.value)}
                 placeholder="Category (optional)"
-                className="px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
+                aria-label="Category"
               />
             </div>
             {ingestMode === "text" ? (
-              <textarea
+              <Textarea
                 value={ingestContent}
                 onChange={(e) => setIngestContent(e.target.value)}
-                placeholder="Paste your text content here..."
+                placeholder="Paste your text content here"
+                aria-label="Text content"
                 rows={5}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] resize-none placeholder:text-[var(--color-text-muted)]"
               />
             ) : ingestMode === "url" ? (
-              <input
+              <Input
                 type="url"
                 value={ingestContent}
                 onChange={(e) => setIngestContent(e.target.value)}
                 placeholder="https://example.com/article"
-                className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
+                aria-label="URL"
               />
             ) : (
               <div>
                 <label
                   htmlFor="knowledge-file-input"
-                  className="flex items-center gap-3 w-full px-3 py-4 text-sm rounded-lg border border-dashed border-[var(--color-border)] bg-[var(--color-surface-subtle)] cursor-pointer hover:border-[var(--color-text-muted)] transition-colors"
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-control border border-dashed border-line bg-surface-muted/40 px-3 py-4 text-sm transition-colors duration-150 hover:border-ink-muted"
                 >
-                  <FileUp className="w-5 h-5 text-[var(--color-text-muted)] shrink-0" />
+                  <FileUp className="h-5 w-5 shrink-0 text-ink-muted" aria-hidden="true" />
                   {ingestFile ? (
-                    <span className="text-[var(--color-text)] truncate">
+                    <span className="truncate text-ink">
                       {ingestFile.name}{" "}
-                      <span className="text-[var(--color-text-muted)]">
+                      <span className="text-ink-secondary">
                         ({(ingestFile.size / 1024).toFixed(0)} KB)
                       </span>
                     </span>
                   ) : (
-                    <span className="text-[var(--color-text-muted)]">
+                    <span className="text-ink-secondary">
                       Choose a PDF, TXT, MD, CSV or JSON file (max 10 MB)
                     </span>
                   )}
@@ -328,66 +319,61 @@ export default function KnowledgePage() {
               </div>
             )}
             <div className="flex items-center gap-3">
-              <button
+              <Button
                 type="submit"
                 disabled={
-                  ingesting ||
-                  (ingestMode === "file" ? !ingestFile : !ingestContent.trim())
+                  ingestMode === "file" ? !ingestFile : !ingestContent.trim()
                 }
-                className="px-4 py-2 text-sm font-medium text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
+                loading={ingesting}
               >
-                {ingesting ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Ingesting...
-                  </span>
-                ) : (
-                  "Ingest"
-                )}
-              </button>
+                {ingesting ? "Ingesting" : "Ingest"}
+              </Button>
               {ingestResult && (
-                <span className="text-sm text-[var(--color-text-secondary)]">{ingestResult}</span>
+                <span className="text-sm text-ink-secondary">{ingestResult}</span>
               )}
             </div>
           </form>
-        </div>
+        </Card>
       )}
 
       {/* Search */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
-          <input
+          <Search
+            className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
+            aria-hidden="true"
+          />
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search your knowledge base..."
-            className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
+            placeholder="Search your knowledge base"
+            aria-label="Search knowledge base"
+            className="pl-10"
           />
         </div>
-        <button
-          type="submit"
-          disabled={!searchQuery.trim() || searching}
-          className="px-4 py-2.5 text-sm font-medium text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
-        >
-          {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : "Search"}
-        </button>
+        <Button type="submit" disabled={!searchQuery.trim()} loading={searching}>
+          {searching ? "Searching" : "Search"}
+        </Button>
       </form>
 
-      {/* Search Results */}
+      {/* Search results */}
       {searchResults && (
-        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-semibold">Search Results ({searchResults.length})</h2>
+        <Card className="p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-serif text-lg font-semibold text-ink">
+              Search results ({searchResults.length})
+            </h2>
             <button
+              type="button"
               onClick={() => setSearchResults(null)}
-              className="text-xs text-[var(--color-text-muted)] hover:underline"
+              className="text-xs text-ink-secondary hover:underline"
             >
               Clear
             </button>
           </div>
           {searchResults.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-secondary)] py-4 text-center">
+            <p className="py-4 text-center text-sm text-ink-secondary">
               No results found.
             </p>
           ) : (
@@ -395,39 +381,46 @@ export default function KnowledgePage() {
               {searchResults.map((r) => (
                 <div
                   key={r.id}
-                  className="p-3 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)]"
+                  className="rounded-control border border-line bg-surface-muted/40 p-3"
                 >
-                  <div className="flex items-start justify-between mb-1">
-                    <p className="text-sm font-medium">{r.title || "Untitled"}</p>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] font-medium">
+                  <div className="mb-1 flex items-start justify-between">
+                    <p className="text-sm font-medium text-ink">{r.title || "Untitled"}</p>
+                    <span className="rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-medium text-ink-secondary">
                       {(r.score * 100).toFixed(0)}% match
                     </span>
                   </div>
-                  <p className="text-xs text-[var(--color-text-secondary)] line-clamp-2">
+                  <p className="line-clamp-2 text-xs text-ink-secondary">
                     {r.content}
                   </p>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
-      {/* Items List */}
-      <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
-        <h2 className="text-lg font-semibold mb-4">
-          Knowledge Items {!loading && `(${items.length})`}
+      {/* Items list */}
+      <Card className="p-5">
+        <h2 className="mb-4 font-serif text-lg font-semibold text-ink">
+          Knowledge items {!loading && `(${items.length})`}
         </h2>
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-5 h-5 animate-spin text-[var(--color-text-muted)]" />
+            <Loader2 className="h-5 w-5 animate-spin text-ink-muted" aria-hidden="true" />
           </div>
         ) : items.length === 0 ? (
           <div className="py-12 text-center">
-            <BookOpen className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-3" />
-            <h3 className="text-lg font-semibold mb-2">No documents yet</h3>
-            <p className="text-sm text-[var(--color-text-secondary)] max-w-sm mx-auto">
-              Upload documents, notes, or links to build your knowledge base.
+            <BookOpen
+              className="mx-auto mb-3 h-10 w-10 text-ink-muted"
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <h3 className="mb-2 font-serif text-lg font-semibold text-ink">
+              No documents yet
+            </h3>
+            <p className="mx-auto max-w-sm text-sm text-ink-secondary">
+              Upload documents, notes, or links to give your agents something to
+              ground their work in.
             </p>
           </div>
         ) : (
@@ -435,27 +428,26 @@ export default function KnowledgePage() {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="p-3 rounded-lg border border-[var(--color-border)] hover:bg-[var(--color-surface-subtle)] transition-colors"
+                className="rounded-control border border-line p-3 transition-colors duration-150 hover:bg-surface-muted/40"
               >
                 <div className="flex items-center gap-3">
-                  <FileText className="w-4 h-4 text-[var(--color-text-secondary)] shrink-0" />
+                  <FileText className="h-4 w-4 shrink-0 text-ink-secondary" aria-hidden="true" />
                   <button
+                    type="button"
                     onClick={() => setExpandedItem(expandedItem === item.id ? null : item.id)}
-                    className="flex-1 text-left min-w-0"
+                    className="min-w-0 flex-1 text-left"
                   >
-                    <p className="text-sm font-medium truncate">{item.title || "Untitled"}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <p className="truncate text-sm font-medium text-ink">
+                      {item.title || "Untitled"}
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-2 text-[10px] text-ink-secondary">
                       {item.category && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-subtle)] text-[var(--color-text-muted)]">
+                        <span className="rounded bg-surface-muted px-1.5 py-0.5">
                           {item.category}
                         </span>
                       )}
-                      <span className="text-[10px] text-[var(--color-text-muted)]">
-                        {new Date(item.created_at).toLocaleDateString()}
-                      </span>
-                      <span className="text-[10px] text-[var(--color-text-muted)]">
-                        {item.has_embedding ? "Embedded" : "Pending"}
-                      </span>
+                      <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                      <span>{item.has_embedding ? "Embedded" : "Pending"}</span>
                     </div>
                   </button>
                   {item.source_url && (
@@ -463,34 +455,37 @@ export default function KnowledgePage() {
                       href={item.source_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)]"
+                      aria-label="Open source"
+                      className="p-1.5 text-ink-muted transition-colors duration-150 hover:text-ink"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                     </a>
                   )}
                   <button
+                    type="button"
                     onClick={() => handleDelete(item.id)}
                     disabled={deleting === item.id}
-                    className="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors"
+                    aria-label="Delete item"
+                    className="p-1.5 text-ink-muted transition-colors duration-150 hover:text-danger"
                   >
                     {deleting === item.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                     ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                     )}
                   </button>
                 </div>
                 {expandedItem === item.id && (
-                  <div className="mt-3 pt-3 border-t border-[var(--color-border)]">
-                    <p className="text-xs text-[var(--color-text-secondary)] whitespace-pre-wrap line-clamp-10">
+                  <div className="mt-3 border-t border-line-subtle pt-3">
+                    <p className="line-clamp-10 whitespace-pre-wrap text-xs text-ink-secondary">
                       {item.content}
                     </p>
                     {item.tags && item.tags.length > 0 && (
-                      <div className="flex gap-1.5 mt-2 flex-wrap">
+                      <div className="mt-2 flex flex-wrap gap-1.5">
                         {item.tags.map((tag) => (
                           <span
                             key={tag}
-                            className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]"
+                            className="rounded-full bg-surface-muted px-2 py-0.5 text-[10px] text-ink-secondary"
                           >
                             {tag}
                           </span>
@@ -503,7 +498,7 @@ export default function KnowledgePage() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
