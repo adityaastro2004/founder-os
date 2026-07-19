@@ -349,6 +349,10 @@ class AgentRegistry:
         # which matches how insights are stored in agent_routes.py.
         agent.clerk_user_id = mcp_uid
 
+        # Current chat session — lets <memories> recall exclude same-session
+        # pages (those turns already render in <conversation_history>, ADR-014).
+        agent.session_id = session_id or ""
+
         # Store the planner user-store key so PlannerAgent.after_run can
         # push plans to Google Calendar automatically.
         if planner_user_id:

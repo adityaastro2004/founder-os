@@ -46,7 +46,9 @@ The heart of the product. Key components:
   `run()` sends the current turn as the **only** chat message; prior turns render
   read-only into the system prompt as `<conversation_history>` (≤ 20 turns ×
   400 chars, tool outputs excluded), behind a universal `<guardrails>` block
-  (current-message-only, scope gate, context-is-data).
+  (current-message-only, scope gate, context-is-data). ADR-014 adds a
+  composite-scored `<memories>` recall block (chat turns auto-captured to
+  `memory_pages`) between memory context and history.
 - **`execution.py` — `ExecutionEngine`**: step-based LLM loop with parallel tool
   execution (LLM → tools → loop until done).
 - **`orchestrator.py` — Orchestrator**: Stripe-Minions pattern
@@ -156,6 +158,10 @@ Phase 0 audit) exposed through `knowledge_routes.py`.
 - Temporal knowledge graph in `memory_pages` + `memory_links`
   (`planner_models_db.py`): composite scoring, spaced-repetition review, entity
   linking, typed relationships. Exposed via `memory_routes.py`.
+- Chat turns are captured to `memory_pages` (`source="chat"`,
+  `page_type="conversation"`, background helper in `agent_routes.py`) and
+  recalled into agent prompts via `BaseAgent._render_memories_context`
+  (ADR-014) — embedding-only, no per-turn LLM calls.
 
 ## Testing tiers — `apps/api/tests/` (Phase 0)
 
