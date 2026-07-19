@@ -28,6 +28,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { PageHeader, Card, Button } from "@/app/_components/ui";
 
 /* ── Types ─────────────────────────────────────────── */
 interface PlannerStatus {
@@ -89,7 +90,7 @@ interface ChatMessage {
   status?: "sending" | "completed" | "error" | "clarification";
 }
 
-/* ── Planner Page ─────────────────────────────────── */
+/* ── Planner page ─────────────────────────────────── */
 export default function PlannerPage() {
   const api = useApi();
   const { getToken } = useAuth();
@@ -380,14 +381,12 @@ export default function PlannerPage() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Planner</h1>
-          <p className="text-[var(--color-text-secondary)] mt-1">
-            AI-powered scheduling and calendar management
-          </p>
-        </div>
+        <PageHeader
+          title="Planner"
+          description="AI-powered scheduling and calendar management"
+        />
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
+          <Loader2 className="h-6 w-6 animate-spin text-ink-muted" aria-hidden="true" />
         </div>
       </div>
     );
@@ -398,110 +397,104 @@ export default function PlannerPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Planner</h1>
-          <p className="text-[var(--color-text-secondary)] mt-1">
-            AI-powered scheduling and calendar management
-          </p>
-        </div>
-        {isOnboarded && isGcalConnected && (
-          <button
-            onClick={handleGenerate}
-            disabled={sending}
-            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-[var(--color-accent-foreground)] text-sm font-medium rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
-          >
-            {sending ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            Generate Weekly Plan
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Planner"
+        description="AI-powered scheduling and calendar management"
+        actions={
+          isOnboarded && isGcalConnected ? (
+            <Button onClick={handleGenerate} loading={sending}>
+              {!sending && <Sparkles className="h-4 w-4" aria-hidden="true" />}
+              Generate weekly plan
+            </Button>
+          ) : undefined
+        }
+      />
 
-      {/* Status Card */}
-      <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-6">
-        <div className="flex items-center gap-3 mb-4">
+      {/* Status card */}
+      <Card className="p-6">
+        <div className="mb-4 flex items-center gap-3">
           <div
             className={clsx(
-              "w-3 h-3 rounded-full",
+              "h-3 w-3 rounded-full",
               status?.status === "active"
-                ? "bg-[var(--color-success)]"
+                ? "bg-success"
                 : status?.status === "pending_gcal"
-                ? "bg-[var(--color-warning)]"
-                : "bg-[var(--color-text-muted)]"
+                  ? "bg-warning"
+                  : "bg-ink-muted"
             )}
           />
-          <h2 className="text-lg font-semibold">
+          <h2 className="font-serif text-lg font-semibold text-ink">
             {status?.status === "active"
-              ? "Planner Active"
+              ? "Planner active"
               : status?.status === "pending_gcal"
-              ? "Calendar Not Connected"
-              : "Setup Required"}
+                ? "Calendar not connected"
+                : "Setup required"}
           </h2>
         </div>
 
         {!isOnboarded ? (
-          <div className="text-center py-8">
-            <CalendarDays className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-3" />
-            <p className="text-sm text-[var(--color-text-secondary)] max-w-md mx-auto mb-4">
+          <div className="py-8 text-center">
+            <CalendarDays
+              className="mx-auto mb-3 h-10 w-10 text-ink-muted"
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
+            <p className="mx-auto mb-4 max-w-md text-sm text-ink-secondary">
               The planner needs your business context before it can plan your
               week. Complete onboarding once and it activates automatically.
             </p>
             <Link
               href="/onboarding"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-[var(--color-accent-foreground)] text-sm font-medium rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
+              className="inline-flex items-center gap-2 rounded-control bg-accent px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent-hover"
             >
               Complete onboarding
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <p className="text-xs text-[var(--color-text-muted)] mt-3">
+            <p className="mt-3 text-xs text-ink-secondary">
               Already onboarded? Refresh this page — your profile syncs
               automatically.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)]">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                <span className="text-xs font-medium text-[var(--color-text-secondary)]">Primary Goal</span>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="rounded-control border border-line bg-surface-muted/40 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <Target className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+                <span className="text-xs font-medium text-ink-secondary">Primary goal</span>
               </div>
-              <p className="text-sm font-medium">{status?.primary_goal || "Not set"}</p>
+              <p className="text-sm font-medium text-ink">{status?.primary_goal || "Not set"}</p>
             </div>
-            <div className="p-4 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)]">
-              <div className="flex items-center gap-2 mb-2">
-                <CalendarDays className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                <span className="text-xs font-medium text-[var(--color-text-secondary)]">Plans Generated</span>
+            <div className="rounded-control border border-line bg-surface-muted/40 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <CalendarDays className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+                <span className="text-xs font-medium text-ink-secondary">Plans generated</span>
               </div>
-              <p className="text-sm font-medium">{status?.total_plans_generated ?? 0}</p>
+              <p className="text-sm font-medium text-ink">{status?.total_plans_generated ?? 0}</p>
             </div>
-            <div className="p-4 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)]">
-              <div className="flex items-center gap-2 mb-2">
-                <LinkIcon className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                <span className="text-xs font-medium text-[var(--color-text-secondary)]">Google Calendar</span>
+            <div className="rounded-control border border-line bg-surface-muted/40 p-4">
+              <div className="mb-2 flex items-center gap-2">
+                <LinkIcon className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+                <span className="text-xs font-medium text-ink-secondary">Google Calendar</span>
               </div>
               <p className="text-sm font-medium">
                 {isGcalConnected ? (
-                  <span className="text-[var(--color-success)] flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span className="flex items-center gap-1 text-success">
+                    <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
                     Connected
                   </span>
                 ) : (
                   <button
+                    type="button"
                     onClick={handleConnect}
                     disabled={connecting}
-                    className="text-[var(--color-text-secondary)] hover:underline flex items-center gap-1 text-sm"
+                    className="flex items-center gap-1 text-sm text-ink-secondary hover:underline"
                   >
                     {connecting ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                     ) : (
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                     )}
-                    {connecting ? "Connecting..." : "Connect now"}
+                    {connecting ? "Connecting" : "Connect now"}
                   </button>
                 )}
               </p>
@@ -509,83 +502,85 @@ export default function PlannerPage() {
           </div>
         )}
 
-        {/* GCal Connect Banner */}
+        {/* GCal connect banner */}
         {isOnboarded && !isGcalConnected && (
-          <div className="mt-4 p-4 rounded-lg bg-[var(--color-warning)]/5 border border-[var(--color-warning)]/20">
+          <div className="mt-4 rounded-control border border-warning/20 bg-warning-soft p-4">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-[var(--color-warning)] shrink-0 mt-0.5" />
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-warning" aria-hidden="true" />
               <div className="flex-1">
-                <p className="text-sm font-medium">
+                <p className="text-sm font-medium text-ink">
                   Google Calendar not connected
                 </p>
-                <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">
+                <p className="mt-0.5 text-xs text-ink-secondary">
                   Connect your calendar to enable automatic scheduling and weekly plan generation.
                 </p>
               </div>
               <button
+                type="button"
                 onClick={handleConnect}
                 disabled={connecting}
-                className="px-3 py-1.5 text-xs font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] rounded-lg transition-colors disabled:opacity-50 flex items-center gap-1.5 shrink-0"
+                className="flex shrink-0 items-center gap-1.5 rounded-control bg-accent px-3 py-1.5 text-xs font-medium text-white transition-colors duration-150 hover:bg-accent-hover disabled:opacity-50"
               >
                 {connecting ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 ) : (
-                  <LinkIcon className="w-3.5 h-3.5" />
+                  <LinkIcon className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
-                {connecting ? "Opening..." : "Connect Google Calendar"}
+                {connecting ? "Opening" : "Connect Google Calendar"}
               </button>
             </div>
           </div>
         )}
 
-        {/* Weekly Goals */}
+        {/* Weekly goals */}
         {isOnboarded && status?.goals_this_week && status.goals_this_week.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-[var(--color-border)]">
-            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
-              <Target className="w-4 h-4 text-[var(--color-text-secondary)]" />
-              Goals This Week
+          <div className="mt-4 border-t border-line-subtle pt-4">
+            <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold text-ink">
+              <Target className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+              Goals this week
             </h3>
             <ul className="space-y-1.5">
               {status.goals_this_week.map((goal, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
-                  <CheckCircle2 className="w-3.5 h-3.5 mt-0.5 text-[var(--color-success)] shrink-0" />
+                <li key={i} className="flex items-start gap-2 text-sm text-ink">
+                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" aria-hidden="true" />
                   {goal}
                 </li>
               ))}
             </ul>
           </div>
         )}
-      </div>
+      </Card>
 
-      {/* Chat Interface */}
+      {/* Chat interface */}
       {isOnboarded && (
-        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Bot className="w-5 h-5 text-[var(--color-text-secondary)]" />
+        <Card className="p-5">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 font-serif text-lg font-semibold text-ink">
+              <Bot className="h-5 w-5 text-ink-secondary" aria-hidden="true" />
               Plan with AI
             </h2>
             {chatMessages.length > 0 && (
               <button
+                type="button"
                 onClick={() => {
                   setChatMessages([]);
                   sessionIdRef.current = `planner-chat-${Date.now()}`;
                 }}
-                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] flex items-center gap-1 transition-colors"
+                className="flex items-center gap-1 text-xs text-ink-secondary transition-colors duration-150 hover:text-ink"
               >
-                <Trash2 className="w-3 h-3" />
+                <Trash2 className="h-3 w-3" aria-hidden="true" />
                 Clear chat
               </button>
             )}
           </div>
-          <p className="text-xs text-[var(--color-text-secondary)] mb-4">
+          <p className="mb-4 text-xs text-ink-secondary">
             Ask anything — schedule meetings, delete events, update goals, replan your week.
             The AI will ask for details if needed.
           </p>
 
-          {/* Chat Messages */}
+          {/* Chat messages */}
           {chatMessages.length > 0 && (
-            <div className="mb-4 max-h-[400px] overflow-y-auto space-y-3 pr-1">
+            <div className="mb-4 max-h-[400px] space-y-3 overflow-y-auto pr-1">
               {chatMessages.map((msg) => (
                 <div
                   key={msg.id}
@@ -595,28 +590,26 @@ export default function PlannerPage() {
                   )}
                 >
                   {msg.role === "assistant" && (
-                    <div className="w-7 h-7 rounded-md bg-[var(--color-accent)] flex items-center justify-center shrink-0 mt-0.5">
-                      <Bot className="w-4 h-4 text-[var(--color-accent-foreground)]" />
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-accent">
+                      <Bot className="h-4 w-4 text-white" aria-hidden="true" />
                     </div>
                   )}
                   <div
                     className={clsx(
-                      "max-w-[80%] rounded-lg px-4 py-2.5 text-sm",
+                      "max-w-[80%] rounded-card px-4 py-2.5 text-sm",
                       msg.role === "user"
-                        ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] rounded-br-sm"
+                        ? "rounded-br-md bg-surface-muted text-ink"
                         : msg.status === "error"
-                        ? "bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 text-[var(--color-danger)] rounded-bl-sm"
-                        : msg.status === "clarification"
-                        ? "bg-[var(--color-warning)]/5 border border-[var(--color-warning)]/20 rounded-bl-sm"
-                        : msg.status === "sending"
-                        ? "bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-bl-sm"
-                        : "bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-bl-sm"
+                          ? "rounded-bl-md border border-danger/20 bg-danger-soft text-danger"
+                          : msg.status === "clarification"
+                            ? "rounded-bl-md border border-warning/20 bg-warning-soft text-ink"
+                            : "rounded-bl-md border border-line bg-paper text-ink"
                     )}
                   >
                     {msg.status === "sending" ? (
-                      <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Thinking...</span>
+                      <div className="flex items-center gap-2 text-ink-secondary">
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        <span>Thinking</span>
                       </div>
                     ) : (
                       <>
@@ -627,16 +620,16 @@ export default function PlannerPage() {
                             {msg.mcpToolsUsed.map((tool) => (
                               <span
                                 key={tool}
-                                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] font-mono"
+                                className="inline-flex items-center gap-1 rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[10px] text-ink-secondary"
                               >
-                                <Plug className="w-2.5 h-2.5" />
+                                <Plug className="h-2.5 w-2.5" aria-hidden="true" />
                                 {tool}
                               </span>
                             ))}
                           </div>
                         )}
                         {msg.durationSeconds && msg.role === "assistant" && (
-                          <div className="mt-1.5 text-[10px] text-[var(--color-text-muted)]">
+                          <div className="mt-1.5 text-[10px] text-ink-secondary">
                             {msg.durationSeconds.toFixed(1)}s
                             {msg.tokensUsed ? ` · ${msg.tokensUsed} tokens` : ""}
                           </div>
@@ -645,8 +638,8 @@ export default function PlannerPage() {
                     )}
                   </div>
                   {msg.role === "user" && (
-                    <div className="w-7 h-7 rounded-md bg-[var(--color-surface-muted)] flex items-center justify-center shrink-0 mt-0.5">
-                      <User className="w-4 h-4 text-[var(--color-text-secondary)]" />
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-muted">
+                      <User className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
                     </div>
                   )}
                 </div>
@@ -660,21 +653,27 @@ export default function PlannerPage() {
               type="text"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="e.g., Delete all events this week, Board meeting Friday at 2 PM..."
+              placeholder="e.g. Delete all events this week, board meeting Friday at 2 PM"
+              aria-label="Ask the planner"
               disabled={sending}
-              className="flex-1 px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] disabled:opacity-50 placeholder:text-[var(--color-text-muted)]"
+              className="flex-1 rounded-control border border-line bg-surface px-4 py-2.5 text-sm text-ink outline-none transition-colors duration-150 placeholder:text-ink-muted focus:border-accent focus:ring-1 focus:ring-accent disabled:opacity-50"
             />
             <button
               type="submit"
+              aria-label="Send"
               disabled={!prompt.trim() || sending}
               className={clsx(
-                "px-4 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "rounded-control px-4 py-2.5 text-sm font-medium transition-colors duration-150",
                 prompt.trim() && !sending
-                  ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:bg-[var(--color-accent-hover)]"
-                  : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
+                  ? "bg-accent text-white hover:bg-accent-hover"
+                  : "bg-surface-muted text-ink-muted"
               )}
             >
-              {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              ) : (
+                <Send className="h-4 w-4" aria-hidden="true" />
+              )}
             </button>
           </form>
 
@@ -689,40 +688,44 @@ export default function PlannerPage() {
               ].map((suggestion) => (
                 <button
                   key={suggestion}
+                  type="button"
                   onClick={() => setPrompt(suggestion)}
-                  className="text-xs px-3 py-1.5 rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)] transition-colors"
+                  className="rounded-control border border-line px-3 py-1.5 text-xs text-ink-secondary transition-colors duration-150 hover:bg-surface-muted/60 hover:text-ink"
                 >
                   {suggestion}
                 </button>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
-      {/* MCP Tools Panel */}
+      {/* MCP tools panel */}
       {isOnboarded && mcpTools && (
-        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
+        <Card className="p-5">
           <button
+            type="button"
             onClick={() => setShowMcpTools(!showMcpTools)}
-            className="flex items-center justify-between w-full"
+            className="flex w-full items-center justify-between"
           >
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Plug className="w-5 h-5 text-[var(--color-text-secondary)]" />
-              MCP Tools
-              <span className={clsx(
-                "text-xs font-medium px-2 py-0.5 rounded-full",
-                mcpTools.mcp_connected
-                  ? "bg-[var(--color-success)]/10 text-[var(--color-success)]"
-                  : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
-              )}>
+            <h2 className="flex items-center gap-2 font-serif text-lg font-semibold text-ink">
+              <Plug className="h-5 w-5 text-ink-secondary" aria-hidden="true" />
+              MCP tools
+              <span
+                className={clsx(
+                  "rounded-full px-2 py-0.5 text-xs font-medium",
+                  mcpTools.mcp_connected
+                    ? "bg-success-soft text-success"
+                    : "bg-surface-muted text-ink-secondary"
+                )}
+              >
                 {mcpTools.mcp_connected ? `${mcpTools.total_tools} tools active` : "Not connected"}
               </span>
             </h2>
             {showMcpTools ? (
-              <ChevronUp className="w-4 h-4 text-[var(--color-text-muted)]" />
+              <ChevronUp className="h-4 w-4 text-ink-muted" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)]" />
+              <ChevronDown className="h-4 w-4 text-ink-muted" aria-hidden="true" />
             )}
           </button>
 
@@ -733,13 +736,13 @@ export default function PlannerPage() {
                 <span
                   key={p.name}
                   className={clsx(
-                    "inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-md border",
+                    "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs",
                     p.status === "connected"
-                      ? "bg-[var(--color-success)]/5 border-[var(--color-success)]/20 text-[var(--color-success)]"
-                      : "bg-[var(--color-warning)]/5 border-[var(--color-warning)]/20 text-[var(--color-warning)]"
+                      ? "border-success/20 bg-success-soft text-success"
+                      : "border-warning/20 bg-warning-soft text-warning"
                   )}
                 >
-                  <Zap className="w-3 h-3" />
+                  <Zap className="h-3 w-3" aria-hidden="true" />
                   {p.name.replace("mcp:", "")} — {p.tool_count} tools
                 </span>
               ))}
@@ -753,45 +756,47 @@ export default function PlannerPage() {
               {mcpTools.providers.map((p) => (
                 <div
                   key={p.name}
-                  className="p-3 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)]"
+                  className="rounded-control border border-line bg-surface-muted/40 p-3"
                 >
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Plug className="w-4 h-4 text-[var(--color-text-secondary)]" />
-                      <span className="text-sm font-semibold">
+                      <Plug className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+                      <span className="text-sm font-semibold text-ink">
                         {p.name.replace("mcp:", "").replace("-", " ").replace(/\b\w/g, c => c.toUpperCase())}
                       </span>
-                      <span className={clsx(
-                        "text-[10px] px-1.5 py-0.5 rounded font-medium uppercase tracking-wide",
-                        p.status === "connected"
-                          ? "bg-[var(--color-success)]/10 text-[var(--color-success)]"
-                          : p.status === "token_expired"
-                          ? "bg-[var(--color-danger)]/10 text-[var(--color-danger)]"
-                          : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
-                      )}>
+                      <span
+                        className={clsx(
+                          "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                          p.status === "connected"
+                            ? "bg-success-soft text-success"
+                            : p.status === "token_expired"
+                              ? "bg-danger-soft text-danger"
+                              : "bg-surface-muted text-ink-secondary"
+                        )}
+                      >
                         {p.status}
                       </span>
                     </div>
-                    <span className="text-[10px] text-[var(--color-text-muted)] uppercase tracking-wide">
+                    <span className="text-[10px] text-ink-secondary">
                       {p.type}
                     </span>
                   </div>
 
                   {/* Tools from this provider */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                     {mcpTools.tools
                       .filter((t) => t.provider === p.name)
                       .map((tool) => (
                         <div
                           key={tool.name}
-                          className="flex items-start gap-2 py-1.5 px-2 rounded-lg hover:bg-[var(--color-surface)] transition-colors"
+                          className="flex items-start gap-2 rounded-control px-2 py-1.5 transition-colors duration-150 hover:bg-surface"
                         >
-                          <Wrench className="w-3.5 h-3.5 text-[var(--color-text-muted)] mt-0.5 shrink-0" />
+                          <Wrench className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-muted" aria-hidden="true" />
                           <div className="min-w-0">
-                            <p className="text-xs font-mono font-medium text-[var(--color-text-secondary)] truncate">
+                            <p className="truncate font-mono text-xs font-medium text-ink-secondary">
                               {tool.name}
                             </p>
-                            <p className="text-[11px] text-[var(--color-text-muted)] line-clamp-1">
+                            <p className="line-clamp-1 text-[11px] text-ink-secondary">
                               {tool.description}
                             </p>
                           </div>
@@ -803,39 +808,40 @@ export default function PlannerPage() {
 
               {/* No providers */}
               {mcpTools.providers.length === 0 && (
-                <div className="text-center py-6">
-                  <Plug className="w-8 h-8 text-[var(--color-text-muted)] mx-auto mb-2" />
-                  <p className="text-sm text-[var(--color-text-secondary)]">
+                <div className="py-6 text-center">
+                  <Plug className="mx-auto mb-2 h-8 w-8 text-ink-muted" aria-hidden="true" />
+                  <p className="text-sm text-ink-secondary">
                     No MCP tools connected yet.
                   </p>
-                  <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                  <p className="mt-1 text-xs text-ink-secondary">
                     Connect Google Calendar above to enable MCP calendar tools.
                   </p>
                 </div>
               )}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
-      {/* Plan History */}
+      {/* Plan history */}
       {history && history.total_plans > 0 && (
-        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
+        <Card className="p-5">
           <button
+            type="button"
             onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center justify-between w-full"
+            className="flex w-full items-center justify-between"
           >
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <History className="w-5 h-5 text-[var(--color-text-secondary)]" />
-              Plan History
-              <span className="text-xs font-normal text-[var(--color-text-muted)]">
+            <h2 className="flex items-center gap-2 font-serif text-lg font-semibold text-ink">
+              <History className="h-5 w-5 text-ink-secondary" aria-hidden="true" />
+              Plan history
+              <span className="text-xs font-normal text-ink-secondary">
                 ({history.total_plans})
               </span>
             </h2>
             {showHistory ? (
-              <ChevronUp className="w-4 h-4 text-[var(--color-text-muted)]" />
+              <ChevronUp className="h-4 w-4 text-ink-muted" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)]" />
+              <ChevronDown className="h-4 w-4 text-ink-muted" aria-hidden="true" />
             )}
           </button>
           {showHistory && (
@@ -843,11 +849,11 @@ export default function PlannerPage() {
               {history.plans.map((plan, i) => (
                 <div
                   key={plan.id || i}
-                  className="p-3 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)]"
+                  className="rounded-control border border-line bg-surface-muted/40 p-3"
                 >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-[var(--color-text-muted)] flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
+                  <div className="mb-1 flex items-center justify-between text-xs text-ink-secondary">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" aria-hidden="true" />
                       {new Date(plan.created_at).toLocaleDateString("en-US", {
                         weekday: "short",
                         month: "short",
@@ -855,17 +861,15 @@ export default function PlannerPage() {
                       })}
                     </span>
                     {plan.events_count != null && (
-                      <span className="text-xs text-[var(--color-text-muted)]">
-                        {plan.events_count} events
-                      </span>
+                      <span>{plan.events_count} events</span>
                     )}
                   </div>
-                  <p className="text-sm">{plan.summary}</p>
+                  <p className="text-sm text-ink">{plan.summary}</p>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );
