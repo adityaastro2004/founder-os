@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useApi } from "@/lib/use-api";
 import { clsx } from "clsx";
+import StateSourcesSection from "./_components/state-sources";
 import {
   Calendar,
   MessageSquare,
@@ -591,6 +592,9 @@ export default function AppsPage() {
 
       {/* Business Info */}
       <BusinessInfoCard profile={profile} />
+
+      {/* Company State Sources (Notion / Obsidian sync) */}
+      <StateSourcesSection />
 
       {/* Connected Apps */}
       {connectedApps.length > 0 && (

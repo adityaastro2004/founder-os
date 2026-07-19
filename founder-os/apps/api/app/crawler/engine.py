@@ -27,6 +27,8 @@ from urllib.parse import urljoin, urlparse
 
 import httpx
 
+from app.crawler.ssrf import safe_get, validate_public_url
+
 logger = logging.getLogger(__name__)
 
 
@@ -153,6 +155,11 @@ class CrawlEngine:
         Respects robots.txt and rate limits.
         """
         try:
+            # SSRF guard: refuse internal / non-public targets before any request
+            # (blocks e.g. the EC2 metadata endpoint). Re-checked per redirect hop
+            # inside _fetch_raw. Raised SSRFError is handled by the except below.
+            await validate_public_url(url)
+
             # Check robots.txt
             if not await self._check_robots_txt(url):
                 return CrawlResult(
@@ -219,10 +226,11 @@ class CrawlEngine:
         try:
             async with self._semaphore:
                 async with httpx.AsyncClient(timeout=self.timeout) as client:
-                    resp = await client.get(
+                    # SSRF-safe: validates the URL and every redirect hop.
+                    resp = await safe_get(
+                        client,
                         url,
                         headers={"User-Agent": self.user_agent},
-                        follow_redirects=True,
                     )
                     resp.raise_for_status()
 
@@ -338,10 +346,11 @@ class CrawlEngine:
     async def _fetch_raw(self, url: str) -> CrawlResult:
         """Internal: fetch a URL and return CrawlResult."""
         async with httpx.AsyncClient(timeout=self.timeout) as client:
-            resp = await client.get(
+            # SSRF-safe: validates the URL and every redirect hop.
+            resp = await safe_get(
+                client,
                 url,
                 headers={"User-Agent": self.user_agent},
-                follow_redirects=True,
             )
 
             # Check content size before reading

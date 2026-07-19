@@ -29,13 +29,18 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.auth import require_auth, ClerkUser
 from app.config import get_settings
+from app.database import get_db
+from app.posthog_client import get_posthog
 from app.user_store import (
     UserProfile,
     get_user,
     get_or_create_user,
     save_user,
+    async_save_user,
     update_user_context,
     store_plan_history,
     get_plan_history,
@@ -329,6 +334,14 @@ async def connect_callback(code: str, state: str):
     from app.integrations.google_calendar.client import store_tokens
     store_tokens(user_id, tokens)
 
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user_id,
+            event="calendar_connected",
+            properties={"calendar_provider": "google"},
+        )
+
     # Return an HTML page that shows success and auto-closes the popup
     from fastapi.responses import HTMLResponse
     display_name = user.business_name or user_id
@@ -540,6 +553,19 @@ async def generate_now(body: GenerateRequest, clerk: ClerkUser = Depends(require
     except Exception as mem_exc:
         logger.warning("Memory store for plan failed (non-fatal): %s", mem_exc)
 
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=clerk.user_id,
+            event="plan_generated",
+            properties={
+                "tasks_generated": task_count,
+                "events_created": result.get("events_created", 0),
+                "duration_seconds": round(duration, 1),
+                "triggered_manually": True,
+            },
+        )
+
     return {
         "status": "completed",
         "user_id": user.user_id,
@@ -560,16 +586,69 @@ async def generate_now(body: GenerateRequest, clerk: ClerkUser = Depends(require
 # 5. STATUS — check everything
 # ============================================================================
 
+def _planner_profile_from_founder(founder, clerk_user_id: str, name: str = "") -> UserProfile:
+    """Map a dashboard FounderProfile row onto a planner UserProfile."""
+    hours = founder.working_hours if isinstance(founder.working_hours, dict) else {}
+    start = hours.get("start") or "09:00"
+    end = hours.get("end") or "18:00"
+    return UserProfile(
+        user_id=clerk_user_id,
+        name=name,
+        business_name=founder.business_name or "",
+        business_type=founder.business_type or "",
+        business_stage=founder.business_stage or "",
+        industry=founder.industry or "",
+        target_audience=founder.target_audience or "",
+        team_size=founder.team_size or 1,
+        current_mrr=float(founder.current_mrr or 0),
+        current_users=founder.current_users or 0,
+        primary_goal=founder.primary_goal or "",
+        preferred_work_hours=f"{start}-{end}",
+    )
+
+
+async def _bootstrap_from_onboarding(clerk_user_id: str, db: AsyncSession) -> UserProfile | None:
+    """The dashboard onboarding wizard saves a FounderProfile, but the planner
+    reads its own planner_users row that historically only POST /api/planner/onboard
+    created — which no UI calls. Provision the planner profile from the founder's
+    onboarding answers so they never have to enter the same context twice."""
+    from sqlalchemy import select
+    from app.models import FounderProfile, User as CoreUser
+
+    row = await db.execute(select(CoreUser).where(CoreUser.clerk_user_id == clerk_user_id))
+    core_user = row.scalar_one_or_none()
+    if core_user is None:
+        return None
+
+    row = await db.execute(select(FounderProfile).where(FounderProfile.user_id == core_user.id))
+    founder = row.scalar_one_or_none()
+    if founder is None:
+        return None
+
+    user = _planner_profile_from_founder(founder, clerk_user_id, name=core_user.full_name or "")
+    await async_save_user(user)
+    logger.info("Planner profile bootstrapped from onboarding data for user %s", clerk_user_id)
+    return user
+
+
 @router.get("/status")
-async def get_status(clerk: ClerkUser = Depends(require_auth)):
+async def get_status(
+    clerk: ClerkUser = Depends(require_auth),
+    db: AsyncSession = Depends(get_db),
+):
     """
     Check your planner status — connection, last plan, upcoming schedule.
+
+    If the founder completed dashboard onboarding but has no planner profile yet,
+    one is provisioned automatically from their onboarding answers.
     """
     user = get_user(clerk.user_id)
     if not user:
+        user = await _bootstrap_from_onboarding(clerk.user_id, db)
+    if not user:
         return {
             "status": "not_onboarded",
-            "message": "No profile found. Call POST /api/planner/onboard to get started.",
+            "message": "Complete onboarding to set up your planner profile.",
         }
 
     return {

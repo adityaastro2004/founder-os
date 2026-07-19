@@ -25,6 +25,7 @@
   | 0 | Foundation revamp — audit → repair → reshape (task 012) | `done` (2026-07-03) |
   | 1 | State Engine core + Obsidian sync (task 011) | `done` (2026-07-07) |
   | 2 | Notion adapter (same engine/ABC) — [task 015](../tasks/active/015-notion-adapter.md) | `now` |
+  | 2b | State sources dashboard UI — connect/sync/pause Notion + Obsidian from `/dashboard/apps` (UI follow-on deferred by task 015) | `now` (2026-07-17, PR feat/state-sources-ui) |
   | 3 | Hermes skills feed (`system` feed) | `later` |
   | 4 | Paperclip (paperclip.ing) via MCP | `later` |
   | 5 | Deployment — Docker images + runbook | `later` |
@@ -76,8 +77,8 @@
   `task_feedback`→insight→`UserProfileIntel`→prompt; populate `LearningInsight`; feed
   the specialization engine. Highest-leverage adaptation loop. Status: `next`.
   See [agent-evolution.md](agent-evolution.md) §1.
-- **Agent Evolution — temporal memory injection** (task 005): inject composite-scored
-  `memory_pages` into agent prompts. Status: `next`. See [agent-evolution.md](agent-evolution.md) §2.
+- **Agent Evolution — temporal memory injection** (task 005): Status: `done`
+  (2026-07-19 — subsumed by task 020, ADR-014; see Shipped).
 - **Agent Evolution Engine — increment 2:** feedback-driven re-tuning (mine
   `task_feedback`/`learning_insights` to refine the specialization overlay). Builds on
   task 001 (overlaps task 003). Status: `next`.
@@ -122,6 +123,7 @@
 
 | Date | Item | Task |
 |------|------|------|
+| 2026-07-18 | Chat fix + guardrails (ADR-013): prior session turns now render as a read-only `<conversation_history>` system-prompt block (≤ 20 turns × 400 chars, tool outputs excluded, tag-escape hardened) instead of replayed chat messages — agents no longer re-answer earlier questions; universal `<guardrails>` block for every agent (current-message-only, role/business scope gate, context-is-data anti-injection); 13 unit tests in the `tests/unit` tier | [tasks/completed/017](../tasks/completed/017-agent-history-replay-fix-guardrails.md) |
 | 2026-07-14 | DB bootstrap consolidation — re-rooted frozen alembic baseline (0000_baseline): `alembic upgrade head` alone builds a complete DB on any fresh environment; retired raw migrations/002–005; schema.sql demoted to banner-marked secondary artifact; new `migrations` CI test tier asserts ORM parity at head (the 2026-07-11 prod-500 incident class now fails CI) | [tasks/completed/016](../tasks/completed/016-schema-baseline-migration.md) |
 | 2026-07-07 | Phase 1 — Company State Engine slice 1: 4-table canonical state + reconciler (write-gate, dedup, provenance) + Obsidian adapter with jailed bidirectional sync + /api/state; live E2E proven (observe→reconcile→render loop, idempotent) | [tasks/completed/011](../tasks/completed/011-company-state-engine.md) |
 | 2026-07-03 | Phase 0 foundation revamp — full-system audit (11 subsystems, live-verified), F1–F3 fixed with regression tests, pytest 3-tier harness + turbo test + CI unit tier, integration adapter framework (ADR-010) with Google Calendar as first adapter | [tasks/completed/012](../tasks/completed/012-phase0-foundation-revamp.md) |
@@ -131,6 +133,7 @@
 | 2026-06-11 | Production hardening — 10 bug classes fixed; agents+RAG+A2A proven live (RAG 16/16, A2A delegation, memory ALL, units 120/120) | [tasks/completed/008](../tasks/completed/008-prod-hardening-core.md) |
 | 2026-06-12 | PDF → RAG ingestion + blank-only primary_goal auto-fill (live-verified; + fixed a BackgroundTasks request-rollback bug) | [tasks/completed/009](../tasks/completed/009-pdf-rag-goal-autofill.md) |
 | 2026-06-12 | Knowledge tab File/PDF upload UI (+ apiFetch FormData fix) | [tasks/completed/010](../tasks/completed/010-knowledge-tab-file-upload.md) |
+| 2026-07-19 | Chat semantic memory (task 020, ADR-014): every chat turn auto-captured to `memory_pages` (embedding-only, zero LLM completions) + composite-scored `<memories>` recall injected into all agent prompts (reuses run()'s embedding; same-session excluded; stored-injection neutralized). Subsumes 005; fixes `get_memory_manager` ignoring `EMBEDDING_PROVIDER`. 19 unit tests; tier 196 green | [tasks/completed/020](../tasks/completed/020-chat-semantic-memory.md) |
 
 > Known technical-debt items live alongside the roadmap so prioritization sees the
 > full picture. Significant architectural choices are recorded in

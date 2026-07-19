@@ -29,13 +29,15 @@ install_deps() {
 # Runs before install/migrate/restart so a refused value aborts with the box
 # untouched. Values are restricted to a safe charset because they pass through
 # sed and an unquoted env assignment — anything else is refused, not written.
+# ':' and '/' are allowed for URL values (redirect URIs); both are inert in the
+# '|'-delimited sed and in an unquoted assignment.
 sync_env() {
   local envfile=$API/.env synced=""
   [ -f "$envfile" ] || sudo -u ubuntu install -m 600 /dev/null "$envfile"
   patch_var() {
     local name=$1 value=$2
     [ -n "$value" ] || return 0
-    if ! [[ "$value" =~ ^[A-Za-z0-9._-]+$ ]]; then
+    if ! [[ "$value" =~ ^[A-Za-z0-9._:/-]+$ ]]; then
       echo "sync_env: refusing ${name}: unexpected characters in value" >&2
       return 1
     fi
@@ -46,8 +48,18 @@ sync_env() {
     fi
     synced="$synced $name"
   }
+  # Pin the runtime to production posture. This is the authoritative gate for
+  # the dev-only x-test-user auth bypass + unauthenticated test routes (app/
+  # auth.py, app/main.py): they are LIVE whenever APP_ENV != production, so a
+  # fresh/empty server .env must never be left at the development default.
+  patch_var APP_ENV "production"
+  patch_var DEBUG "false"
   patch_var OPENAI_API_KEY "${FOS_OPENAI_API_KEY:-}"
   patch_var GEMINI_API_KEY "${FOS_GEMINI_API_KEY:-}"
+  patch_var GOOGLE_CLIENT_ID "${FOS_GOOGLE_CLIENT_ID:-}"
+  patch_var GOOGLE_CLIENT_SECRET "${FOS_GOOGLE_CLIENT_SECRET:-}"
+  patch_var GOOGLE_REDIRECT_URI "${FOS_GOOGLE_REDIRECT_URI:-}"
+  patch_var OAUTH_STATE_SECRET "${FOS_OAUTH_STATE_SECRET:-}"
   if [ -n "$synced" ]; then echo "env synced:$synced"; fi
 }
 

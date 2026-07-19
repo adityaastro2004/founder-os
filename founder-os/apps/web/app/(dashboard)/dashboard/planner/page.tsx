@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, FormEvent } from "react";
+import Link from "next/link";
 import { useApi } from "@/lib/use-api";
 import { DIRECT_API_URL } from "@/lib/api";
 import { useAuth } from "@clerk/nextjs";
 import {
+  ArrowRight,
   CalendarDays,
   Send,
   Loader2,
@@ -446,10 +448,19 @@ export default function PlannerPage() {
           <div className="text-center py-8">
             <CalendarDays className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-3" />
             <p className="text-sm text-[var(--color-text-secondary)] max-w-md mx-auto mb-4">
-              {status?.message || "Set up your business context to get started with AI planning."}
+              The planner needs your business context before it can plan your
+              week. Complete onboarding once and it activates automatically.
             </p>
-            <p className="text-xs text-[var(--color-text-muted)]">
-              Complete onboarding to activate the planner.
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-[var(--color-accent-foreground)] text-sm font-medium rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
+            >
+              Complete onboarding
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <p className="text-xs text-[var(--color-text-muted)] mt-3">
+              Already onboarded? Refresh this page — your profile syncs
+              automatically.
             </p>
           </div>
         ) : (

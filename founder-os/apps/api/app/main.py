@@ -1,8 +1,12 @@
+import atexit
 from contextlib import asynccontextmanager
 import logging
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from posthog import Posthog
+
+from app.posthog_client import _set_posthog
 
 from app.api.routes import router
 from app.api.agent_routes import router as agent_router
@@ -59,9 +63,23 @@ async def _sync_agent_definitions() -> None:
         logging.getLogger(__name__).exception("Agent definition sync failed at startup")
 
 
+_posthog_client: Posthog | None = None
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
+    global _posthog_client
     # ── Startup ──
+    _settings = get_settings()
+    if not _settings.POSTHOG_DISABLED and _settings.POSTHOG_PROJECT_TOKEN:
+        _posthog_client = Posthog(
+            api_key=_settings.POSTHOG_PROJECT_TOKEN,
+            host=_settings.POSTHOG_HOST,
+            enable_exception_autocapture=True,
+        )
+        _set_posthog(_posthog_client)
+        atexit.register(_posthog_client.shutdown)
+
     await init_db()
     await _sync_agent_definitions()
     await init_redis()
@@ -78,12 +96,44 @@ async def lifespan(application: FastAPI):
     stop_scheduler()
     await close_redis()
     await close_db()
+    if _posthog_client is not None:
+        _posthog_client.shutdown()
 
 
 app = FastAPI(title="Founder OS API", lifespan=lifespan)
 
-# ── CORS (needed for Clerk frontend → FastAPI calls) ────
 settings = get_settings()
+
+# ── Fail-loud on a production misconfig ─────────────────
+# When APP_ENV != "production" the unauthenticated dev test routes are mounted
+# and the `x-test-user` auth bypass in app/auth.py is LIVE — anyone could
+# impersonate any user. The deploy script pins APP_ENV=production; this warning
+# makes an accidental dev-mode boot in a real environment impossible to miss.
+if settings.APP_ENV != "production":
+    logging.getLogger(__name__).warning(
+        "APP_ENV=%r — dev test routes + x-test-user auth bypass are ACTIVE. "
+        "This MUST be 'production' in any deployed environment.",
+        settings.APP_ENV,
+    )
+
+# ── Security headers + rate limiting (app/security_middleware.py) ──
+# CORS is added last and so stays the outermost layer; a 429 or a header-stamped
+# error response therefore still gets CORS applied and is readable by the browser.
+if settings.RATE_LIMIT_ENABLED:
+    from app.security_middleware import RateLimitMiddleware
+
+    app.add_middleware(
+        RateLimitMiddleware,
+        max_requests=settings.RATE_LIMIT_REQUESTS,
+        window_seconds=settings.RATE_LIMIT_WINDOW_SECONDS,
+        trust_proxy=settings.TRUST_PROXY,
+    )
+if settings.SECURITY_HEADERS_ENABLED:
+    from app.security_middleware import SecurityHeadersMiddleware
+
+    app.add_middleware(SecurityHeadersMiddleware)
+
+# ── CORS (needed for Clerk frontend → FastAPI calls) ────
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
