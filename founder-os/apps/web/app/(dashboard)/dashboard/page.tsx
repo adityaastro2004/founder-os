@@ -8,11 +8,9 @@ import {
   CalendarDays,
   Brain,
   ListTodo,
-
   CheckCircle2,
   ArrowRight,
   Activity,
-  Loader2,
   XCircle,
   Wrench,
   GitBranch,
@@ -20,7 +18,13 @@ import {
   Eye,
 } from "lucide-react";
 import Link from "next/link";
-import { clsx } from "clsx";
+import {
+  PageHeader,
+  StatCard,
+  Card,
+  Badge,
+  Skeleton,
+} from "@/app/_components/ui";
 
 /* ── Types ─────────────────────────────────────────── */
 interface AgentStatus {
@@ -71,32 +75,7 @@ interface ActivityEvent {
   timestamp: number;
 }
 
-/* ── Stat Card ─────────────────────────────────────── */
-function StatCard({
-  label,
-  value,
-  sub,
-  loading,
-}: {
-  label: string;
-  value: string;
-  sub: string;
-  loading?: boolean;
-}) {
-  return (
-    <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4">
-      <p className="text-[11px] text-[var(--color-text-muted)] uppercase tracking-wider font-medium">{label}</p>
-      {loading ? (
-        <div className="h-7 w-10 mt-1.5 rounded bg-[var(--color-surface-muted)] animate-pulse" />
-      ) : (
-        <p className="text-2xl font-semibold mt-1 tracking-tight">{value}</p>
-      )}
-      <p className="text-xs text-[var(--color-text-secondary)] mt-1">{sub}</p>
-    </div>
-  );
-}
-
-/* ── Activity Item ────────────────────────────────── */
+/* ── Activity item ────────────────────────────────── */
 const statusIconMap: Record<string, React.ElementType> = {
   started: Play,
   completed: CheckCircle2,
@@ -119,25 +98,25 @@ function ActivityItem({ event }: { event: ActivityEvent }) {
   const Icon = statusIconMap[event.status] || Activity;
   return (
     <div className="flex items-start gap-3 py-3">
-      <div className="p-1.5 rounded-md bg-[var(--color-surface-muted)] shrink-0">
-        <Icon className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
+      <div className="shrink-0 rounded-md bg-surface-muted p-1.5">
+        <Icon className="h-3.5 w-3.5 text-ink-secondary" aria-hidden="true" />
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm truncate">{event.title}</p>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-ink">{event.title}</p>
         {event.description && (
-          <p className="text-xs text-[var(--color-text-muted)] mt-0.5 line-clamp-1">
+          <p className="mt-0.5 line-clamp-1 text-xs text-ink-secondary">
             {event.description}
           </p>
         )}
       </div>
-      <span className="text-[11px] text-[var(--color-text-muted)] whitespace-nowrap">
+      <span className="whitespace-nowrap text-[11px] text-ink-secondary">
         {timeAgo(event.timestamp)}
       </span>
     </div>
   );
 }
 
-/* ── Quick Action Card ────────────────────────────── */
+/* ── Quick action card ────────────────────────────── */
 function QuickAction({
   title,
   description,
@@ -152,50 +131,84 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className="group flex items-center gap-3 p-3.5 rounded-lg border border-[var(--color-border-subtle)] bg-white hover:bg-[var(--color-surface-subtle)] transition-colors"
+      className="group flex items-center gap-3 rounded-card border border-line bg-surface p-3.5 transition-colors duration-150 hover:bg-surface-muted/50"
     >
-      <div className="p-2 rounded-md bg-[var(--color-surface-muted)] group-hover:bg-[var(--color-surface)]">
-        <Icon className="w-4 h-4 text-[var(--color-text-secondary)]" />
+      <div className="rounded-md bg-surface-muted p-2 transition-colors duration-150 group-hover:bg-surface">
+        <Icon className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-[var(--color-text-muted)] mt-0.5">
-          {description}
-        </p>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-ink">{title}</p>
+        <p className="mt-0.5 text-xs text-ink-secondary">{description}</p>
       </div>
-      <ArrowRight className="w-3.5 h-3.5 text-[var(--color-text-muted)] group-hover:translate-x-0.5 transition-transform" />
+      <ArrowRight
+        className="h-3.5 w-3.5 text-ink-muted transition-transform duration-150 group-hover:translate-x-0.5"
+        aria-hidden="true"
+      />
     </Link>
   );
 }
 
-/* ── Agent Row ─────────────────────────────────────── */
+/* ── Agent row ─────────────────────────────────────── */
 function AgentRow({ agent }: { agent: AgentStatus }) {
+  const tone =
+    agent.status === "running"
+      ? "success"
+      : agent.status === "error"
+        ? "danger"
+        : "neutral";
   return (
     <div className="flex items-center gap-3 py-2.5">
-      <div className="w-7 h-7 rounded-md bg-[var(--color-surface-muted)] flex items-center justify-center shrink-0">
-        <Bot className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-muted">
+        <Bot className="h-3.5 w-3.5 text-ink-secondary" aria-hidden="true" />
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm truncate">{agent.display_name}</p>
-        <p className="text-[11px] text-[var(--color-text-muted)]">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm text-ink">{agent.display_name}</p>
+        <p className="text-[11px] text-ink-secondary">
           {agent.tasks_today} tasks · {agent.tasks_completed} done
         </p>
       </div>
-      <span
-        className={clsx(
-          "px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider rounded-full border",
-          agent.status === "running" && "text-[var(--color-success)] border-[var(--color-success)]/20 bg-[var(--color-success)]/5",
-          agent.status === "idle" && "text-[var(--color-text-muted)] border-[var(--color-border)]",
-          agent.status === "error" && "text-[var(--color-danger)] border-[var(--color-danger)]/20 bg-[var(--color-danger)]/5"
-        )}
-      >
-        {agent.status}
-      </span>
+      <Badge tone={tone}>{agent.status}</Badge>
     </div>
   );
 }
 
-/* ── Dashboard Page ───────────────────────────────── */
+/* ── Section list wrapper ─────────────────────────── */
+function ListCard({
+  title,
+  viewAllHref,
+  children,
+}: {
+  title: string;
+  viewAllHref: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="p-5">
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-sm font-medium text-ink">{title}</h2>
+        <Link
+          href={viewAllHref}
+          className="text-xs text-ink-secondary transition-colors duration-150 hover:text-ink"
+        >
+          View all
+        </Link>
+      </div>
+      {children}
+    </Card>
+  );
+}
+
+function ListLoading() {
+  return (
+    <div className="space-y-3 py-2">
+      <Skeleton className="h-9 w-full" />
+      <Skeleton className="h-9 w-full" />
+      <Skeleton className="h-9 w-4/5" />
+    </div>
+  );
+}
+
+/* ── Dashboard page ───────────────────────────────── */
 export default function DashboardPage() {
   const api = useApi();
   const [activityStats, setActivityStats] = useState<ActivityStats | null>(null);
@@ -247,17 +260,14 @@ export default function DashboardPage() {
   const knowledgeCount = knowledgeStats?.total_items ?? 0;
 
   return (
-    <div className="space-y-8 max-w-6xl">
-      {/* Page header */}
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
-        <p className="text-sm text-[var(--color-text-secondary)] mt-0.5">
-          Overview of your AI operating system
-        </p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        title="Dashboard"
+        description="Overview of your AI operating system"
+      />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Stats grid */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Agents"
           value={`${activeAgents}/${totalAgents}`}
@@ -285,35 +295,35 @@ export default function DashboardPage() {
       </div>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left column */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Quick Actions */}
+        <div className="space-y-6 lg:col-span-2">
+          {/* Quick actions */}
           <div>
-            <h2 className="text-xs font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-2.5">
-              Quick Actions
+            <h2 className="mb-2.5 text-[13px] font-medium text-ink-secondary">
+              Quick actions
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <QuickAction
-                title="Chat with Agents"
+                title="Chat with agents"
                 description="Auto-delegates to specialists"
                 href="/dashboard/chat"
                 icon={Bot}
               />
               <QuickAction
-                title="Review Tasks"
+                title="Review tasks"
                 description={pendingReview > 0 ? `${pendingReview} need review` : "Approve outputs"}
                 href="/dashboard/tasks"
                 icon={ListTodo}
               />
               <QuickAction
-                title="Weekly Planner"
+                title="Weekly planner"
                 description="AI schedule optimization"
                 href="/dashboard/planner"
                 icon={CalendarDays}
               />
               <QuickAction
-                title="Knowledge Base"
+                title="Knowledge base"
                 description={knowledgeCount > 0 ? `${knowledgeCount} items indexed` : "Upload docs"}
                 href="/dashboard/knowledge"
                 icon={Brain}
@@ -321,27 +331,20 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Recent Activity */}
-          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-medium">Recent Activity</h2>
-              <Link
-                href="/dashboard/agents"
-                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-              >
-                View all
-              </Link>
-            </div>
-            <div className="divide-y divide-[var(--color-border)]">
+          {/* Recent activity */}
+          <ListCard title="Recent activity" viewAllHref="/dashboard/agents">
+            <div className="divide-y divide-line-subtle">
               {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
-                </div>
+                <ListLoading />
               ) : recentEvents.length === 0 ? (
                 <div className="py-8 text-center">
-                  <Activity className="w-6 h-6 text-[var(--color-text-muted)] mx-auto mb-2" />
-                  <p className="text-sm text-[var(--color-text-secondary)]">
-                    No activity yet. Start from Chat.
+                  <Activity
+                    className="mx-auto mb-2 h-6 w-6 text-ink-muted"
+                    aria-hidden="true"
+                  />
+                  <p className="text-sm text-ink-secondary">
+                    Nothing yet today. Agent activity will stream in here as it
+                    happens.
                   </p>
                 </div>
               ) : (
@@ -350,53 +353,36 @@ export default function DashboardPage() {
                 ))
               )}
             </div>
-          </div>
+          </ListCard>
         </div>
 
         {/* Right column */}
         <div className="space-y-6">
-          {/* Active Agents */}
-          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-medium">Agents</h2>
-              <Link
-                href="/dashboard/agents"
-                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-              >
-                View all
-              </Link>
-            </div>
-            <div className="divide-y divide-[var(--color-border)]">
+          {/* Active agents */}
+          <ListCard title="Agents" viewAllHref="/dashboard/agents">
+            <div className="divide-y divide-line-subtle">
               {loading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
-                </div>
+                <ListLoading />
               ) : activityStats?.agents && activityStats.agents.length > 0 ? (
                 activityStats.agents.slice(0, 5).map((agent) => (
                   <AgentRow key={agent.agent_name} agent={agent} />
                 ))
               ) : (
                 <div className="py-8 text-center">
-                  <Bot className="w-6 h-6 text-[var(--color-text-muted)] mx-auto mb-2" />
-                  <p className="text-sm text-[var(--color-text-secondary)]">
-                    No agents registered.
+                  <Bot
+                    className="mx-auto mb-2 h-6 w-6 text-ink-muted"
+                    aria-hidden="true"
+                  />
+                  <p className="text-sm text-ink-secondary">
+                    No agents registered yet.
                   </p>
                 </div>
               )}
             </div>
-          </div>
+          </ListCard>
 
-          {/* Review Queue */}
-          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-medium">Review Queue</h2>
-              <Link
-                href="/dashboard/tasks"
-                className="text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-              >
-                View all
-              </Link>
-            </div>
+          {/* Review queue */}
+          <ListCard title="Review queue" viewAllHref="/dashboard/tasks">
             <div className="space-y-2">
               {[
                 { label: "Pending", value: reviewStats?.pending_review ?? 0, icon: Eye },
@@ -405,15 +391,17 @@ export default function DashboardPage() {
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[var(--color-surface-subtle)] border border-[var(--color-border)]"
+                  className="flex items-center gap-2.5 rounded-control border border-line bg-surface-muted/40 p-2.5"
                 >
-                  <item.icon className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
-                  <span className="text-sm flex-1">{item.label}</span>
-                  <span className="text-sm font-medium tabular-nums">{loading ? "—" : item.value}</span>
+                  <item.icon className="h-3.5 w-3.5 text-ink-muted" aria-hidden="true" />
+                  <span className="flex-1 text-sm text-ink">{item.label}</span>
+                  <span className="text-sm font-medium tabular-nums text-ink">
+                    {loading ? "—" : item.value}
+                  </span>
                 </div>
               ))}
             </div>
-          </div>
+          </ListCard>
         </div>
       </div>
     </div>
