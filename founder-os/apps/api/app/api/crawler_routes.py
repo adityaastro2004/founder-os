@@ -35,6 +35,7 @@ from app.crawler.research import (
     get_research_engine,
 )
 from app.database import get_db
+from app.posthog_client import get_posthog
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +140,21 @@ async def trigger_research_cycle(
 
         if not report:
             raise HTTPException(status_code=500, detail="Research cycle failed")
+
+        ph = get_posthog()
+        if ph is not None:
+            ph.capture(
+                distinct_id=user_id,
+                event="research_triggered",
+                properties={
+                    "findings_stored": report.findings_stored,
+                    "queries_executed": report.queries_executed,
+                    "pages_crawled": report.pages_crawled,
+                    "competitor_updates_count": len(report.competitor_updates),
+                    "trends_count": len(report.trends),
+                    "customer_signals_count": len(report.customer_signals),
+                },
+            )
 
         return {
             "success": True,

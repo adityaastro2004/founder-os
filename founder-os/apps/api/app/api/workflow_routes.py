@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import ClerkUser, require_auth
 from app.database import get_db
 from app.models import Workflow, WorkflowExecution
+from app.posthog_client import get_posthog
 from app.users import get_or_create_user_id
 from app.workflows import service
 from app.log_sanitize import sl
@@ -190,4 +191,19 @@ async def run_workflow(
             logger.warning("n8n trigger failed for workflow %s: %s", sl(workflow_id), sl(exc))
 
     await db.flush()
+
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=user.user_id,
+            event="workflow_executed",
+            properties={
+                "workflow_id": str(workflow_id),
+                "trigger_type": "manual",
+                "has_n8n_workflow": bool(wf.n8n_workflow_id),
+                "total_steps": _step_count(wf.steps),
+                "run_status": run.status,
+            },
+        )
+
     return _serialize_run(run)
