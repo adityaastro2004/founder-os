@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { clsx } from "clsx";
 import { useChatStore, EMPTY_SESSION } from "@/lib/chat-store";
+import { PageHeader, Card, Badge } from "@/app/_components/ui";
 
 /* ── Types ───────────────────────────────────────────── */
 interface ActivityEvent {
@@ -87,12 +88,12 @@ interface HistoryRun {
 
 /* ── Agent colors ────────────────────────────────────── */
 const agentColors: Record<string, string> = {
-  orchestrator: "bg-neutral-900",
-  planner: "bg-neutral-800",
-  content: "bg-neutral-700",
-  research: "bg-neutral-600",
-  support: "bg-neutral-300",
-  system: "bg-neutral-200",
+  orchestrator: "bg-ink",
+  planner: "bg-ink-secondary",
+  content: "bg-accent",
+  research: "bg-success",
+  support: "bg-warning",
+  system: "bg-ink-muted",
 };
 
 const agentDescriptions: Record<string, string> = {
@@ -146,12 +147,12 @@ const statusIcons: Record<string, React.ElementType> = {
 };
 
 const statusColors: Record<string, string> = {
-  started: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]",
-  completed: "text-[var(--color-success)] bg-[var(--color-success)]/5",
-  failed: "text-[var(--color-danger)] bg-[var(--color-danger)]/5",
-  tool_call: "text-[var(--color-warning)] bg-[var(--color-warning)]/5",
-  delegation: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]",
-  info: "text-[var(--color-text-muted)] bg-[var(--color-surface-muted)]",
+  started: "text-ink-secondary bg-surface-muted",
+  completed: "text-success bg-success-soft",
+  failed: "text-danger bg-danger-soft",
+  tool_call: "text-warning bg-warning-soft",
+  delegation: "text-ink-secondary bg-surface-muted",
+  info: "text-ink-secondary bg-surface-muted",
 };
 
 /* ── Time formatting ─────────────────────────────────── */
@@ -164,7 +165,24 @@ function timeAgo(ts: number): string {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-/* ── Agent Chat Panel (slide-over) ───────────────────── */
+/* ── Status dot ──────────────────────────────────────── */
+function StatusDot({ status }: { status: AgentStatus["status"] }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span
+        className={clsx(
+          "h-1.5 w-1.5 rounded-full",
+          status === "running" && "animate-pulse bg-success",
+          status === "idle" && "bg-ink-muted",
+          status === "error" && "bg-danger"
+        )}
+      />
+      <span className="text-xs capitalize text-ink-secondary">{status}</span>
+    </span>
+  );
+}
+
+/* ── Agent chat panel (slide-over) ───────────────────── */
 function AgentChatPanel({
   agent,
   onClose,
@@ -185,7 +203,7 @@ function AgentChatPanel({
     localStorage.setItem(key, id);
     return id;
   });
-  const gradient = agentColors[agent.agent_name] || agentColors.system;
+  const accentBg = agentColors[agent.agent_name] || agentColors.system;
   const suggestions = agentSuggestions[agent.agent_name] || [];
 
   // Chat state and the in-flight run live in ChatProvider (dashboard layout),
@@ -232,93 +250,89 @@ function AgentChatPanel({
     <div className="fixed inset-0 z-50 flex">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/20 backdrop-blur-sm"
+        className="absolute inset-0 bg-ink/20 backdrop-blur-sm"
         onClick={onClose}
       />
       {/* Panel */}
-      <div className="relative ml-auto w-full max-w-2xl bg-white border-l border-[var(--color-border)] flex flex-col h-full shadow-2xl">
+      <div className="relative ml-auto flex h-full w-full max-w-2xl flex-col border-l border-line bg-surface shadow-xl">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-3 border-b border-line px-5 py-4">
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
+            aria-label="Back"
+            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
           >
-            <ArrowLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
+            <ArrowLeft className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           </button>
           <div
             className={clsx(
-              "w-8 h-8 rounded-md flex items-center justify-center",
-              gradient
+              "flex h-8 w-8 items-center justify-center rounded-md",
+              accentBg
             )}
           >
-            <Bot className="w-4 h-4 text-white" />
+            <Bot className="h-4 w-4 text-white" aria-hidden="true" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm">{agent.display_name}</p>
-            <p className="text-xs text-[var(--color-text-muted)]">
-              {agentDescriptions[agent.agent_name] || "AI Agent"}
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink">{agent.display_name}</p>
+            <p className="text-xs text-ink-secondary">
+              {agentDescriptions[agent.agent_name] || "AI agent"}
             </p>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span
-              className={clsx(
-                "w-1.5 h-1.5 rounded-full",
-                agent.status === "running" &&
-                  "bg-[var(--color-success)] animate-pulse",
-                agent.status === "idle" && "bg-[var(--color-text-muted)]",
-                agent.status === "error" && "bg-[var(--color-danger)]"
-              )}
-            />
-            <span className="text-xs text-[var(--color-text-muted)] capitalize">
-              {agent.status}
-            </span>
-          </div>
+          <StatusDot status={agent.status} />
           {messages.length > 0 && (
             <button
+              type="button"
               onClick={clearChat}
-              className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
+              className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
               title="Clear chat"
+              aria-label="Clear chat"
             >
-              <Trash2 className="w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+              <Trash2 className="h-3.5 w-3.5 text-ink-muted" aria-hidden="true" />
             </button>
           )}
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
+            aria-label="Close"
+            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
           >
-            <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
+            <X className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           </button>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+        <div className="flex-1 space-y-3 overflow-y-auto p-5">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full">
+            <div className="flex h-full flex-col items-center justify-center">
               <div
                 className={clsx(
-                  "w-14 h-14 rounded-lg flex items-center justify-center mb-4",
-                  gradient
+                  "mb-4 flex h-14 w-14 items-center justify-center rounded-card",
+                  accentBg
                 )}
               >
-                <Bot className="w-7 h-7 text-white" />
+                <Bot className="h-7 w-7 text-white" aria-hidden="true" />
               </div>
-              <h2 className="text-lg font-semibold mb-1">
+              <h2 className="mb-1 font-serif text-lg font-semibold text-ink">
                 Chat with {agent.display_name}
               </h2>
-              <p className="text-sm text-[var(--color-text-secondary)] max-w-sm text-center mb-6">
-                {agentDescriptions[agent.agent_name] ||
-                  "Ask this agent anything."}
+              <p className="mb-6 max-w-sm text-center text-sm text-ink-secondary">
+                {agentDescriptions[agent.agent_name] || "Ask this agent anything."}
               </p>
               {suggestions.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
+                <div className="grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
                   {suggestions.map((s) => (
                     <button
                       key={s}
+                      type="button"
                       onClick={() => handleSend(s)}
-                      className="flex items-center gap-3 p-3 rounded-lg border border-[var(--color-border-subtle)] bg-white hover:bg-[var(--color-surface-subtle)] transition-colors text-left"
+                      className="flex items-center gap-3 rounded-card border border-line bg-surface p-3 text-left transition-colors duration-150 hover:bg-surface-muted/50"
                     >
-                      <MessageSquare className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" />
-                      <span className="text-sm">{s}</span>
+                      <MessageSquare
+                        className="h-4 w-4 shrink-0 text-ink-muted"
+                        aria-hidden="true"
+                      />
+                      <span className="text-sm text-ink">{s}</span>
                     </button>
                   ))}
                 </div>
@@ -337,31 +351,29 @@ function AgentChatPanel({
                   {msg.role === "assistant" && (
                     <div
                       className={clsx(
-                        "w-7 h-7 rounded-md flex items-center justify-center shrink-0 mt-0.5",
-                        gradient
+                        "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+                        accentBg
                       )}
                     >
-                      <Bot className="w-4 h-4 text-white" />
+                      <Bot className="h-4 w-4 text-white" aria-hidden="true" />
                     </div>
                   )}
                   <div
                     className={clsx(
-                      "max-w-[80%] rounded-lg px-4 py-2.5 text-sm",
+                      "max-w-[80%] rounded-card px-4 py-2.5 text-sm",
                       msg.role === "user"
-                        ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] rounded-br-sm"
+                        ? "rounded-br-md bg-surface-muted text-ink"
                         : msg.status === "error"
-                        ? "bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 text-[var(--color-danger)] rounded-bl-sm"
-                        : msg.status === "clarification"
-                        ? "bg-[var(--color-warning)]/5 border border-[var(--color-warning)]/20 rounded-bl-sm"
-                        : msg.status === "sending"
-                        ? "bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-bl-sm"
-                        : "bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-bl-sm"
+                          ? "rounded-bl-md border border-danger/20 bg-danger-soft text-danger"
+                          : msg.status === "clarification"
+                            ? "rounded-bl-md border border-warning/20 bg-warning-soft text-ink"
+                            : "rounded-bl-md border border-line bg-paper text-ink"
                     )}
                   >
                     {msg.status === "sending" ? (
-                      <div className="flex items-center gap-2 text-[var(--color-text-muted)]">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Thinking...</span>
+                      <div className="flex items-center gap-2 text-ink-secondary">
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        <span>Thinking</span>
                       </div>
                     ) : (
                       <>
@@ -371,28 +383,26 @@ function AgentChatPanel({
                             {msg.toolsUsed.map((tool) => (
                               <span
                                 key={tool}
-                                className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] font-mono"
+                                className="inline-flex items-center gap-1 rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[10px] text-ink-secondary"
                               >
-                                <Wrench className="w-2.5 h-2.5" />
+                                <Wrench className="h-2.5 w-2.5" aria-hidden="true" />
                                 {tool}
                               </span>
                             ))}
                           </div>
                         )}
                         {msg.durationSeconds && msg.role === "assistant" && (
-                          <div className="mt-1.5 text-[10px] text-[var(--color-text-muted)]">
+                          <div className="mt-1.5 text-[10px] text-ink-secondary">
                             {msg.durationSeconds.toFixed(1)}s
-                            {msg.tokensUsed
-                              ? ` \u00b7 ${msg.tokensUsed} tokens`
-                              : ""}
+                            {msg.tokensUsed ? ` · ${msg.tokensUsed} tokens` : ""}
                           </div>
                         )}
                       </>
                     )}
                   </div>
                   {msg.role === "user" && (
-                    <div className="w-7 h-7 rounded-md bg-[var(--color-surface-muted)] flex items-center justify-center shrink-0 mt-0.5">
-                      <User className="w-4 h-4 text-[var(--color-text-secondary)]" />
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-muted">
+                      <User className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
                     </div>
                   )}
                 </div>
@@ -403,31 +413,33 @@ function AgentChatPanel({
         </div>
 
         {/* Input */}
-        <div className="border-t border-[var(--color-border)] p-4">
+        <div className="border-t border-line p-4">
           <form onSubmit={handleSubmit} className="flex gap-2">
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder={`Ask ${agent.display_name} anything...`}
+              placeholder={`Ask ${agent.display_name} anything`}
+              aria-label={`Message ${agent.display_name}`}
               disabled={sending}
-              className="flex-1 px-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] disabled:opacity-50 placeholder:text-[var(--color-text-muted)]"
+              className="flex-1 rounded-control border border-line bg-surface px-4 py-2.5 text-sm text-ink outline-none transition-colors duration-150 placeholder:text-ink-muted focus:border-accent focus:ring-1 focus:ring-accent disabled:opacity-50"
             />
             <button
               type="submit"
+              aria-label="Send message"
               disabled={!input.trim() || sending}
               className={clsx(
-                "px-4 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                "rounded-control px-4 py-2.5 text-sm font-medium transition-colors duration-150",
                 input.trim() && !sending
-                  ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:bg-[var(--color-accent-hover)]"
-                  : "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]"
+                  ? "bg-accent text-white hover:bg-accent-hover"
+                  : "bg-surface-muted text-ink-muted"
               )}
             >
               {sending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
               ) : (
-                <Send className="w-4 h-4" />
+                <Send className="h-4 w-4" aria-hidden="true" />
               )}
             </button>
           </form>
@@ -437,7 +449,7 @@ function AgentChatPanel({
   );
 }
 
-/* ── Agent History Panel (slide-over) ────────────────── */
+/* ── Agent history panel (slide-over) ────────────────── */
 function AgentHistoryPanel({
   agent,
   onClose,
@@ -449,7 +461,7 @@ function AgentHistoryPanel({
   const [runs, setRuns] = useState<HistoryRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const gradient = agentColors[agent.agent_name] || agentColors.system;
+  const accentBg = agentColors[agent.agent_name] || agentColors.system;
 
   useEffect(() => {
     let cancelled = false;
@@ -474,36 +486,46 @@ function AgentHistoryPanel({
 
   return (
     <div className="fixed inset-0 z-50 flex">
-      <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative ml-auto w-full max-w-2xl bg-white border-l border-[var(--color-border)] flex flex-col h-full shadow-2xl">
+      <div className="absolute inset-0 bg-ink/20 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative ml-auto flex h-full w-full max-w-2xl flex-col border-l border-line bg-surface shadow-xl">
         {/* Header */}
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-[var(--color-border)]">
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors">
-            <ArrowLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
+        <div className="flex items-center gap-3 border-b border-line px-5 py-4">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Back"
+            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
+          >
+            <ArrowLeft className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           </button>
-          <div className={clsx("w-8 h-8 rounded-md flex items-center justify-center", gradient)}>
-            <History className="w-4 h-4 text-white" />
+          <div className={clsx("flex h-8 w-8 items-center justify-center rounded-md", accentBg)}>
+            <History className="h-4 w-4 text-white" aria-hidden="true" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm">{agent.display_name} — History</p>
-            <p className="text-xs text-[var(--color-text-muted)]">Past runs with full input & output</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-ink">{agent.display_name} — history</p>
+            <p className="text-xs text-ink-secondary">Past runs with full input and output</p>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors">
-            <X className="w-4 h-4 text-[var(--color-text-secondary)]" />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
+          >
+            <X className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           </button>
         </div>
 
         {/* Runs list */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 space-y-3 overflow-y-auto p-4">
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
+              <Loader2 className="h-6 w-6 animate-spin text-ink-muted" aria-hidden="true" />
             </div>
           ) : runs.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <History className="w-12 h-12 text-[var(--color-text-muted)] mb-4" />
-              <h3 className="text-lg font-semibold mb-1">No history yet</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
+              <History className="mb-4 h-10 w-10 text-ink-muted" strokeWidth={1.5} aria-hidden="true" />
+              <h3 className="mb-1 font-serif text-lg font-semibold text-ink">No history yet</h3>
+              <p className="max-w-sm text-sm text-ink-secondary">
                 Run tasks with this agent and they&apos;ll appear here.
               </p>
             </div>
@@ -511,15 +533,22 @@ function AgentHistoryPanel({
             runs.map((run) => {
               const isExpanded = expandedId === run.id;
               return (
-                <div key={run.id} className="bg-[var(--color-surface-subtle)] border border-[var(--color-border)] rounded-lg overflow-hidden">
+                <div key={run.id} className="overflow-hidden rounded-card border border-line bg-paper">
                   <button
+                    type="button"
                     onClick={() => setExpandedId(isExpanded ? null : run.id)}
-                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--color-surface-muted)] transition-colors"
+                    className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors duration-150 hover:bg-surface-muted/50"
                   >
-                    <ChevronRight className={clsx("w-4 h-4 text-[var(--color-text-muted)] transition-transform shrink-0", isExpanded && "rotate-90")} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{run.user_message}</p>
-                      <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[var(--color-text-muted)]">
+                    <ChevronRight
+                      className={clsx(
+                        "h-4 w-4 shrink-0 text-ink-muted transition-transform duration-150",
+                        isExpanded && "rotate-90"
+                      )}
+                      aria-hidden="true"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-ink">{run.user_message}</p>
+                      <div className="mt-0.5 flex items-center gap-2 text-[10px] text-ink-secondary">
                         <span>{new Date(run.created_at).toLocaleString()}</span>
                         <span>·</span>
                         <span>{run.duration_seconds.toFixed(1)}s</span>
@@ -528,37 +557,38 @@ function AgentHistoryPanel({
                         {run.tool_names.length > 0 && (
                           <>
                             <span>·</span>
-                            <span className="flex items-center gap-0.5"><Wrench className="w-2.5 h-2.5" />{run.tool_calls_count}</span>
+                            <span className="flex items-center gap-0.5">
+                              <Wrench className="h-2.5 w-2.5" aria-hidden="true" />
+                              {run.tool_calls_count}
+                            </span>
                           </>
                         )}
                       </div>
                     </div>
-                    <span className={clsx(
-                      "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                      run.status === "completed" ? "bg-[var(--color-success)]/10 text-[var(--color-success)]" : "bg-[var(--color-danger)]/10 text-[var(--color-danger)]"
-                    )}>
+                    <Badge tone={run.status === "completed" ? "success" : "danger"}>
                       {run.status}
-                    </span>
+                    </Badge>
                   </button>
                   {isExpanded && (
-                    <div className="border-t border-[var(--color-border)] px-4 py-3 space-y-3">
+                    <div className="space-y-3 border-t border-line px-4 py-3">
                       <div>
-                        <p className="text-[10px] font-semibold uppercase text-[var(--color-text-muted)] mb-1">You said</p>
-                        <div className="text-sm bg-white rounded-lg border border-[var(--color-border)] px-3 py-2 whitespace-pre-wrap">
+                        <p className="mb-1 text-[10px] font-semibold text-ink-secondary">You said</p>
+                        <div className="whitespace-pre-wrap rounded-control border border-line bg-surface px-3 py-2 text-sm text-ink">
                           {run.user_message}
                         </div>
                       </div>
                       <div>
-                        <p className="text-[10px] font-semibold uppercase text-[var(--color-text-muted)] mb-1">Agent response</p>
-                        <div className="text-sm bg-white rounded-lg border border-[var(--color-border)] px-3 py-2 whitespace-pre-wrap max-h-80 overflow-y-auto">
+                        <p className="mb-1 text-[10px] font-semibold text-ink-secondary">Agent response</p>
+                        <div className="max-h-80 overflow-y-auto whitespace-pre-wrap rounded-control border border-line bg-surface px-3 py-2 text-sm text-ink">
                           {run.agent_response}
                         </div>
                       </div>
                       {run.tool_names.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {run.tool_names.map((t) => (
-                            <span key={t} className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] font-mono">
-                              <Wrench className="w-2.5 h-2.5" />{t}
+                            <span key={t} className="inline-flex items-center gap-1 rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[10px] text-ink-secondary">
+                              <Wrench className="h-2.5 w-2.5" aria-hidden="true" />
+                              {t}
                             </span>
                           ))}
                         </div>
@@ -566,13 +596,14 @@ function AgentHistoryPanel({
                       {run.agents_used && run.agents_used.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
                           {run.agents_used.map((a) => (
-                            <span key={a} className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
-                              <GitBranch className="w-2.5 h-2.5" />{a}
+                            <span key={a} className="inline-flex items-center gap-1 rounded bg-surface-muted px-1.5 py-0.5 text-[10px] text-ink-secondary">
+                              <GitBranch className="h-2.5 w-2.5" aria-hidden="true" />
+                              {a}
                             </span>
                           ))}
                         </div>
                       )}
-                      <div className="flex items-center gap-3 text-[10px] text-[var(--color-text-muted)]">
+                      <div className="flex items-center gap-3 text-[10px] text-ink-secondary">
                         <span>Model: {run.model}</span>
                         {run.cost_usd > 0 && <span>Cost: ${run.cost_usd.toFixed(4)}</span>}
                       </div>
@@ -588,7 +619,7 @@ function AgentHistoryPanel({
   );
 }
 
-/* ── Agent Status Card ───────────────────────────────── */
+/* ── Agent status card ───────────────────────────────── */
 function AgentStatusCard({
   agent,
   onClick,
@@ -598,84 +629,75 @@ function AgentStatusCard({
   onClick: () => void;
   onHistory: () => void;
 }) {
-  const gradient = agentColors[agent.agent_name] || agentColors.system;
+  const accentBg = agentColors[agent.agent_name] || agentColors.system;
   return (
-    <div
-      className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4 hover:bg-[var(--color-surface-subtle)] hover:border-[var(--color-border)] transition-all text-left w-full group"
-    >
-      <button onClick={onClick} className="w-full text-left">
-        <div className="flex items-center gap-3 mb-3">
+    <Card className="group w-full p-4 text-left transition-colors duration-150 hover:bg-surface-muted/40">
+      <button type="button" onClick={onClick} className="w-full text-left">
+        <div className="mb-3 flex items-center gap-3">
           <div
             className={clsx(
-              "w-8 h-8 rounded-md flex items-center justify-center",
-              gradient
+              "flex h-8 w-8 items-center justify-center rounded-md",
+              accentBg
             )}
           >
-            <Bot className="w-4 h-4 text-white" />
+            <Bot className="h-4 w-4 text-white" aria-hidden="true" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-sm truncate">{agent.display_name}</p>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <span
-                className={clsx(
-                  "w-1.5 h-1.5 rounded-full",
-                  agent.status === "running" &&
-                    "bg-[var(--color-success)] animate-pulse",
-                  agent.status === "idle" && "bg-[var(--color-text-muted)]",
-                  agent.status === "error" && "bg-[var(--color-danger)]"
-                )}
-              />
-              <span className="text-xs text-[var(--color-text-muted)] capitalize">
-                {agent.status}
-              </span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-ink">{agent.display_name}</p>
+            <div className="mt-0.5">
+              <StatusDot status={agent.status} />
             </div>
           </div>
-          <MessageSquare className="w-4 h-4 text-[var(--color-text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+          <MessageSquare
+            className="h-4 w-4 text-ink-muted opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+            aria-hidden="true"
+          />
         </div>
-        <p className="text-xs text-[var(--color-text-secondary)] mb-3 line-clamp-1">
-          {agentDescriptions[agent.agent_name] || "AI Agent"}
+        <p className="mb-3 line-clamp-1 text-xs text-ink-secondary">
+          {agentDescriptions[agent.agent_name] || "AI agent"}
         </p>
         <div className="grid grid-cols-3 gap-2 text-center">
           <div>
-            <p className="text-base font-semibold tabular-nums">
+            <p className="text-base font-semibold tabular-nums text-ink">
               {agent.tasks_today}
             </p>
-            <p className="text-[10px] text-[var(--color-text-muted)]">Today</p>
+            <p className="text-[10px] text-ink-secondary">Today</p>
           </div>
           <div>
-            <p className="text-base font-semibold tabular-nums text-[var(--color-success)]">
+            <p className="text-base font-semibold tabular-nums text-success">
               {agent.tasks_completed}
             </p>
-            <p className="text-[10px] text-[var(--color-text-muted)]">Done</p>
+            <p className="text-[10px] text-ink-secondary">Done</p>
           </div>
           <div>
-            <p className="text-base font-semibold tabular-nums text-[var(--color-danger)]">
+            <p className="text-base font-semibold tabular-nums text-danger">
               {agent.tasks_failed}
             </p>
-            <p className="text-[10px] text-[var(--color-text-muted)]">Failed</p>
+            <p className="text-[10px] text-ink-secondary">Failed</p>
           </div>
         </div>
       </button>
-      <div className="flex items-center justify-between mt-2">
+      <div className="mt-2 flex items-center justify-between">
         {agent.last_active ? (
-          <p className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-1">
-            <Clock className="w-3 h-3" />
+          <p className="flex items-center gap-1 text-[10px] text-ink-secondary">
+            <Clock className="h-3 w-3" aria-hidden="true" />
             Last active {timeAgo(agent.last_active)}
           </p>
         ) : <span />}
         <button
+          type="button"
           onClick={(e) => { e.stopPropagation(); onHistory(); }}
-          className="inline-flex items-center gap-1 text-[10px] text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors px-2 py-1 rounded hover:bg-[var(--color-surface-muted)]"
+          className="inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] text-ink-secondary transition-colors duration-150 hover:bg-surface-muted hover:text-ink"
         >
-          <History className="w-3 h-3" />
+          <History className="h-3 w-3" aria-hidden="true" />
           History
         </button>
       </div>
-    </div>
+    </Card>
   );
 }
 
-/* ── Activity Event Row ──────────────────────────────── */
+/* ── Activity event row ──────────────────────────────── */
 function EventRow({
   event,
   isNew,
@@ -685,56 +707,56 @@ function EventRow({
 }) {
   const Icon = statusIcons[event.status] || Activity;
   const colorClass = statusColors[event.status] || statusColors.info;
-  const gradient = agentColors[event.agent_name] || agentColors.system;
+  const accentBg = agentColors[event.agent_name] || agentColors.system;
 
   return (
     <div
       className={clsx(
-        "flex items-start gap-3 py-3 px-4 rounded-xl transition-all duration-500",
-        isNew && "bg-[var(--color-surface-muted)]"
+        "flex items-start gap-3 px-4 py-3 transition-colors duration-500",
+        isNew && "bg-surface-muted"
       )}
     >
       <div
         className={clsx(
-          "w-7 h-7 rounded-md flex items-center justify-center shrink-0 mt-0.5",
-          gradient
+          "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md",
+          accentBg
         )}
       >
-        <Bot className="w-3.5 h-3.5 text-white" />
+        <Bot className="h-3.5 w-3.5 text-white" aria-hidden="true" />
       </div>
-      <div className="flex-1 min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium truncate">{event.title}</p>
+          <p className="truncate text-sm font-medium text-ink">{event.title}</p>
           <span
             className={clsx(
-              "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-medium",
+              "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium",
               colorClass
             )}
           >
-            <Icon className="w-3 h-3" />
+            <Icon className="h-3 w-3" aria-hidden="true" />
             {event.status}
           </span>
         </div>
         {event.description && (
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 line-clamp-2">
+          <p className="mt-0.5 line-clamp-2 text-xs text-ink-secondary">
             {event.description}
           </p>
         )}
         {typeof event.metadata?.tool_name === "string" && (
-          <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-md bg-[var(--color-surface-muted)] text-[10px] font-mono text-[var(--color-text-secondary)]">
-            <Wrench className="w-3 h-3" />
+          <span className="mt-1 inline-flex items-center gap-1 rounded-md bg-surface-muted px-2 py-0.5 font-mono text-[10px] text-ink-secondary">
+            <Wrench className="h-3 w-3" aria-hidden="true" />
             {event.metadata.tool_name}
           </span>
         )}
       </div>
-      <span className="text-[10px] text-[var(--color-text-muted)] whitespace-nowrap shrink-0 mt-1">
+      <span className="mt-1 shrink-0 whitespace-nowrap text-[10px] text-ink-secondary">
         {timeAgo(event.timestamp)}
       </span>
     </div>
   );
 }
 
-/* ── Main Page ───────────────────────────────────────── */
+/* ── Main page ───────────────────────────────────────── */
 export default function AgentsPage() {
   const api = useApi();
   const [events, setEvents] = useState<ActivityEvent[]>([]);
@@ -749,7 +771,7 @@ export default function AgentsPage() {
   const [chatAgent, setChatAgent] = useState<AgentStatus | null>(null);
   const [historyAgent, setHistoryAgent] = useState<AgentStatus | null>(null);
 
-  /* ── SSE: Real-time event stream ── */
+  /* ── SSE: real-time event stream ── */
   const { connected } = useEventSource<ActivityEvent>(
     `${DIRECT_API_URL}/api/activity/stream`,
     {
@@ -818,107 +840,88 @@ export default function AgentsPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Agents</h1>
-          <p className="text-[var(--color-text-secondary)] mt-1">
-            Click any agent to start a conversation
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className={clsx(
-              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border",
-              connected
-                ? "text-[var(--color-success)] border-[var(--color-success)]/20 bg-[var(--color-success)]/5"
-                : paused
-                ? "text-[var(--color-text-muted)] border-[var(--color-border)] bg-[var(--color-surface-muted)]"
-                : "text-[var(--color-warning)] border-[var(--color-warning)]/20 bg-[var(--color-warning)]/5"
-            )}
-          >
-            {connected ? (
-              <Wifi className="w-3.5 h-3.5" />
-            ) : (
-              <WifiOff className="w-3.5 h-3.5" />
-            )}
-            {connected ? "Live" : paused ? "Paused" : "Connecting..."}
-          </span>
+      <PageHeader
+        title="Agents"
+        description="Click any agent to start a conversation"
+        actions={
+          <>
+            <span
+              className={clsx(
+                "inline-flex items-center gap-1.5 rounded-control border px-3 py-1.5 text-xs font-medium",
+                connected
+                  ? "border-success/20 bg-success-soft text-success"
+                  : paused
+                    ? "border-line bg-surface-muted text-ink-secondary"
+                    : "border-warning/20 bg-warning-soft text-warning"
+              )}
+            >
+              {connected ? (
+                <Wifi className="h-3.5 w-3.5" aria-hidden="true" />
+              ) : (
+                <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              {connected ? "Live" : paused ? "Paused" : "Connecting"}
+            </span>
 
-          <button
-            onClick={() => setPaused(!paused)}
-            className="p-2 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
-            title={paused ? "Resume" : "Pause"}
-          >
-            {paused ? (
-              <Play className="w-4 h-4 text-[var(--color-text-secondary)]" />
-            ) : (
-              <Pause className="w-4 h-4 text-[var(--color-text-secondary)]" />
-            )}
-          </button>
+            <button
+              type="button"
+              onClick={() => setPaused(!paused)}
+              className="rounded-control p-2 transition-colors duration-150 hover:bg-surface-muted"
+              title={paused ? "Resume" : "Pause"}
+              aria-label={paused ? "Resume stream" : "Pause stream"}
+            >
+              {paused ? (
+                <Play className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+              ) : (
+                <Pause className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+              )}
+            </button>
 
-          <button
-            onClick={fetchData}
-            className="p-2 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className="w-4 h-4 text-[var(--color-text-secondary)]" />
-          </button>
-        </div>
-      </div>
+            <button
+              type="button"
+              onClick={fetchData}
+              className="rounded-control p-2 transition-colors duration-150 hover:bg-surface-muted"
+              title="Refresh"
+              aria-label="Refresh"
+            >
+              <RefreshCw className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+            </button>
+          </>
+        }
+      />
 
       {/* Stats bar */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4 flex items-center gap-3">
-            <div className="p-2 rounded-md bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
-              <Activity className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xl font-semibold tabular-nums">
-                {stats.total_events_today}
-              </p>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Events today
-              </p>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4 flex items-center gap-3">
-            <div className="p-2 rounded-md bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
-              <Zap className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xl font-semibold tabular-nums">
-                {stats.agents.filter((a) => a.status === "running").length}
-              </p>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Active agents
-              </p>
-            </div>
-          </div>
-          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-4 flex items-center gap-3">
-            <div className="p-2 rounded-md bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
-              <AlertTriangle className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xl font-semibold tabular-nums">
-                {stats.pending_approvals}
-              </p>
-              <p className="text-xs text-[var(--color-text-muted)]">
-                Pending approvals
-              </p>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {[
+            { icon: Activity, value: stats.total_events_today, label: "Events today" },
+            {
+              icon: Zap,
+              value: stats.agents.filter((a) => a.status === "running").length,
+              label: "Active agents",
+            },
+            { icon: AlertTriangle, value: stats.pending_approvals, label: "Pending approvals" },
+          ].map((s) => (
+            <Card key={s.label} className="flex items-center gap-3 p-4">
+              <div className="rounded-md bg-surface-muted p-2 text-ink-secondary">
+                <s.icon className="h-4 w-4" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-xl font-semibold tabular-nums text-ink">{s.value}</p>
+                <p className="text-xs text-ink-secondary">{s.label}</p>
+              </div>
+            </Card>
+          ))}
         </div>
       )}
 
-      {/* Agent Cards */}
+      {/* Agent cards */}
       {stats && stats.agents.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-3">
-            Your Agents
+          <h2 className="mb-3 text-[13px] font-medium text-ink-secondary">
+            Your agents
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {stats.agents.map((agent) => (
               <AgentStatusCard
                 key={agent.agent_name}
@@ -931,14 +934,14 @@ export default function AgentsPage() {
         </div>
       )}
 
-      {/* Event Feed */}
-      <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-3 border-b border-[var(--color-border)]">
-          <h2 className="font-semibold text-sm flex items-center gap-2">
-            <Activity className="w-4 h-4 text-[var(--color-text-secondary)]" />
-            Event Feed
+      {/* Event feed */}
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <Activity className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+            Event feed
             {filteredEvents.length > 0 && (
-              <span className="text-xs text-[var(--color-text-muted)] font-normal">
+              <span className="text-xs font-normal text-ink-secondary">
                 ({filteredEvents.length} events)
               </span>
             )}
@@ -947,7 +950,8 @@ export default function AgentsPage() {
             <select
               value={filterAgent}
               onChange={(e) => setFilterAgent(e.target.value)}
-              className="appearance-none text-xs pl-7 pr-6 py-1.5 rounded-lg border border-[var(--color-border)] bg-white text-[var(--color-text)] cursor-pointer hover:border-[var(--color-text-muted)] transition-colors"
+              aria-label="Filter by agent"
+              className="cursor-pointer appearance-none rounded-control border border-line bg-surface py-1.5 pl-7 pr-6 text-xs text-ink transition-colors duration-150 hover:border-ink-muted"
             >
               <option value="">All agents</option>
               {agentNames.map((name) => (
@@ -956,27 +960,33 @@ export default function AgentsPage() {
                 </option>
               ))}
             </select>
-            <Filter className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
-            <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+            <Filter
+              className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted"
+              aria-hidden="true"
+            />
+            <ChevronDown
+              className="absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted"
+              aria-hidden="true"
+            />
           </div>
         </div>
         <div
           ref={scrollRef}
-          className="divide-y divide-[var(--color-border)] max-h-[50vh] sm:max-h-[600px] overflow-y-auto"
+          className="max-h-[50vh] divide-y divide-line-subtle overflow-y-auto sm:max-h-[600px]"
         >
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
-              <span className="ml-2 text-sm text-[var(--color-text-secondary)]">
-                Loading activity...
+              <Loader2 className="h-6 w-6 animate-spin text-ink-muted" aria-hidden="true" />
+              <span className="ml-2 text-sm text-ink-secondary">
+                Loading activity
               </span>
             </div>
           ) : filteredEvents.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Activity className="w-12 h-12 text-[var(--color-text-muted)] mb-4" />
-              <h3 className="text-lg font-semibold mb-1">No activity yet</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
-                Agent events will appear here in real-time as your agents work.
+              <Activity className="mb-4 h-10 w-10 text-ink-muted" strokeWidth={1.5} aria-hidden="true" />
+              <h3 className="mb-1 font-serif text-lg font-semibold text-ink">No activity yet</h3>
+              <p className="max-w-sm text-sm text-ink-secondary">
+                Agent events will appear here in real time as your agents work.
                 Click an agent above to start a conversation.
               </p>
             </div>
@@ -990,9 +1000,9 @@ export default function AgentsPage() {
             ))
           )}
         </div>
-      </div>
+      </Card>
 
-      {/* Agent Chat Panel */}
+      {/* Agent chat panel */}
       {chatAgent && (
         <AgentChatPanel
           agent={chatAgent}
@@ -1000,7 +1010,7 @@ export default function AgentsPage() {
         />
       )}
 
-      {/* Agent History Panel */}
+      {/* Agent history panel */}
       {historyAgent && (
         <AgentHistoryPanel
           agent={historyAgent}
