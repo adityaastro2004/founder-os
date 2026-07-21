@@ -15,6 +15,36 @@ export const DIRECT_API_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 /**
+ * FastAPI's error `detail` is a string for HTTPExceptions but an ARRAY of
+ * {loc, msg, type} objects for 422 validation errors — passing that array to
+ * `new Error()` renders as "[object Object]" in the UI. Flatten every shape
+ * to a readable sentence.
+ */
+export function apiErrorMessage(body: unknown, status: number): string {
+  const fallback = `API error ${status}`;
+  if (!body || typeof body !== "object") return fallback;
+  const detail = (body as { detail?: unknown }).detail;
+  if (typeof detail === "string" && detail) return detail;
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((d) => {
+        if (typeof d === "string") return d;
+        if (d && typeof d === "object") {
+          const { loc, msg } = d as { loc?: unknown[]; msg?: string };
+          const field = Array.isArray(loc)
+            ? loc.filter((l) => l !== "body").join(".")
+            : "";
+          if (msg) return field ? `${field}: ${msg}` : msg;
+        }
+        return "";
+      })
+      .filter(Boolean);
+    if (parts.length) return parts.join("; ");
+  }
+  return fallback;
+}
+
+/**
  * Authenticated fetch wrapper.
  * Passes the Clerk session token as a Bearer token to the FastAPI backend.
  *
@@ -61,7 +91,7 @@ export async function apiFetch(
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.detail || `API error ${res.status}`);
+      throw new Error(apiErrorMessage(body, res.status));
     }
 
     // 204 No Content (e.g. DELETE /api/state/sources/{id}, /api/knowledge/items/{id})
@@ -99,7 +129,7 @@ export async function apiRawFetch(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.detail || `API error ${res.status}`);
+    throw new Error(apiErrorMessage(body, res.status));
   }
 
   return res;

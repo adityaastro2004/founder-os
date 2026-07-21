@@ -447,11 +447,12 @@ async def test_ac10_char_cap(monkeypatch):
     await agent.run("What's my Q3 focus?")
     system = engine.calls[0]["system"]
 
-    assert fake.format_calls[0]["max_chars"] == 6000
-    assert BaseAgent._MEMORY_BLOCK_MAX_CHARS == 6000
+    cap = BaseAgent._MEMORY_BLOCK_MAX_CHARS
+    assert fake.format_calls[0]["max_chars"] == cap
+    assert cap == 3000  # halved by the token-optimization pass (PR #24)
     # The rendered block honors the cap (entries beyond it are dropped).
     block = system[system.index("\n<memories>\n"): system.index("\n</memories>")]
-    assert len(block) <= 6000 + 300  # envelope/label slack
+    assert len(block) <= cap + 300  # envelope/label slack
 
 
 # ─────────────────────────────────────────────────────────────
@@ -481,8 +482,9 @@ async def test_ac11_overfetch_then_render_limit(monkeypatch):
     await agent.run("What did we plan before?")
     system = engine.calls[0]["system"]
 
-    assert fake.recall_calls[0]["limit"] == 8            # over-fetch (AC-11 headroom)
+    # Limits tightened by the token-optimization pass (PR #24): 8→5 fetch, 5→3 render.
+    assert fake.recall_calls[0]["limit"] == 5            # over-fetch (AC-11 headroom)
     assert fake.recall_calls[0]["min_importance"] == 0.2
-    assert fake.format_calls[0]["count"] == 5            # top _MEMORY_RENDER_LIMIT
-    assert "<title>mem-4</title>" in system
-    assert "mem-5" not in system and "mem-7" not in system
+    assert fake.format_calls[0]["count"] == 3            # top _MEMORY_RENDER_LIMIT
+    assert "<title>mem-2</title>" in system
+    assert "mem-3" not in system and "mem-7" not in system

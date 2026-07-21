@@ -30,6 +30,34 @@ never Tailwind's stock grays (`bg-white`, `text-gray-*`, `bg-neutral-*`).
 | `warning` / `-soft` | `#B9741C` / `#F5ECDC` | Caution status |
 | `danger` / `-soft` | `#BF4232` / `#F6E4E0` | Errors, destructive actions |
 
+### Dark theme
+
+The same tokens are re-valued under `.dark` on `<html>` (`app/globals.css`) —
+components never branch on theme; utilities pick up the override automatically.
+The palette keeps the warm hue family: near-black warm charcoal paper, ivory
+ink, and a brightened terracotta for contrast on dark.
+
+| Token | Dark value | Notes |
+|---|---|---|
+| `paper` | `#262624` | Warm charcoal |
+| `surface` | `#30302E` | Cards, inputs |
+| `surface-muted` | `#3A3835` | Sidebar, hover fills |
+| `line` / `line-subtle` | `#423F3A` / `#363430` | Borders |
+| `ink` | `#F0EEE6` | Primary text (ivory) |
+| `ink-secondary` | `#B8B3AA` | Secondary text (AA on dark paper) |
+| `ink-muted` | `#837F77` | Placeholders only |
+| `accent` | `#D97757` | Brightened terracotta |
+| `accent-hover` / `accent-text` | `#E08B6D` | Hover + AA-safe small text |
+| `accent-soft` | `#453029` | Tinted chips |
+| `success` / `-soft` | `#7CAB7F` / `#2C3A2E` | |
+| `warning` / `-soft` | `#D09A4A` / `#423520` | |
+| `danger` / `-soft` | `#E0705C` / `#462B26` | |
+
+Theme choice persists in `localStorage("founder-os-theme")`, defaults to the
+OS preference, and is applied pre-paint by an inline script in `app/layout.tsx`.
+Toggle lives in the sidebar footer and the landing nav
+(`app/_components/theme-toggle.tsx`).
+
 ## Typography
 
 - **Display serif** — Source Serif 4 (`font-serif`): page titles, section

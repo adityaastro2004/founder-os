@@ -32,6 +32,31 @@
   --sidebar-width: 248px;
 }
 
+/* ── Dark theme — same warm hues, inverted values ───
+   Utilities compile to var(--color-*), so overriding the
+   custom properties on .dark re-themes every component. */
+.dark {
+  color-scheme: dark;
+  --color-paper: #262624;
+  --color-surface: #30302e;
+  --color-surface-muted: #3a3835;
+  --color-line: #423f3a;
+  --color-line-subtle: #363430;
+  --color-ink: #f0eee6;
+  --color-ink-secondary: #b8b3aa;
+  --color-ink-muted: #837f77;
+  --color-accent: #d97757;
+  --color-accent-hover: #e08b6d;
+  --color-accent-text: #e08b6d; /* accent as small text on dark paper — AA-safe */
+  --color-accent-soft: #453029;
+  --color-success: #7cab7f;
+  --color-success-soft: #2c3a2e;
+  --color-warning: #d09a4a;
+  --color-warning-soft: #423520;
+  --color-danger: #e0705c;
+  --color-danger-soft: #462b26;
+}
+
 /* ── Base ──────────────────────────────────────────── */
 html,
 body {

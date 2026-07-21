@@ -9,3 +9,4 @@ export { StatCard } from "./stat-card";
 export { Dialog } from "./dialog";
 export { Tabs } from "./tabs";
 export { Kbd } from "./kbd";
+export { Markdown } from "./markdown";
