@@ -155,6 +155,12 @@ turbo build                   # build all
 turbo lint                    # ESLint (web: eslint --max-warnings 0)
 turbo check-types             # next typegen && tsc --noEmit
 
+# Frontend PRODUCTION deploy — Vercel git integration auto-deploys merges to main.
+# NEVER run `vercel deploy --prod` by hand; a stale-checkout deploy reverted prod
+# on 2026-07-21. If a manual deploy is unavoidable, ONLY via the guarded script
+# (it refuses unless HEAD == origin/main and the tree is clean):
+./scripts/deploy-web.sh       # run from the git root of a clean worktree
+
 # Backend tests — integration scripts that hit a LIVE server on :8000.
 # Start the stack first (./start.sh), then run a single suite directly:
 cd founder-os/apps/api && source .venv/bin/activate && python3 test_system.py
