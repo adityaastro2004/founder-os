@@ -93,26 +93,26 @@ async def test_ac2_history_block_shape():
 
 
 # ─────────────────────────────────────────────────────────────
-# AC-3 — caps: _HISTORY_MAX_TURNS turns, _HISTORY_MSG_CHARS truncation,
-# tool residue excluded. Caps tightened by the token-optimization pass
-# (PR #24): 20→10 turns, 400→250 chars.
+# AC-3 — caps: _HISTORY_MAX_TURNS window, _HISTORY_MSG_CHARS truncation,
+# tool residue excluded. The knob values are tuning (revised by the
+# 2026-07-21 token optimization); these tests pin the mechanism only.
 # ─────────────────────────────────────────────────────────────
 
-async def test_ac3_last_max_turns_only():
+async def test_ac3_last_n_turns_only():
+    window = BaseAgent._HISTORY_MAX_TURNS
+    total = window + 5
     turns = [
         ("user" if i % 2 == 0 else "assistant", f"turn-{i:02d}")
-        for i in range(25)
+        for i in range(total)
     ]
     agent, engine = make_agent(prior_turns=turns)
     await agent.run("current question")
     block = history_block(engine.calls[0]["system"])
 
-    dropped = 25 - BaseAgent._HISTORY_MAX_TURNS
-    for i in range(dropped):  # oldest dropped
+    for i in range(5):  # oldest 5 dropped
         assert f"turn-{i:02d}" not in block
-    for i in range(dropped, 25):  # last _HISTORY_MAX_TURNS kept
+    for i in range(5, total):  # last _HISTORY_MAX_TURNS kept
         assert f"turn-{i:02d}" in block
-    assert BaseAgent._HISTORY_MAX_TURNS == 10
 
 
 async def test_ac3_truncation_with_marker():
@@ -127,7 +127,6 @@ async def test_ac3_truncation_with_marker():
 
     assert "SECRET_TAIL" not in block          # cut at _HISTORY_MSG_CHARS
     assert ("x" * cap + " …") in block          # marker appended
-    assert BaseAgent._HISTORY_MSG_CHARS == 250
 
 
 async def test_ac3_tool_messages_excluded():
