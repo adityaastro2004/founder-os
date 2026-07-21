@@ -168,8 +168,11 @@ For everything else, reply concisely — founders scan, they don't read essays.
             return
 
         try:
-            from app.user_store import get_user
-            user = get_user(planner_user_id)
+            # Fresh read: a cached profile would let us push to a calendar the
+            # user just disconnected, and save_user() below would then write the
+            # stale tokens back, silently undoing the disconnect.
+            from app.user_store import get_user_fresh
+            user = get_user_fresh(planner_user_id)
             if not user or not user.gcal_connected or not user.has_valid_gcal_tokens():
                 _log.debug("User %s has no gcal connected — skipping push", planner_user_id)
                 return

@@ -204,6 +204,54 @@ def get_user(user_id: str) -> UserProfile | None:
     return profile
 
 
+def get_user_fresh(user_id: str) -> UserProfile | None:
+    """Fetch a user straight from the DB, bypassing (and refreshing) the cache.
+
+    `_cache` is process-local and never expires, so the API process clearing a
+    Google Calendar connection is invisible to the Celery/agents process, which
+    would keep pushing to a revoked calendar and — worse — write its stale
+    token-bearing profile back on the next save_user(). Any read that gates a
+    credential use MUST go through this, not get_user().
+    """
+    profile = _sync_fetch(user_id)
+    if profile:
+        _cache[user_id] = profile
+    else:
+        _cache.pop(user_id, None)
+    return profile
+
+
+def disconnect_gcal(user_id: str) -> bool:
+    """Null out the stored Google Calendar credentials. Returns True on success.
+
+    Deliberately a targeted UPDATE rather than save_user(): the generic upsert
+    swallows DB errors (_sync_upsert logs and returns), which would let a
+    disconnect report success while the tokens are still at rest. Here a failure
+    is raised so the route can refuse to claim the user was disconnected.
+    """
+    from sqlalchemy import text
+
+    with _engine().begin() as conn:
+        result = conn.execute(
+            text("""
+                UPDATE planner_users
+                   SET gcal_connected = false,
+                       gcal_access_token = NULL,
+                       gcal_refresh_token = NULL,
+                       gcal_token_expiry = NULL,
+                       gcal_token_data = '{}'::jsonb
+                 WHERE user_id = :user_id
+            """),
+            {"user_id": user_id},
+        )
+        updated = result.rowcount
+
+    # Evict rather than mutate: the next read re-hydrates from the DB, which is
+    # now the only place the truth lives.
+    _cache.pop(user_id, None)
+    return updated > 0
+
+
 def get_or_create_user(user_id: str) -> UserProfile:
     """Get an existing user or create a new one."""
     existing = get_user(user_id)

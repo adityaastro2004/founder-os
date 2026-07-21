@@ -45,9 +45,14 @@ def store_tokens(user_id: str, tokens: dict[str, Any]) -> None:
 
 
 def get_tokens(user_id: str) -> dict[str, Any] | None:
-    """Retrieve stored OAuth tokens for a user (from PostgreSQL)."""
+    """Retrieve stored OAuth tokens for a user (from PostgreSQL).
+
+    Reads fresh, never from the process-local cache: a disconnect performed in
+    the API process must be visible to the Celery/agents process immediately,
+    or we would keep calling Google with credentials the user has revoked.
+    """
     try:
-        from app.user_store import get_user
+        from app.user_store import get_user_fresh as get_user
         user = get_user(user_id)
         if user and user.gcal_tokens:
             return user.gcal_tokens
@@ -57,16 +62,13 @@ def get_tokens(user_id: str) -> dict[str, Any] | None:
 
 
 def clear_tokens(user_id: str) -> None:
-    """Remove stored OAuth tokens for a user."""
+    """Remove stored OAuth tokens for a user (best-effort; see disconnect_gcal
+    for the variant that reports failure)."""
     try:
-        from app.user_store import get_user, save_user
-        user = get_user(user_id)
-        if user:
-            user.gcal_tokens = {}
-            user.gcal_connected = False
-            save_user(user)
+        from app.user_store import disconnect_gcal
+        disconnect_gcal(user_id)
     except Exception as exc:
-        logger.error("Failed to clear tokens for %s: %s", user_id, exc)
+        logger.error("Failed to clear tokens for %s: %s", sl(user_id), sl(exc))
 
 
 # ============================================================================
@@ -75,6 +77,7 @@ def clear_tokens(user_id: str) -> None:
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+GOOGLE_REVOKE_URL = "https://oauth2.googleapis.com/revoke"
 GOOGLE_CALENDAR_API = "https://www.googleapis.com/calendar/v3"
 SCOPES = "https://www.googleapis.com/auth/calendar.events"
 
@@ -151,6 +154,45 @@ async def refresh_access_token(
         return response.json()
 
 
+async def revoke_token(token: str) -> tuple[bool, bool]:
+    """Ask Google to revoke a grant.
+
+    Returns (revoked, certain):
+      - (True,  True)  Google confirmed the grant is gone.
+      - (False, True)  Google rejected the token as already invalid (4xx) —
+                       the grant is gone either way.
+      - (False, False) We could not reach Google, or it 5xx'd. The grant may
+                       well still be live and we CANNOT claim otherwise.
+
+    Best-effort by contract: the caller deletes our local copy regardless, since
+    failing the disconnect would trap the user in a connection they cannot
+    remove. The `certain` flag exists so the caller never tells the user access
+    was revoked when we genuinely do not know.
+    """
+    if not token:
+        # Nothing to revoke; there is no grant of ours left to worry about.
+        return False, True
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                GOOGLE_REVOKE_URL,
+                data={"token": token},
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
+        if response.status_code == 200:
+            return True, True
+        if 400 <= response.status_code < 500:
+            # Google only 4xxs a token it no longer honours.
+            logger.info("Google revoke: token already invalid (%s)", response.status_code)
+            return False, True
+        logger.warning("Google revoke returned %s — grant may still be live",
+                       response.status_code)
+        return False, False
+    except Exception as exc:
+        logger.warning("Google token revoke failed: %s", sl(exc))
+        return False, False
+
+
 class CalendarAuthExpired(Exception):
     """Raised when Google Calendar tokens are expired/revoked and re-auth is needed."""
 
@@ -158,15 +200,11 @@ class CalendarAuthExpired(Exception):
 def _clear_gcal_connection(user_id: str) -> None:
     """Mark the user as disconnected from Google Calendar."""
     try:
-        from app.user_store import get_user, save_user
-        user = get_user(user_id)
-        if user:
-            user.gcal_connected = False
-            user.gcal_tokens = {}
-            save_user(user)
-            logger.info("Cleared GCal connection for user %s (token revoked/expired)", user_id)
+        from app.user_store import disconnect_gcal
+        if disconnect_gcal(user_id):
+            logger.info("Cleared GCal connection for %s (token revoked/expired)", sl(user_id))
     except Exception as exc:
-        logger.error("Failed to clear GCal connection for %s: %s", user_id, exc)
+        logger.error("Failed to clear GCal connection for %s: %s", sl(user_id), sl(exc))
 
 
 async def _get_valid_token(
