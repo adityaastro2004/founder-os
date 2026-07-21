@@ -46,3 +46,6 @@ out/
 # ── Backups ──────────────────────────
 *.bak
 *.backup
+.vercel
+.env*
+!.env*.example
