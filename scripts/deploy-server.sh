@@ -8,6 +8,7 @@
 #   /home/ubuntu/founder-os              git checkout
 #   postgres + redis                     docker compose (localhost-only)
 #   founder-api / founder-celery         systemd units, venv at apps/api/.venv
+#   nightly DB backup → S3               /etc/cron.d/founder-os-db-backup (scripts/backup-db.sh)
 #
 # Rollback restores the previous code but NOT the schema: alembic downgrades
 # are manual by design, so migrations must stay backward-compatible for at
@@ -60,11 +61,30 @@ sync_env() {
   patch_var GOOGLE_CLIENT_SECRET "${FOS_GOOGLE_CLIENT_SECRET:-}"
   patch_var GOOGLE_REDIRECT_URI "${FOS_GOOGLE_REDIRECT_URI:-}"
   patch_var OAUTH_STATE_SECRET "${FOS_OAUTH_STATE_SECRET:-}"
+  patch_var BACKUP_S3_BUCKET "${FOS_BACKUP_S3_BUCKET:-}"
   if [ -n "$synced" ]; then echo "env synced:$synced"; fi
 }
 
 migrate() {
   sudo -u ubuntu bash -c "cd $API && source .venv/bin/activate && alembic upgrade head"
+}
+
+# Install the nightly DB backup cron (scripts/backup-db.sh → S3). Idempotent:
+# rewrites the cron entry every deploy. The script itself no-ops until the
+# BACKUP_S3_BUCKET secret is set, and a missing aws CLI only warns here so a
+# broken snap store can never block a deploy.
+install_backup() {
+  chmod +x "$REPO/scripts/backup-db.sh"
+  cat > /etc/cron.d/founder-os-db-backup <<CRON
+# Managed by deploy-server.sh — edits are overwritten on every deploy.
+# Nightly Postgres dump → S3 at 22:00 UTC (03:30 IST).
+30 22 * * * root $REPO/scripts/backup-db.sh >> /var/log/founder-os-db-backup.log 2>&1
+CRON
+  chmod 644 /etc/cron.d/founder-os-db-backup
+  if ! command -v aws >/dev/null 2>&1; then
+    snap install aws-cli --classic >/dev/null 2>&1 \
+      || echo "WARN: aws CLI unavailable — nightly DB backup will fail until installed" >&2
+  fi
 }
 
 restart_and_check() {
@@ -81,6 +101,7 @@ restart_and_check() {
 sync_env
 install_deps
 migrate
+install_backup
 if restart_and_check; then
   echo "DEPLOY OK: now at $(sudo -u ubuntu git -C "$REPO" rev-parse --short HEAD)"
   exit 0
