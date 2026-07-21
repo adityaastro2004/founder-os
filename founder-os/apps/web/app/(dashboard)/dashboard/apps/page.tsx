@@ -3,8 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { useApi } from "@/lib/use-api";
 import { clsx } from "clsx";
-import StateSourcesSection from "./_components/state-sources";
+import StateSourcesSection, {
+  type SourceType,
+  type StateSource,
+} from "./_components/state-sources";
 import {
+  BookOpen,
   Calendar,
   MessageSquare,
   FileText,
@@ -85,6 +89,7 @@ const iconMap: Record<string, React.ElementType> = {
   calendar: Calendar,
   "message-square": MessageSquare,
   "file-text": FileText,
+  "book-open": BookOpen,
   code: Code,
   "credit-card": CreditCard,
   "layout-list": LayoutList,
@@ -93,6 +98,32 @@ const iconMap: Record<string, React.ElementType> = {
   "share-2": Share2,
   users: Users,
 };
+
+// Notion and Obsidian connect through the State Engine source flow
+// (/api/state/sources), not the integrations table, so the backend app catalog
+// deliberately excludes them. Their cards are derived client-side from the
+// state sources list so each has exactly one status.
+const STATE_APPS: Pick<
+  AppStatus,
+  "key" | "display_name" | "description" | "category" | "icon"
+>[] = [
+  {
+    key: "notion",
+    display_name: "Notion",
+    description:
+      "Two-way sync between your Notion workspace and the living company state",
+    category: "Company state",
+    icon: "file-text",
+  },
+  {
+    key: "obsidian",
+    display_name: "Obsidian",
+    description:
+      "Two-way sync between your Obsidian vault and the living company state",
+    category: "Company state",
+    icon: "book-open",
+  },
+];
 
 const statusConfig: Record<
   string,
@@ -417,6 +448,8 @@ export default function AppsPage() {
   const [loading, setLoading] = useState(true);
   const [connectingAppKey, setConnectingAppKey] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [stateSources, setStateSources] = useState<StateSource[]>([]);
+  const [addingSource, setAddingSource] = useState<SourceType | null>(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -550,8 +583,49 @@ export default function AppsPage() {
     [api, loadData]
   );
 
-  const connectedApps = apps.filter((a) => a.status === "connected");
-  const availableApps = apps.filter((a) => a.status !== "connected");
+  // Route Notion/Obsidian to the state-source add form; everything else to OAuth.
+  const handleConnect = useCallback(
+    (app: AppStatus) => {
+      if (app.key === "notion" || app.key === "obsidian") {
+        setAddingSource(app.key);
+        document
+          .getElementById("company-state-sources")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return;
+      }
+      void handleConnectApp(app);
+    },
+    [handleConnectApp]
+  );
+
+  // A Notion/Obsidian type counts as connected once at least one source of that
+  // type exists — per-source error/sync detail is managed in the Company State
+  // Sources section above, so the card here stays a simple connected/not toggle.
+  const stateApps: AppStatus[] = STATE_APPS.map((def) => {
+    const sources = stateSources.filter((s) => s.type === def.key);
+    const connected = sources.length > 0;
+    const lastSync =
+      sources
+        .map((s) => s.last_synced_at)
+        .filter((t): t is string => t !== null)
+        .sort()
+        .pop() ?? null;
+    return {
+      ...def,
+      status: connected ? "connected" : "disconnected",
+      is_active: connected,
+      last_sync_at: lastSync,
+      sync_status: null,
+      connect_url: "/api/state/sources",
+    };
+  });
+
+  const allApps = [...stateApps, ...apps];
+  const connectedApps = allApps.filter((a) => a.status === "connected");
+  const connectableApps = allApps.filter(
+    (a) => a.status === "disconnected" || a.status === "error"
+  );
+  const comingSoonApps = allApps.filter((a) => a.status === "coming_soon");
 
   if (loading) {
     return (
@@ -583,10 +657,14 @@ export default function AppsPage() {
       {/* Business info */}
       <BusinessInfoCard profile={profile} />
 
-      {/* Company state sources (Notion / Obsidian sync) */}
-      <StateSourcesSection />
+      {/* Company state sources (Notion / Obsidian sync management) */}
+      <StateSourcesSection
+        adding={addingSource}
+        onAddingChange={setAddingSource}
+        onSourcesChange={setStateSources}
+      />
 
-      {/* Connected apps */}
+      {/* Connected */}
       {connectedApps.length > 0 && (
         <div>
           <div className="mb-4 flex items-center gap-2">
@@ -601,22 +679,44 @@ export default function AppsPage() {
         </div>
       )}
 
-      {/* Available apps */}
-      <div>
-        <h2 className="mb-4 font-serif text-base font-semibold text-ink">
-          {connectedApps.length > 0 ? "Available apps" : "Apps and integrations"}
-        </h2>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {availableApps.map((app) => (
-            <AppCard
-              key={app.key}
-              app={app}
-              onConnect={handleConnectApp}
-              connecting={connectingAppKey === app.key}
-            />
-          ))}
+      {/* Can be connected */}
+      {connectableApps.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-center gap-2">
+            <h2 className="font-serif text-base font-semibold text-ink">
+              Can be connected
+            </h2>
+            <Badge>{connectableApps.length}</Badge>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {connectableApps.map((app) => (
+              <AppCard
+                key={app.key}
+                app={app}
+                onConnect={handleConnect}
+                connecting={connectingAppKey === app.key}
+              />
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Coming soon */}
+      {comingSoonApps.length > 0 && (
+        <div>
+          <div className="mb-4 flex items-center gap-2">
+            <h2 className="font-serif text-base font-semibold text-ink">
+              Coming soon
+            </h2>
+            <Badge>{comingSoonApps.length}</Badge>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {comingSoonApps.map((app) => (
+              <AppCard key={app.key} app={app} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
