@@ -440,23 +440,26 @@ async def test_s1_inner_structure_tags_neutralized(monkeypatch):
 # ─────────────────────────────────────────────────────────────
 
 async def test_ac10_char_cap(monkeypatch):
+    # The cap value is a tuning knob (revised by the 2026-07-21 token
+    # optimization); pin the mechanism — the knob reaches the formatter
+    # and the rendered block honors it.
+    cap = BaseAgent._MEMORY_BLOCK_MAX_CHARS
     big_hits = [
-        make_hit(title=f"big-{i}", content="x" * 2000) for i in range(5)
+        make_hit(title=f"big-{i}", content="x" * cap) for i in range(5)
     ]
     agent, engine, fake = make_memory_agent(monkeypatch, hits=big_hits)
     await agent.run("What's my Q3 focus?")
     system = engine.calls[0]["system"]
 
-    cap = BaseAgent._MEMORY_BLOCK_MAX_CHARS
     assert fake.format_calls[0]["max_chars"] == cap
-    assert cap == 3000  # halved by the token-optimization pass (PR #24)
     # The rendered block honors the cap (entries beyond it are dropped).
     block = system[system.index("\n<memories>\n"): system.index("\n</memories>")]
     assert len(block) <= cap + 300  # envelope/label slack
 
 
 # ─────────────────────────────────────────────────────────────
-# AC-11 — same-session hits excluded; over-fetch then render top 5
+# AC-11 — same-session hits excluded; over-fetch (_MEMORY_RECALL_LIMIT)
+# then render top _MEMORY_RENDER_LIMIT
 # ─────────────────────────────────────────────────────────────
 
 async def test_ac11_same_session_hits_excluded(monkeypatch):
@@ -477,14 +480,16 @@ async def test_ac11_same_session_hits_excluded(monkeypatch):
 
 
 async def test_ac11_overfetch_then_render_limit(monkeypatch):
-    hits = [make_hit(title=f"mem-{i}") for i in range(8)]
+    fetch = BaseAgent._MEMORY_RECALL_LIMIT
+    render = BaseAgent._MEMORY_RENDER_LIMIT
+    assert fetch > render  # over-fetch headroom (AC-11) must survive tuning
+    hits = [make_hit(title=f"mem-{i}") for i in range(fetch)]
     agent, engine, fake = make_memory_agent(monkeypatch, hits=hits)
     await agent.run("What did we plan before?")
     system = engine.calls[0]["system"]
 
-    # Limits tightened by the token-optimization pass (PR #24): 8→5 fetch, 5→3 render.
-    assert fake.recall_calls[0]["limit"] == 5            # over-fetch (AC-11 headroom)
+    assert fake.recall_calls[0]["limit"] == fetch        # over-fetch (AC-11 headroom)
     assert fake.recall_calls[0]["min_importance"] == 0.2
-    assert fake.format_calls[0]["count"] == 3            # top _MEMORY_RENDER_LIMIT
-    assert "<title>mem-2</title>" in system
-    assert "mem-3" not in system and "mem-7" not in system
+    assert fake.format_calls[0]["count"] == render       # top _MEMORY_RENDER_LIMIT
+    assert f"<title>mem-{render - 1}</title>" in system
+    assert f"mem-{render}" not in system and f"mem-{fetch - 1}" not in system
