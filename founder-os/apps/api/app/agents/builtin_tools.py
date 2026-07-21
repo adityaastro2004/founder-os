@@ -681,13 +681,11 @@ async def validate_event_fields(
 @tool(
     name="delegate_task",
     description=(
-        "Delegate a task to a specialist agent. Available agents: planner, "
-        "content, research, ops, product, support.\n\n"
-        "RULES:\n"
-        "1. Rewrite the task as a clear instruction — never forward raw messages.\n"
-        "2. Include context: user's goal, timezone, business stage, prior results.\n"
-        "3. For calendar operations → delegate to 'planner' with timezone.\n"
-        "4. For multi-step work → delegate sequentially, passing prior output."
+        "Delegate a task to a specialist agent: planner, content, research, "
+        "or support. Rewrite the task as a clear instruction (never forward "
+        "raw messages) and include context (goal, timezone, stage, prior "
+        "results). Calendar work → 'planner'. Multi-step → delegate "
+        "sequentially, passing prior output."
     ),
 )
 async def delegate_task(

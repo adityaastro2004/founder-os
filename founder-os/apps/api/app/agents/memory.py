@@ -35,6 +35,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = logging.getLogger(__name__)
 
+# Per-key cap when rendering working/shared memory into the system prompt.
+# Stored values can be multi-KB blobs (plans, drafts, orchestration traces)
+# and the rendered block is re-sent on every LLM round — uncapped rendering
+# was the single largest variable token cost per request.
+_RENDER_MAX_CHARS_PER_KEY = 1500
+
+
+def _render_memory_block(tag: str, data: dict[str, Any]) -> str:
+    """Render a Redis memory dict as a size-bounded prompt block."""
+    if not data:
+        return ""
+    parts = [f"<{tag}>"]
+    for k, v in data.items():
+        formatted = json.dumps(v, indent=2, default=str) if not isinstance(v, str) else v
+        if len(formatted) > _RENDER_MAX_CHARS_PER_KEY:
+            formatted = formatted[:_RENDER_MAX_CHARS_PER_KEY] + " …[truncated]"
+        parts.append(f"[{k}]\n{formatted}")
+    parts.append(f"</{tag}>")
+    return "\n".join(parts)
+
 
 # ============================================================================
 # 1. Conversation Memory (in-process)
@@ -175,15 +195,7 @@ class WorkingMemory:
 
     async def to_context_string(self) -> str:
         """Serialise working memory into a string suitable for the LLM."""
-        data = await self.get_all()
-        if not data:
-            return ""
-        parts = ["<working_memory>"]
-        for k, v in data.items():
-            formatted = json.dumps(v, indent=2, default=str) if not isinstance(v, str) else v
-            parts.append(f"[{k}]\n{formatted}")
-        parts.append("</working_memory>")
-        return "\n".join(parts)
+        return _render_memory_block("working_memory", await self.get_all())
 
 
 # ============================================================================
@@ -246,15 +258,7 @@ class SharedMemory:
         await self._redis.delete(self._key(field))
 
     async def to_context_string(self) -> str:
-        data = await self.get_all()
-        if not data:
-            return ""
-        parts = ["<shared_memory>"]
-        for k, v in data.items():
-            formatted = json.dumps(v, indent=2, default=str) if not isinstance(v, str) else v
-            parts.append(f"[{k}]\n{formatted}")
-        parts.append("</shared_memory>")
-        return "\n".join(parts)
+        return _render_memory_block("shared_memory", await self.get_all())
 
 
 # ============================================================================

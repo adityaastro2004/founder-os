@@ -328,7 +328,14 @@ class AnthropicProvider(LLMProvider):
             "messages": self._format_messages(messages),
         }
         if system:
-            api_kwargs["system"] = system
+            # Cache breakpoint: system + tools are identical on every round of
+            # the agentic loop, so rounds 2+ (and follow-up turns within the
+            # cache TTL) re-read this prefix at ~10% of normal input cost.
+            api_kwargs["system"] = [{
+                "type": "text",
+                "text": system,
+                "cache_control": {"type": "ephemeral"},
+            }]
         if temperature is not None:
             api_kwargs["temperature"] = temperature
         if tools:
@@ -340,6 +347,7 @@ class AnthropicProvider(LLMProvider):
                 }
                 for t in tools
             ]
+            api_kwargs["tools"][-1]["cache_control"] = {"type": "ephemeral"}
         if stop_sequences:
             api_kwargs["stop_sequences"] = stop_sequences
 

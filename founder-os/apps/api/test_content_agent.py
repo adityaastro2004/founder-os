@@ -277,7 +277,10 @@ def test_prompt_module_imports():
         get_format_prompt,
         get_output_schema,
     )
-    assert "MISSION" in CONTENT_AGENT_SYSTEM_PROMPT
+    # Functional anchors of the master prompt (not decorative headers)
+    for anchor in ("detect_content_type", "get_writing_style", "save_draft",
+                   "generate_structured_content", "publish-ready"):
+        assert anchor in CONTENT_AGENT_SYSTEM_PROMPT, anchor
     assert "BLOG POST FORMAT GUIDE" in BLOG_POST_PROMPT
     assert "SOCIAL MEDIA FORMAT GUIDE" in SOCIAL_MEDIA_PROMPT
     assert "EMAIL FORMAT GUIDE" in EMAIL_PROMPT
@@ -325,7 +328,7 @@ def test_content_agent_class():
     assert "generate_structured_content" in ContentAgent.default_tools
     assert "get_content_format_guide" in ContentAgent.default_tools
     assert "repurpose_content" in ContentAgent.default_tools
-    assert "MISSION" in ContentAgent.default_system_prompt
+    assert "publish-ready" in ContentAgent.default_system_prompt
 
 
 def test_content_agent_in_registry():
