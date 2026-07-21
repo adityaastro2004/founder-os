@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
 import { useChatStore } from "@/lib/chat-store";
+import { ThemeToggle } from "@/app/_components/theme-toggle";
 import {
   LayoutDashboard,
   Bot,
@@ -173,6 +174,7 @@ export function Sidebar({
 
       {/* Bottom navigation */}
       <div className="space-y-0.5 border-t border-line px-3 py-3">
+        <ThemeToggle variant="row" />
         {bottomNav.map((item) => (
           <NavLink
             key={item.name}

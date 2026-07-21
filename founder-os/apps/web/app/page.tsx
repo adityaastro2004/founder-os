@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ThemeToggle } from "./_components/theme-toggle";
 
 const features = [
   "7 AI agents",
@@ -30,6 +31,7 @@ export default async function Home() {
           </span>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Link
             href="/sign-in"
             className="px-4 py-2 text-sm font-medium text-ink-secondary transition-colors duration-150 hover:text-ink"
