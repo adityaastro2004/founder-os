@@ -22,7 +22,7 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "@clerk/nextjs";
-import { DIRECT_API_URL } from "@/lib/api";
+import { DIRECT_API_URL, apiErrorMessage } from "@/lib/api";
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -358,7 +358,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
           });
           if (!fallback.ok) {
             const body = await fallback.json().catch(() => ({}));
-            throw new Error(body.detail || `API error ${fallback.status}`);
+            throw new Error(apiErrorMessage(body, fallback.status));
           }
           appendOrchestratorResult(sessionId, await fallback.json());
           return;

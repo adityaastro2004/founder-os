@@ -2,6 +2,7 @@
 
 import { useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
+import { apiErrorMessage } from "@/lib/api";
 
 /**
  * Hook for streaming text responses from the API.
@@ -55,7 +56,7 @@ export function useStreamingFetch() {
 
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.detail || `API error ${res.status}`);
+          throw new Error(apiErrorMessage(body, res.status));
         }
 
         const contentType = res.headers.get("content-type") || "";

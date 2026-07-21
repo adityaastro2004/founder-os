@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Source_Serif_4 } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { PostHogIdentify } from "./_components/posthog-identify";
+import { AppClerkProvider } from "./_components/app-clerk-provider";
+import { ThemeProvider, themeInitScript } from "./_components/theme";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -23,18 +24,6 @@ export const metadata: Metadata = {
   description: "AI-powered operating system for founders",
 };
 
-const clerkAppearance = {
-  variables: {
-    colorPrimary: "#c96442",
-    colorText: "#1f1e1d",
-    colorTextSecondary: "#63605b",
-    colorBackground: "#ffffff",
-    colorInputBackground: "#ffffff",
-    borderRadius: "8px",
-    fontFamily: "var(--font-geist-sans), system-ui, sans-serif",
-  },
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -45,19 +34,25 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable}`}
     >
       {/* Font variable classes live on <html>: the @theme font tokens are
-          defined on :root and resolve nested var()s there, not on <body>. */}
+          defined on :root and resolve nested var()s there, not on <body>.
+          suppressHydrationWarning: the theme script may add .dark before
+          hydration, which the server render can't know about. */}
       <body className="antialiased">
-        {hasClerk ? (
-          <ClerkProvider appearance={clerkAppearance}>
-            {children}
-            <PostHogIdentify />
-          </ClerkProvider>
-        ) : (
-          children
-        )}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <ThemeProvider>
+          {hasClerk ? (
+            <AppClerkProvider>
+              {children}
+              <PostHogIdentify />
+            </AppClerkProvider>
+          ) : (
+            children
+          )}
+        </ThemeProvider>
       </body>
     </html>
   );

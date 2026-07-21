@@ -19,6 +19,37 @@
 
 ---
 
+## ADR-016 — Dark mode via `.dark` token re-values + owned theme provider; markdown chat rendering
+
+- Date: 2026-07-21
+- Status: accepted
+- Context: ADR-015 shipped light-only and explicitly ruled out dark mode "until
+  tokens are extended deliberately"; the founder then asked for a dark mode
+  toggle. Separately, agent chat replies rendered raw markdown (`**bold**`
+  literally) and FastAPI 422 `detail` arrays rendered as `[object Object]`.
+- Decision: Dark mode is a pure token re-value: `.dark` on `<html>` overrides
+  the same `--color-*` custom properties `@theme` emits (utilities compile to
+  `var(--color-*)`, so every component re-themes with zero `dark:` variants —
+  the ADR-015 ban stands). Warm charcoal palette documented in
+  `apps/web/brand.md`. An owned `ThemeProvider` + pre-paint inline script
+  (localStorage `founder-os-theme`, OS-preference default) — no next-themes
+  dependency. Clerk widgets are themed via a client `AppClerkProvider` that
+  mirrors the token values per theme (Clerk's `appearance` needs literal
+  colors). Assistant chat messages render through a kit `Markdown` component
+  (react-markdown + remark-gfm; builds a React tree, never raw HTML — XSS-safe
+  for model output). API error `detail` of any shape flattens to a readable
+  string via `apiErrorMessage` in `lib/api.ts`; onboarding numeric fields are
+  clamped client-side and bounded server-side
+  (`FounderProfileCreate` `le=` limits keep values inside Postgres INTEGER).
+- Consequences: react-markdown/remark-gfm are the kit's first rendering
+  dependencies (justified: hand-rolling a safe markdown parser is worse).
+  Components must keep using tokens only — a hardcoded color now breaks in one
+  of the two themes. Clerk's palette must be updated by hand if brand tokens
+  change. Screenshots/marketing assume light; dark is user preference only.
+- Links: tasks/completed/022-dark-mode-and-ui-fixes.md · ADR-015 ·
+  founder-os/apps/web/brand.md ·
+  founder-os/apps/api/tests/unit/test_onboarding_validation.py
+
 ## ADR-015 — Claude-style design system with owned UI kit (no component library)
 
 - Date: 2026-07-19
