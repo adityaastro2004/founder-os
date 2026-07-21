@@ -1,8 +1,8 @@
 ---
 id: 021
 title: Frontend revamp — Claude-style design system
-status: review
-stage: qa
+status: done
+stage: done
 owner: eng-qa
 created: 2026-07-19
 dependencies: []
@@ -103,3 +103,17 @@ Findings:
 
 Verdict: **Approve** (no blockers) — hand to eng-qa. Dead-export cleanup
 (should-fix) can land as a small follow-up before task close.
+
+## QA — 2026-07-21 (post-merge with origin/main)
+
+Re-verified after merging origin/main (PostHog ADR-012, chat semantic memory
+ADR-014/task 020, background chat runs PR #22) and resolving the
+`layout.tsx` conflict (Clerk `appearance` theming + `PostHogIdentify` both kept):
+
+- `turbo lint check-types --filter=web` — 4/4 tasks successful.
+- `turbo build --filter=web` — successful.
+- Acceptance grep (`bg-white|text-gray-|bg-gray-|bg-neutral-|dark:|var(--color-`
+  in `app lib`, excluding `globals.css`) — **0 hits**.
+
+**PASS.** Founder eyeball on the Vercel preview still recommended before
+production deploy (visual pass on logged-in dashboard routes).
