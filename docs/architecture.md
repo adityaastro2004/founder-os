@@ -152,6 +152,16 @@ Ollama `nomic-embed-text` (1536 dims) or OpenAI `text-embedding-3-small`. Hybrid
 search (RRF fusion; explicit `float8` casts are load-bearing — see F3 in the
 Phase 0 audit) exposed through `knowledge_routes.py`.
 
+## Global search — `search_routes.py`
+
+`GET /api/search?q=` backs the dashboard ⌘K command palette (task 024). A single
+read-only, user-scoped endpoint that substring-matches (`ILIKE`, wildcards escaped)
+across `tasks`, `knowledge_items`, `content_ideas`, and `workflows` — bounded per
+type, title matches ranked above body matches. Deliberately *not* semantic: it
+returns a flat typed list and the frontend deep-links knowledge hits into the
+hybrid-search page above rather than re-running embeddings. Page navigation and
+result grouping are client-side (`_components/command-palette.tsx`).
+
 ## Memory & temporal knowledge graph
 
 - 4-layer agent memory (above) for in-flight context.

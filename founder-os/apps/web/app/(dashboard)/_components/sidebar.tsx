@@ -22,9 +22,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-type NavItem = { name: string; href: string; icon: LucideIcon };
+export type NavItem = { name: string; href: string; icon: LucideIcon };
 
-const navGroups: { section: string | null; items: NavItem[] }[] = [
+export const navGroups: { section: string | null; items: NavItem[] }[] = [
   {
     section: null,
     items: [{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
@@ -55,7 +55,7 @@ const navGroups: { section: string | null; items: NavItem[] }[] = [
   },
 ];
 
-const bottomNav: NavItem[] = [
+export const bottomNav: NavItem[] = [
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
