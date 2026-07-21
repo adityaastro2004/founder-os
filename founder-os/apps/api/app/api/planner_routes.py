@@ -34,6 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import require_auth, ClerkUser
 from app.config import get_settings
 from app.database import get_db
+from app.log_sanitize import sl
 from app.posthog_client import get_posthog
 from app.user_store import (
     UserProfile,

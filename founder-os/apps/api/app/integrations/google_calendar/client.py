@@ -32,14 +32,20 @@ logger = logging.getLogger(__name__)
 
 
 def store_tokens(user_id: str, tokens: dict[str, Any]) -> None:
-    """Save OAuth tokens for a user (persisted to PostgreSQL)."""
+    """Save OAuth tokens for a user (persisted to PostgreSQL).
+
+    Goes through user_store.store_gcal_tokens(), a targeted UPDATE — the generic
+    upsert deliberately no longer writes the gcal_* columns, so save_user() here
+    would drop the tokens on the floor.
+    """
     tokens["stored_at"] = time.time()
     try:
-        from app.user_store import get_or_create_user, save_user
-        user = get_or_create_user(user_id)
-        user.store_gcal_tokens(tokens)
-        save_user(user)
-        logger.info("Stored GCal tokens for %s in PostgreSQL", sl(user_id))
+        from app.user_store import get_or_create_user, store_gcal_tokens
+        get_or_create_user(user_id)   # ensure the row exists for the UPDATE
+        if store_gcal_tokens(user_id, tokens):
+            logger.info("Stored GCal tokens for %s in PostgreSQL", sl(user_id))
+        else:
+            logger.error("Stored no GCal tokens for %s — no planner_users row", sl(user_id))
     except Exception as exc:
         logger.error("Failed to persist tokens for %s: %s", sl(user_id), sl(exc))
 

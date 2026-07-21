@@ -221,6 +221,47 @@ def get_user_fresh(user_id: str) -> UserProfile | None:
     return profile
 
 
+def store_gcal_tokens(user_id: str, tokens: dict[str, Any]) -> bool:
+    """Persist Google Calendar credentials. One of only two writers of the
+    gcal_* columns (see the note in _sync_upsert). Returns True if a row was
+    updated. The planner_users row must already exist.
+    """
+    import json as _json
+    from datetime import timedelta
+    from sqlalchemy import text
+
+    tokens = dict(tokens)
+    tokens.setdefault("stored_at", time.time())
+    expiry = datetime.now(timezone.utc) + timedelta(
+        seconds=int(tokens.get("expires_in", 3600))
+    )
+
+    with _engine().begin() as conn:
+        result = conn.execute(
+            text("""
+                UPDATE planner_users
+                   SET gcal_connected = true,
+                       gcal_access_token = :access_token,
+                       gcal_refresh_token = :refresh_token,
+                       gcal_token_expiry = :expiry,
+                       gcal_token_data = CAST(:token_data AS jsonb),
+                       updated_at = NOW()
+                 WHERE user_id = :user_id
+            """),
+            {
+                "user_id": user_id,
+                "access_token": tokens.get("access_token"),
+                "refresh_token": tokens.get("refresh_token"),
+                "expiry": expiry,
+                "token_data": _json.dumps(tokens),
+            },
+        )
+        updated = result.rowcount
+
+    _cache.pop(user_id, None)
+    return updated > 0
+
+
 def disconnect_gcal(user_id: str) -> bool:
     """Null out the stored Google Calendar credentials. Returns True on success.
 
@@ -231,24 +272,28 @@ def disconnect_gcal(user_id: str) -> bool:
     """
     from sqlalchemy import text
 
-    with _engine().begin() as conn:
-        result = conn.execute(
-            text("""
-                UPDATE planner_users
-                   SET gcal_connected = false,
-                       gcal_access_token = NULL,
-                       gcal_refresh_token = NULL,
-                       gcal_token_expiry = NULL,
-                       gcal_token_data = '{}'::jsonb
-                 WHERE user_id = :user_id
-            """),
-            {"user_id": user_id},
-        )
-        updated = result.rowcount
+    try:
+        with _engine().begin() as conn:
+            result = conn.execute(
+                text("""
+                    UPDATE planner_users
+                       SET gcal_connected = false,
+                           gcal_access_token = NULL,
+                           gcal_refresh_token = NULL,
+                           gcal_token_expiry = NULL,
+                           gcal_token_data = '{}'::jsonb,
+                           updated_at = NOW()
+                     WHERE user_id = :user_id
+                """),
+                {"user_id": user_id},
+            )
+            updated = result.rowcount
+    finally:
+        # Evict even if the UPDATE raised: a cached profile still holding the
+        # tokens is the exact thing that resurrects them. The next read
+        # re-hydrates from the DB, which is the only place the truth lives.
+        _cache.pop(user_id, None)
 
-    # Evict rather than mutate: the next read re-hydrates from the DB, which is
-    # now the only place the truth lives.
-    _cache.pop(user_id, None)
     return updated > 0
 
 
@@ -459,11 +504,16 @@ def _sync_upsert(user: UserProfile) -> None:
                         timezone = EXCLUDED.timezone,
                         preferred_work_hours = EXCLUDED.preferred_work_hours,
                         calendar_id = EXCLUDED.calendar_id,
-                        gcal_connected = EXCLUDED.gcal_connected,
-                        gcal_access_token = EXCLUDED.gcal_access_token,
-                        gcal_refresh_token = EXCLUDED.gcal_refresh_token,
-                        gcal_token_expiry = EXCLUDED.gcal_token_expiry,
-                        gcal_token_data = EXCLUDED.gcal_token_data,
+                        -- gcal_* columns are DELIBERATELY not updated here.
+                        -- This upsert writes whatever UserProfile it is handed,
+                        -- and callers routinely hold one across slow work (LLM
+                        -- plan generation, calendar pushes). A disconnect
+                        -- landing inside that window would be silently undone
+                        -- and the tokens restored — after we had told the user
+                        -- they were deleted. The credential columns therefore
+                        -- have exactly two writers: store_gcal_tokens() (connect
+                        -- / refresh) and disconnect_gcal() (teardown), both
+                        -- targeted UPDATEs. Do not add them back here.
                         plan_count = EXCLUDED.plan_count,
                         last_plan_at = EXCLUDED.last_plan_at,
                         last_plan_events = EXCLUDED.last_plan_events,
@@ -656,11 +706,16 @@ async def _async_upsert(user: UserProfile) -> None:
                         timezone = EXCLUDED.timezone,
                         preferred_work_hours = EXCLUDED.preferred_work_hours,
                         calendar_id = EXCLUDED.calendar_id,
-                        gcal_connected = EXCLUDED.gcal_connected,
-                        gcal_access_token = EXCLUDED.gcal_access_token,
-                        gcal_refresh_token = EXCLUDED.gcal_refresh_token,
-                        gcal_token_expiry = EXCLUDED.gcal_token_expiry,
-                        gcal_token_data = EXCLUDED.gcal_token_data,
+                        -- gcal_* columns are DELIBERATELY not updated here.
+                        -- This upsert writes whatever UserProfile it is handed,
+                        -- and callers routinely hold one across slow work (LLM
+                        -- plan generation, calendar pushes). A disconnect
+                        -- landing inside that window would be silently undone
+                        -- and the tokens restored — after we had told the user
+                        -- they were deleted. The credential columns therefore
+                        -- have exactly two writers: store_gcal_tokens() (connect
+                        -- / refresh) and disconnect_gcal() (teardown), both
+                        -- targeted UPDATEs. Do not add them back here.
                         plan_count = EXCLUDED.plan_count,
                         last_plan_at = EXCLUDED.last_plan_at,
                         last_plan_events = EXCLUDED.last_plan_events,

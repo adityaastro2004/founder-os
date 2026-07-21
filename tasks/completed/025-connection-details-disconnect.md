@@ -94,7 +94,7 @@ homes and two busy states.
 
 ## Verification
 
-`test_connection_details.py` — **47 checks, all passing.** Needs no live server.
+`test_connection_details.py` — **57 checks, all passing.** Needs no live server.
 Mutation-tested: leaking the access token into a detail field fails 3 checks,
 so the credential assertions have teeth.
 
@@ -242,3 +242,125 @@ Deferred: #7 (per-field length caps beyond the `sync_error` cap), #8 (blocking
 sync DB calls in the async disconnect route — pre-existing pattern throughout
 `planner_routes.py`, worth a separate pass), #9 (`sl()` on the logged `key`,
 allowlist-validated so not exploitable).
+
+## Security re-audit (eng-security, round 2) — **FAIL**
+
+Verified against the code, not the change description. Test suite re-run with the
+main-checkout venv: 47/47 pass.
+
+### Genuinely closed
+
+- **Blocker 1 (routine path).** `app/user_store.py` `disconnect_gcal()` is a targeted
+  UPDATE nulling all four token columns with a `rowcount` check and **no** `except`;
+  `app/api/planner_routes.py:436-452` 500s on either a raised exception or
+  `cleared == False`. There is no longer a path that returns 200 while the tokens
+  persist. `clear_tokens()` and `_clear_gcal_connection()` both delegate to it.
+- **Blocker 2 (credential *use*).** `get_user_fresh()` on `get_tokens()`
+  (`client.py:55`) closes the worst path: after a disconnect, `_get_valid_token`
+  raises `CalendarAuthExpired` before any refresh, so `store_tokens()` can no longer
+  re-persist. `agents.py:174` no longer writes a stale profile back.
+- **#4.** `revoke_token() -> (revoked, certain)`; all four outcomes tested; the 5xx /
+  network case now tells the user we could **not** confirm and links
+  `myaccount.google.com/permissions`.
+- **#5.** `/^\/api\/[A-Za-z0-9/_-]*$/` + verb allowlist. Anchored, no `.` `:` `%` `\`,
+  so protocol-relative and absolute URLs are rejected. Correct.
+
+### Blocker (still open)
+
+1. **The generic upsert still rewrites the token columns from any stale in-memory
+   profile.** `app/user_store.py:395-422` (`_sync_upsert` ON CONFLICT DO UPDATE) sets
+   `gcal_access_token`, `gcal_refresh_token`, `gcal_token_expiry`, `gcal_token_data`,
+   `gcal_connected` from whatever `UserProfile` it is handed. The fix converted the
+   credential *reads*, not the *writers*. Reachable without any multi-worker
+   assumption: `app/api/planner_routes.py:503` takes `user = get_or_create_user(...)`,
+   spends a full LLM plan generation + calendar push, then `save_user(user)` at
+   `:597` — a disconnect landing in that window is silently undone and the tokens are
+   back at rest. Same shape at `:230/238`, `:329/331`, `:1059`, and
+   `user_store.update_user_context()` from any second API worker.
+   *Fix (one line, kills every variant):* drop the five `gcal_*` columns from the
+   `DO UPDATE SET` list so `store_tokens()` and `disconnect_gcal()` are the only
+   writers of the credential columns.
+
+### Should-fix
+
+2. **`sl` is undefined in `app/api/planner_routes.py:445`** — no import, verified at
+   runtime (`hasattr(module, 'sl') is False`). The `except` branch added for Blocker 1
+   raises `NameError` instead of the intended `HTTPException`. It still fails *closed*
+   (generic 500, never a false success), but the crafted "Nothing was changed" message
+   never reaches the user and the log line recording a failed credential deletion is
+   never written. That the exception path shipped broken is itself the signal: nothing
+   tests it. Import `sl` and add a route-level test that forces `disconnect_gcal` to
+   raise and to return `False`.
+3. **Redactor is a mitigation, not a guarantee — verified bypasses.** Ran
+   `_SECRET_PATTERNS` against realistic error text; these pass through unredacted:
+   `token xoxb-1234-…` (pattern 1 requires `=` or `:`, so the common space-separated
+   phrasing misses), a bare JWT `eyJhbGciOi…`, `Authorization: Basic …`, `ghp_…`,
+   `pat-na1-…`, `AIzaSy…`, `sk_live_…`. `slack`, `github`, `stripe` and `hubspot` are
+   all in `SUPPORTED_APPS`. The durable fix remains: don't publish raw provider error
+   text — store a classified code / fixed message and keep the raw text in logs.
+4. **`app/agents/registry.py:482`** (`_check_conflicts_impl`) still gates on cached
+   `get_user` and was missed by the sweep. Downstream `get_tokens()` is fresh so no
+   revoked credential is used, but the guard reports a connection the user removed.
+   `app/api/settings_routes.py:367` has the same staleness for the Apps page itself.
+5. **Test 9 is a substring check, not an assertion.** `"get_user_fresh" in body` passes
+   if *any* line in the file mentions it and cannot see which call site was converted —
+   which is exactly why `registry.py` was missed. Assert on the resolved call site
+   (e.g. patch `user_store.get_user` to raise and confirm the guard still works).
+
+### Nits
+
+6. `planner_routes.py:447-452` — "Nothing was changed" is inaccurate when the upstream
+   revoke already succeeded before the local delete failed.
+7. `user_store.disconnect_gcal` does not bump `updated_at`, and `_cache.pop()` is not
+   reached if the UPDATE raises (put it in a `finally`).
+
+**Verdict: FAIL** — one blocker remains (credential resurrection via `_sync_upsert`).
+
+
+## Security re-audit round 2 — remaining blocker, fixed
+
+The first remediation was re-audited and came back **FAIL** again. It was right
+twice, and both findings were confirmed against the code before fixing:
+
+**Round-1 fix was incomplete: I converted the credential *readers*, not the
+*writer*.** `_sync_upsert`'s `ON CONFLICT DO UPDATE SET` still wrote all five
+`gcal_*` columns from whatever `UserProfile` it was handed. Reachable with **no
+multi-worker assumption**: `planner_routes.py` `get_or_create_user()` → LLM plan
+generation + calendar push → `save_user()` hundreds of lines later. A disconnect
+landing in that window was silently undone and the tokens restored — after the
+user had been told they were deleted.
+
+*Fix:* dropped the five `gcal_*` columns from the `ON CONFLICT DO UPDATE` list in
+**both** `_sync_upsert` and `_async_upsert`. The credential columns now have
+exactly two writers, both targeted UPDATEs: `store_gcal_tokens()` (new, used by
+connect and refresh) and `disconnect_gcal()` (teardown). The INSERT still carries
+them so new-row creation is unaffected. This kills every variant at once —
+converting more read sites never could.
+
+**A bug the first fix introduced:** `planner_routes.py` called `sl()` without
+importing it, so the disconnect failure branch raised `NameError` instead of the
+intended `HTTPException`. It still failed *closed* (generic 500, never a false
+success), but the retry message never reached the user and the log line recording
+a failed credential deletion was never written. Import added. That this shipped
+is the tell that nothing tested the failure branch — now covered.
+
+**Redactor was trivially bypassed.** The audit demonstrated `xoxb-…`, bare JWTs,
+`Basic …`, `ghp_…`, `AIza…`, `sk_live_…` and space-separated `token <value>` all
+passing through — and `slack`, `github`, `stripe`, `hubspot` are all in
+`SUPPORTED_APPS`. A shape denylist is a mitigation, not a guarantee. *Fix:* raw
+provider error text is **no longer published at all** — the client gets a fixed
+"Last sync failed" message and the raw text stays in the logs. `redact_secrets()`
+was kept and widened, but now only as defence-in-depth on the log line.
+
+**A test that was fixed superficially.** Round 1's check 9 was
+`"get_user_fresh" in file_contents` — a file-level substring match that passes if
+*any* line mentions the symbol. That is exactly how `registry.py`'s stale guard
+survived the sweep. *Fix:* check 9 now parses the AST, resolves the named
+function, and asserts on what that function imports from `app.user_store`,
+failing if it pulls in the cached `get_user`.
+
+New coverage (47 → 57 checks), mutation-tested: restoring `gcal_access_token` to
+the ON CONFLICT list and removing the `sl` import each fail their check.
+
+Deferred (unchanged): async DB calls in the disconnect route; `registry.py`'s
+`_get_user_profile_impl`, which reads cached but gates no credential use.

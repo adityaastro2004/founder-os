@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import ClerkUser, require_auth
 from app.database import get_db
+from app.log_sanitize import sl
 from app.models import FounderProfile, Integration, User
 
 logger = logging.getLogger(__name__)
@@ -253,12 +254,20 @@ SUPPORTED_APPS = [
 # Provider error text routinely embeds the failing request URL (…?access_token=…)
 # or an echoed Authorization header.
 _SECRET_PATTERNS = [
-    re.compile(r"(access_token|refresh_token|client_secret|api[_-]?key|token)"
-               r"(=|\"?\s*:\s*\"?)[^\s&\"',}]+", re.IGNORECASE),
-    re.compile(r"\bBearer\s+[A-Za-z0-9._\-]+", re.IGNORECASE),
-    re.compile(r"\bya29\.[A-Za-z0-9._\-]+"),          # Google access tokens
-    re.compile(r"\b1//[A-Za-z0-9._\-]+"),             # Google refresh tokens
-    re.compile(r"\b(ntn|secret)_[A-Za-z0-9]{8,}"),    # Notion integration tokens
+    # key=value / "key": "value", with or without a separator (space too).
+    re.compile(r"(access_token|refresh_token|client_secret|api[_-]?key|id_token"
+               r"|token|password)"
+               r"\s*(=|:)?\s*\"?[A-Za-z0-9._\-/+]{8,}\"?", re.IGNORECASE),
+    re.compile(r"\b(Bearer|Basic)\s+[A-Za-z0-9._\-/+=]+", re.IGNORECASE),
+    re.compile(r"\bey[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+"),  # JWT
+    re.compile(r"\bya29\.[A-Za-z0-9._\-]+"),            # Google access
+    re.compile(r"\b1//[A-Za-z0-9._\-]+"),               # Google refresh
+    re.compile(r"\bAIza[A-Za-z0-9._\-]{10,}"),          # Google API key
+    re.compile(r"\b(ntn|secret)_[A-Za-z0-9]{8,}"),      # Notion
+    re.compile(r"\bxox[abposr]-[A-Za-z0-9-]{8,}"),      # Slack
+    re.compile(r"\b(ghp|gho|ghu|ghs|ghr|github_pat)_[A-Za-z0-9_]{8,}"),  # GitHub
+    re.compile(r"\b(sk|pk|rk)_(live|test)_[A-Za-z0-9]{8,}"),             # Stripe
+    re.compile(r"\bpat-[a-z0-9]{2,}-[A-Za-z0-9-]{8,}"),                  # HubSpot
 ]
 
 
@@ -364,7 +373,9 @@ async def list_connected_apps(
     gcal_connected = False
     planner_user = None
     try:
-        from app.user_store import get_user as get_planner_user
+        # Fresh read: this endpoint decides whether the UI shows "Connected",
+        # so a stale cache would offer a disconnect for an already-gone grant.
+        from app.user_store import get_user_fresh as get_planner_user
         planner_user = get_planner_user(clerk_user.user_id)
         if planner_user and planner_user.gcal_connected:
             gcal_connected = True
@@ -417,12 +428,22 @@ async def list_connected_apps(
                     AppDetailField(label="Last sync", value=integration.sync_status)
                 )
             if integration.sync_error:
-                # The one field here not built from a known-safe column —
-                # redact credential-shaped substrings and cap the length.
+                # Provider error text is NOT published. It routinely embeds the
+                # failing request URL (…?access_token=…) or an echoed
+                # Authorization header, and a token-shape denylist is a
+                # mitigation, not a guarantee — every provider has its own
+                # format and the next one added is the one that slips through.
+                # The raw text stays in the logs, where operators can read it.
+                logger.warning(
+                    "integration %s sync_error for user %s: %s",
+                    sl(app_def["key"]), sl(str(user.id)),
+                    sl(redact_secrets(integration.sync_error)),
+                )
                 details.append(
                     AppDetailField(
                         label="Error",
-                        value=redact_secrets(integration.sync_error)[:300],
+                        value="Last sync failed. Reconnect, or contact support "
+                              "if it keeps failing.",
                         tone="danger",
                     )
                 )
