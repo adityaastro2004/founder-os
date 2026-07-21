@@ -166,7 +166,11 @@ async def update_founder_profile(
 
 # ── Connected Apps ───────────────────────────────────────
 
-# Registry of all supported apps (for display even if not connected)
+# Registry of all supported apps (for display even if not connected).
+# Notion and Obsidian are deliberately absent: they connect through the State
+# Engine source flow (/api/state/sources, SourceCreateRequest types) and the
+# dashboard's Company State Sources section — listing them here too would show
+# a second, contradictory status for the same connection.
 SUPPORTED_APPS = [
     {
         "key": "google_calendar",
@@ -182,14 +186,6 @@ SUPPORTED_APPS = [
         "description": "Get notifications and interact with agents via Slack",
         "category": "Communication",
         "icon": "message-square",
-        "connect_url": None,
-    },
-    {
-        "key": "notion",
-        "display_name": "Notion",
-        "description": "Sync tasks, knowledge, and meeting notes",
-        "category": "Productivity",
-        "icon": "file-text",
         "connect_url": None,
     },
     {
