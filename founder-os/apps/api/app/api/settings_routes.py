@@ -168,9 +168,10 @@ async def update_founder_profile(
 
 # Registry of all supported apps (for display even if not connected).
 # Notion and Obsidian are deliberately absent: they connect through the State
-# Engine source flow (/api/state/sources, SourceCreateRequest types) and the
-# dashboard's Company State Sources section — listing them here too would show
-# a second, contradictory status for the same connection.
+# Engine source flow (/api/state/sources, SourceCreateRequest types) — listing
+# them here too would show a second, contradictory status for the same
+# connection. The apps page derives their cards client-side from that endpoint
+# (STATE_APPS in apps/web .../dashboard/apps/page.tsx).
 SUPPORTED_APPS = [
     {
         "key": "google_calendar",

@@ -14,7 +14,6 @@ import {
   Loader2,
   Pause,
   Play,
-  Plus,
   RefreshCw,
   Trash2,
   X,
@@ -27,7 +26,7 @@ interface SourceHealth {
   detail: string;
 }
 
-interface StateSource {
+export interface StateSource {
   id: string;
   type: "obsidian" | "notion";
   name: string;
@@ -39,7 +38,7 @@ interface StateSource {
   health: SourceHealth | null;
 }
 
-type SourceType = "notion" | "obsidian";
+export type SourceType = "notion" | "obsidian";
 
 /* ── Helpers ── */
 
@@ -520,11 +519,22 @@ function SourceRow({
 const POLL_INTERVAL_MS = 5000;
 const POLL_MAX = 18; // ~90s; first Notion walk can take longer — stop politely
 
-export default function StateSourcesSection() {
+export default function StateSourcesSection({
+  adding,
+  onAddingChange,
+  onSourcesChange,
+}: {
+  /** Which add-source form is open — controlled by the apps page, so the
+   *  "Connect" buttons on the Notion/Obsidian app cards can open it. */
+  adding: SourceType | null;
+  onAddingChange: (type: SourceType | null) => void;
+  /** Reports the loaded sources up so the apps page can group the Notion /
+   *  Obsidian cards under Connected vs. Can be connected. */
+  onSourcesChange?: (sources: StateSource[]) => void;
+}) {
   const api = useApi();
   const [sources, setSources] = useState<StateSource[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [adding, setAdding] = useState<SourceType | null>(null);
   const [busy, setBusy] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const pollTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -534,6 +544,7 @@ export default function StateSourcesSection() {
     try {
       const data = await api("/api/state/sources");
       setSources(data.sources ?? []);
+      onSourcesChange?.(data.sources ?? []);
     } catch (err) {
       setLoadError(
         err instanceof Error && err.message
@@ -542,7 +553,7 @@ export default function StateSourcesSection() {
       );
       setSources((prev) => prev ?? []);
     }
-  }, [api]);
+  }, [api, onSourcesChange]);
 
   useEffect(() => {
     load();
@@ -663,11 +674,11 @@ export default function StateSourcesSection() {
     }
   };
 
-  const addButton =
-    "flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-control border border-line text-ink-secondary hover:text-ink hover:border-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors";
-
   return (
-    <div className="rounded-card border border-line bg-surface p-6">
+    <div
+      id="company-state-sources"
+      className="scroll-mt-6 rounded-card border border-line bg-surface p-6"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-control bg-accent flex items-center justify-center">
@@ -683,26 +694,6 @@ export default function StateSourcesSection() {
             </p>
           </div>
         </div>
-        {adding === null && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setAdding("notion")}
-              className={addButton}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Connect Notion
-            </button>
-            <button
-              type="button"
-              onClick={() => setAdding("obsidian")}
-              className={addButton}
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Connect Obsidian
-            </button>
-          </div>
-        )}
       </div>
 
       {notice && (
@@ -727,9 +718,9 @@ export default function StateSourcesSection() {
           <AddSourceForm
             type={adding}
             api={api}
-            onCancel={() => setAdding(null)}
+            onCancel={() => onAddingChange(null)}
             onCreated={async () => {
-              setAdding(null);
+              onAddingChange(null);
               await load();
             }}
           />
@@ -765,9 +756,10 @@ export default function StateSourcesSection() {
             <Database className="mx-auto h-6 w-6 text-ink-secondary" />
             <p className="mt-2 text-sm font-medium">No sources connected yet</p>
             <p className="mx-auto mt-1 max-w-md text-xs text-ink-secondary">
-              Connect your Notion workspace or Obsidian vault and Founder OS
-              keeps a unified, living model of your company in sync — goals,
-              projects, tasks, and decisions with full provenance.
+              Connect Notion or Obsidian from &ldquo;Can be connected&rdquo;
+              below and Founder OS keeps a unified, living model of your
+              company in sync — goals, projects, tasks, and decisions with
+              full provenance.
             </p>
           </div>
         )
