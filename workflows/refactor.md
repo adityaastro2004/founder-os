@@ -15,11 +15,11 @@ changes, it's a [new feature](new_feature.md); if it fixes a defect, it's a
 
 | # | Stage | Skill / Agent | Produces |
 |---|-------|---------------|----------|
-| 1 | Characterize | [eng-qa](../agents/qa.md) / [skills/analyze.md](../skills/analyze.md) | a test or repeatable check capturing current behavior (add a thin one if missing) |
-| 2 | Plan the change | [eng-architect](../agents/architect.md) | the target shape + the named smell; scope boundary |
-| 3 | Refactor | [eng-executor](../agents/executor.md) via [skills/refactor.md](../skills/refactor.md) (or [optimize](../skills/optimize.md) for perf) | small behavior-preserving steps, check green after each |
-| 4 | Verify equivalence | [eng-qa](../agents/qa.md) | same inputs → same outputs; the check still passes |
-| 5 | Review | [eng-reviewer](../agents/reviewer.md) | confirm no behavior/security change, scope contained |
+| 1 | Characterize | [eng-qa](../.claude/agents/eng-qa.md) / [skills/analyze.md](../skills/analyze.md) | a test or repeatable check capturing current behavior (add a thin one if missing) |
+| 2 | Plan the change | [eng-architect](../.claude/agents/eng-architect.md) | the target shape + the named smell; scope boundary |
+| 3 | Refactor | [eng-executor](../.claude/agents/eng-executor.md) via [skills/refactor.md](../skills/refactor.md) (or [optimize](../skills/optimize.md) for perf) | small behavior-preserving steps, check green after each |
+| 4 | Verify equivalence | [eng-qa](../.claude/agents/eng-qa.md) | same inputs → same outputs; the check still passes |
+| 5 | Review | [eng-reviewer](../.claude/agents/eng-reviewer.md) | confirm no behavior/security change, scope contained |
 
 ## Rules
 

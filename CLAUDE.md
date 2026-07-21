@@ -59,7 +59,7 @@ monorepo lives one level down in `founder-os/founder-os/`.
 ```
 founder-os/                          ← git root, this CLAUDE.md, meta-layer
 ├── CLAUDE.md            ← constitution (this file)
-├── docs/               ← vision · roadmap · requirements · architecture · decisions(ADRs)
+├── docs/               ← vision · roadmap · requirements · architecture · decisions(ADRs) · agent-evolution
 ├── standards/          ← coding · api · testing · security · ux
 ├── skills/             ← analyze · debug · refactor · optimize · security_audit
 ├── workflows/          ← new_feature · bug_fix · refactor · release
@@ -67,7 +67,6 @@ founder-os/                          ← git root, this CLAUDE.md, meta-layer
 ├── tasks/              ← backlog/ active/ completed/  (state = folder) + TEMPLATE.md
 ├── reports/            ← durable run & release reports (audit log)
 ├── readme.md            ← product vision (source of truth for the pitch)
-├── AUDIT.md             ← audit / compliance notes
 ├── .claude/             ← native subagents (eng-*), skills, settings (leave settings.json intact)
 └── founder-os/          ← the Turborepo monorepo
     ├── apps/
@@ -75,13 +74,14 @@ founder-os/                          ← git root, this CLAUDE.md, meta-layer
     │   │   ├── app/
     │   │   │   ├── agents/      ← PRODUCT runtime agents (base, registry, orchestrator, llm…)
     │   │   │   ├── api/         ← *_routes.py FastAPI routers
-    │   │   │   ├── crawler/  integrations/  memory/  retrieval/  tasks/
+    │   │   │   ├── state/       ← Company State Engine (service, mirror, reconciler, write_gate)
+    │   │   │   ├── integrations/← external adapters (notion/…) + credential storage
+    │   │   │   ├── crawler/  memory/  retrieval/  tasks/  workflows/
     │   │   │   ├── auth.py      ← Clerk JWT (require_auth / optional_auth)
     │   │   │   ├── main.py      ← app + lifespan + router registration
     │   │   │   ├── models.py + planner_models_db.py  ← SQLAlchemy ORM
-    │   │   │   ├── config.py  database.py  redis.py  celery_app.py  scheduler.py
-    │   │   │   └── schema.sql   ← full DDL
-    │   │   ├── alembic/  migrations/  requirements.txt  test_*.py
+    │   │   │   └── config.py  database.py  redis.py  celery_app.py  scheduler.py
+    │   │   ├── alembic/  schema.sql (full DDL)  requirements.txt  test_*.py
     │   ├── web/         ← Next.js 16 dashboard (App Router)
     │   │   ├── app/(auth) (dashboard) (onboarding)/   lib/ (useApi, useEventSource…)
     │   └── docs/        ← Next.js docs site (WIP)

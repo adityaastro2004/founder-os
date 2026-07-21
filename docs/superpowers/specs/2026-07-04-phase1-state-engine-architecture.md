@@ -3,7 +3,7 @@
 - Date: 2026-07-04
 - Status: approved design — ready for `eng-executor`
 - Author: eng-architect
-- Task: [tasks/active/011-company-state-engine.md](../../../tasks/active/011-company-state-engine.md)
+- Task: [tasks/completed/011-company-state-engine.md](../../../tasks/completed/011-company-state-engine.md)
 - Inputs: [design spec 2026-06-22](2026-06-22-company-state-engine-design.md) (§4–§7, §9),
   ADR-009 + **ADR-010** (docs/decisions.md), docs/architecture.md,
   standards/{api,security,coding,testing}.md

@@ -56,4 +56,4 @@ Find security weaknesses in a change before it ships, tuned to this stack's mode
 ## Output
 
 Ranked findings (blocker / should-fix / nit) with `file:line` and fixes, plus an
-overall verdict. Feed blockers back to the [executor](../agents/executor.md).
+overall verdict. Feed blockers back to the [executor](../.claude/agents/eng-executor.md).

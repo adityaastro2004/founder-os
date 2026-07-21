@@ -8,9 +8,9 @@
 | # | Stage | Skill / Agent | Produces |
 |---|-------|---------------|----------|
 | 1 | Diagnose | [skills/debug.md](../skills/debug.md) | a deterministic repro + proven root cause (evidence-backed) |
-| 2 | Fix | [eng-executor](../agents/executor.md) | the minimal change that addresses the root cause + a regression test |
-| 3 | Verify | [eng-qa](../agents/qa.md) | repro now passes; nothing else broke (output shown) |
-| 4 | Review | [eng-reviewer](../agents/reviewer.md) | confirm correctness, no security/scope regression |
+| 2 | Fix | [eng-executor](../.claude/agents/eng-executor.md) | the minimal change that addresses the root cause + a regression test |
+| 3 | Verify | [eng-qa](../.claude/agents/eng-qa.md) | repro now passes; nothing else broke (output shown) |
+| 4 | Review | [eng-reviewer](../.claude/agents/eng-reviewer.md) | confirm correctness, no security/scope regression |
 
 For a tiny, obvious fix you may collapse 2–4, but **never skip the regression
 test** — a bug worth fixing is worth a check that keeps it fixed.

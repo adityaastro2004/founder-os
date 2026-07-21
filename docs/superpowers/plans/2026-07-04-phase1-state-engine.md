@@ -8,7 +8,7 @@
 [docs/superpowers/specs/2026-07-04-phase1-state-engine-architecture.md](../specs/2026-07-04-phase1-state-engine-architecture.md)
 (§-references below are to that doc). The executor implements it **without redesign**;
 any needed design change is flagged, not improvised. Product criteria:
-[tasks/active/011-company-state-engine.md](../../../tasks/active/011-company-state-engine.md).
+[tasks/completed/011-company-state-engine.md](../../../tasks/completed/011-company-state-engine.md).
 
 **Tech Stack:** Python 3.14 / FastAPI / SQLAlchemy 2.0 async / Alembic / pgvector / Celery / Redis; `python-frontmatter` (new dep); pytest 3-tier harness from Phase 0.
 
