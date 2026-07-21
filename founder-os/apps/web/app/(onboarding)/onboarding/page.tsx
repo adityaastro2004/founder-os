@@ -55,6 +55,19 @@ const INITIAL: FormData = {
   working_hours: { start: "09:00", end: "18:00" },
 };
 
+/* Bounds mirror the API's validation (onboarding_routes.FounderProfileCreate)
+   and keep values inside Postgres INTEGER range. parseInt on a huge string
+   yields Infinity, which JSON.stringify turns into null → a 422; clamp so
+   the request can never be malformed. */
+const MAX_TEAM_SIZE = 100_000;
+const MAX_COUNT = 2_000_000_000;
+const MAX_MRR = 1_000_000_000_000;
+
+function clampNumber(raw: number, min: number, max: number): number {
+  if (!Number.isFinite(raw)) return min;
+  return Math.min(max, Math.max(min, raw));
+}
+
 const STEPS = [
   { label: "Business", icon: Building2 },
   { label: "Goals", icon: Target },
@@ -288,6 +301,7 @@ export default function OnboardingPage() {
                 onChange={(e) => update("business_name", e.target.value)}
                 placeholder="Acme Inc."
                 autoComplete="organization"
+                maxLength={255}
               />
             </Field>
 
@@ -391,9 +405,13 @@ export default function OnboardingPage() {
                 <Input
                   type="number"
                   min={1}
+                  max={MAX_TEAM_SIZE}
                   value={form.team_size}
                   onChange={(e) =>
-                    update("team_size", Math.max(1, parseInt(e.target.value) || 1))
+                    update(
+                      "team_size",
+                      clampNumber(parseInt(e.target.value) || 1, 1, MAX_TEAM_SIZE)
+                    )
                   }
                 />
               </Field>
@@ -443,9 +461,13 @@ export default function OnboardingPage() {
                     id="onboarding-mrr"
                     type="number"
                     min={0}
+                    max={MAX_MRR}
                     value={form.current_mrr || ""}
                     onChange={(e) =>
-                      update("current_mrr", parseFloat(e.target.value) || 0)
+                      update(
+                        "current_mrr",
+                        clampNumber(parseFloat(e.target.value) || 0, 0, MAX_MRR)
+                      )
                     }
                     placeholder="0"
                     className="w-full bg-transparent text-2xl font-semibold text-ink placeholder:text-ink-muted focus:outline-none"
@@ -465,9 +487,13 @@ export default function OnboardingPage() {
                   id="onboarding-users"
                   type="number"
                   min={0}
+                  max={MAX_COUNT}
                   value={form.current_users || ""}
                   onChange={(e) =>
-                    update("current_users", parseInt(e.target.value) || 0)
+                    update(
+                      "current_users",
+                      clampNumber(parseInt(e.target.value) || 0, 0, MAX_COUNT)
+                    )
                   }
                   placeholder="0"
                   className="w-full bg-transparent text-2xl font-semibold text-ink placeholder:text-ink-muted focus:outline-none"
@@ -486,9 +512,13 @@ export default function OnboardingPage() {
                   id="onboarding-traffic"
                   type="number"
                   min={0}
+                  max={MAX_COUNT}
                   value={form.monthly_traffic || ""}
                   onChange={(e) =>
-                    update("monthly_traffic", parseInt(e.target.value) || 0)
+                    update(
+                      "monthly_traffic",
+                      clampNumber(parseInt(e.target.value) || 0, 0, MAX_COUNT)
+                    )
                   }
                   placeholder="0"
                   className="w-full bg-transparent text-2xl font-semibold text-ink placeholder:text-ink-muted focus:outline-none"
@@ -608,7 +638,7 @@ export default function OnboardingPage() {
         {/* ── Error ────────────────────────────────────── */}
         {error && (
           <div className="mt-4 rounded-control border border-danger/20 bg-danger-soft p-3">
-            <p className="text-sm text-danger">{error}</p>
+            <p className="text-sm break-words text-danger">{error}</p>
           </div>
         )}
 

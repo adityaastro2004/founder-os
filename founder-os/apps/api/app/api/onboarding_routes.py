@@ -70,13 +70,15 @@ class FounderProfileCreate(BaseModel):
     # Step 2: Stage & Goals
     business_stage: str = Field(..., max_length=100)
     primary_goal: str = Field(..., max_length=100)
-    team_size: int = Field(default=1, ge=1)
+    # Upper bounds keep values inside Postgres INTEGER range — unbounded ints
+    # from the form used to blow up at the DB layer as a 500.
+    team_size: int = Field(default=1, ge=1, le=100_000)
     team_roles: list[str] = Field(default_factory=list)
 
     # Step 3: Metrics
-    current_mrr: float = 0.0
-    current_users: int = 0
-    monthly_traffic: int = 0
+    current_mrr: float = Field(default=0.0, ge=0, le=1_000_000_000_000)
+    current_users: int = Field(default=0, ge=0, le=2_000_000_000)
+    monthly_traffic: int = Field(default=0, ge=0, le=2_000_000_000)
 
     # Step 4: Preferences
     working_hours: Optional[dict] = None
