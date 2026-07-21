@@ -150,6 +150,9 @@ class BaseAgent:
     default_tools: list[str] = []
     capabilities: list[str] = []
     tags: list[str] = []
+    # Set False when the agent's own prompt already describes the specialist
+    # roster (e.g. the orchestrator) — avoids injecting the same list twice.
+    inject_delegation_context: bool = True
 
     def __init__(
         self,
@@ -415,11 +418,7 @@ class BaseAgent:
         # Current date/time — always injected so agents know "today"
         now = datetime.now(tz.utc)
         parts.append(
-            f"\n<current_datetime>\n"
-            f"Current date: {now.strftime('%A, %B %d, %Y')}\n"
-            f"Current time: {now.strftime('%H:%M %Z')}\n"
-            f"ISO: {now.isoformat()}\n"
-            f"</current_datetime>"
+            f"\n<current_datetime>{now.isoformat()} ({now.strftime('%A')})</current_datetime>"
         )
 
         # Per-user custom instructions
@@ -441,7 +440,7 @@ class BaseAgent:
             parts.append(f"\n{profile_ctx}")
 
         # A2A: inject available agents for delegation awareness
-        if self.router:
+        if self.router and self.inject_delegation_context:
             agents_summary = self.router.get_capabilities_summary()
             if agents_summary:
                 parts.append(
@@ -564,8 +563,8 @@ class BaseAgent:
     # History rendered into the system prompt, not replayed as chat turns:
     # a replayed transcript (especially with a dangling user turn) makes
     # models answer the previous question again before the current one.
-    _HISTORY_MAX_TURNS = 20
-    _HISTORY_MSG_CHARS = 400
+    _HISTORY_MAX_TURNS = 10
+    _HISTORY_MSG_CHARS = 250
 
     def _render_history_context(self) -> str:
         """Format prior conversation turns as a read-only system-prompt block."""
@@ -598,10 +597,10 @@ class BaseAgent:
     # Cross-session recall (<memories>) — ADR-014. Over-fetch, drop the current
     # session's pages (they already render in <conversation_history>), render
     # the top survivors through MemoryManager.format_for_llm.
-    _MEMORY_RECALL_LIMIT = 8
-    _MEMORY_RENDER_LIMIT = 5
+    _MEMORY_RECALL_LIMIT = 5
+    _MEMORY_RENDER_LIMIT = 3
     _MEMORY_MIN_IMPORTANCE = 0.2    # planner recall precedent
-    _MEMORY_BLOCK_MAX_CHARS = 6000  # AC-10 documented cap (formatter default, explicit)
+    _MEMORY_BLOCK_MAX_CHARS = 3000  # was 6000 — halved for token efficiency
 
     async def _render_memories_context(
         self,
