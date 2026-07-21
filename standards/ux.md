@@ -1,8 +1,8 @@
 # UX Standards — Founder OS
 
 > How the dashboard (`apps/web`) should feel and behave. Owned in spirit by the
-> [product agent](../agents/product.md); enforced by [reviewer](../agents/reviewer.md)
-> and [QA](../agents/qa.md). Grounded in the existing Next.js 16 + Tailwind 4 + Clerk
+> [product agent](../.claude/agents/eng-product.md); enforced by [reviewer](../.claude/agents/eng-reviewer.md)
+> and [QA](../.claude/agents/eng-qa.md). Grounded in the existing Next.js 16 + Tailwind 4 + Clerk
 > setup — match it, don't reinvent.
 
 ## Product principles (from the vision)

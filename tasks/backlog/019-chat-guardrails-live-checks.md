@@ -7,7 +7,7 @@ dependencies: [017, 020]
 links:
   - tasks/completed/017-agent-history-replay-fix-guardrails.md
   - docs/decisions.md   # ADR-013, ADR-014
-  - tasks/active/020-chat-semantic-memory.md   # scope C extension below
+  - tasks/completed/020-chat-semantic-memory.md   # scope C extension below
 ---
 
 # 019 — Live-LLM checks for chat guardrails

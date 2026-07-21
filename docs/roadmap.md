@@ -1,7 +1,7 @@
 # Roadmap — Founder OS
 
 > The prioritized "what's next" for the product. Owned by the
-> [product agent](../agents/product.md); updated as the **last step** of every
+> [product agent](../.claude/agents/eng-product.md); updated as the **last step** of every
 > major task (see [CLAUDE.md](../CLAUDE.md) §7, step 8). Keep it honest — it's the
 > single place that answers "is this the highest-value thing to build now?".
 
@@ -37,7 +37,7 @@
   app-switching is the deepest, most defensible founder pain — no tool today *knows the
   company*. **Slice 1** = State Engine core + **Obsidian** bidirectional sync (local-first,
   no OAuth), proving Observe→Remember→Sync end-to-end. Status: `now`. See ADR-009 +
-  [tasks/backlog/011](../tasks/backlog/011-company-state-engine.md) +
+  [tasks/backlog/011](../tasks/completed/011-company-state-engine.md) +
   [spec](superpowers/specs/2026-06-22-company-state-engine-design.md).
 - _(seed)_ **Establish the development factory** — the meta-layer in this repo so
   the system improves itself. Why: less founder context-repetition, higher quality.

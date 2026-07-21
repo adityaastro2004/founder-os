@@ -53,6 +53,6 @@ Show me all files, then stop.
   input/output. The whole point is that you stop hand-holding the handoffs.
 - Prefix native agents with `eng-` to keep them distinct from product runtime
   agents (see [CLAUDE.md §2](../CLAUDE.md)).
-- Reuse the general agents ([planner](../agents/planner.md) …
-  [qa](../agents/qa.md)) as the template for tone and structure.
+- Reuse the general agents ([planner](../.claude/agents/eng-planner.md) …
+  [qa](../.claude/agents/eng-qa.md)) as the template for tone and structure.
 - Next level up: wire the trio to a trigger with [scaffold-orchestration](scaffold-orchestration.md).

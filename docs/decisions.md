@@ -2,7 +2,7 @@
 
 > A running log of significant technical decisions and their rationale, so the
 > system never re-litigates a settled question or loses the "why". The
-> [architect agent](../agents/architect.md) appends an ADR whenever a decision
+> [architect agent](../.claude/agents/eng-architect.md) appends an ADR whenever a decision
 > shapes the architecture. Newest first.
 
 ## Format (one entry per decision)
@@ -211,7 +211,7 @@
     invisible to Clerk-id recall — backlog candidate, out of 020's scope.
   - Rules out: changing `format_for_llm`'s shape or the scoring/decay internals;
     schema changes; memory writes that can fail a chat response.
-- Links: [tasks/active/020](../tasks/active/020-chat-semantic-memory.md),
+- Links: [tasks/active/020](../tasks/completed/020-chat-semantic-memory.md),
   `founder-os/apps/api/app/api/agent_routes.py` (helper + 4 hook sites),
   `founder-os/apps/api/app/agents/base.py` (`_render_memories_context`, guardrail
   rule 3, tag neutralizers), `founder-os/apps/api/app/memory/manager.py`
@@ -426,7 +426,7 @@
   in ADR-006 ("schema managed via schema.sql, no Alembic"): Alembic is now the only
   bootstrap and migration path. Rules out: importing app models inside migrations;
   applying `schema.sql` to any environment; hand-run SQL as a deploy step.
-- Links: [tasks/active/016](../tasks/active/016-schema-baseline-migration.md),
+- Links: [tasks/active/016](../tasks/completed/016-schema-baseline-migration.md),
   `founder-os/apps/api/alembic/versions/` (`0000_baseline.py` new, `0001` re-parent,
   `0002` untouched), `founder-os/apps/api/schema.sql`,
   `founder-os/apps/api/tests/migrations/`, `.github/workflows/ci.yml` (backend job),
@@ -499,7 +499,7 @@
     merge in v1; defers the full Curator + Hermes skills + non-Obsidian adapters to later
     phases.
 - Links: docs/superpowers/specs/2026-06-22-company-state-engine-design.md,
-  tasks/backlog/011-company-state-engine.md, ADR-008, readme.md, docs/vision.md,
+  tasks/completed/011-company-state-engine.md, ADR-008, readme.md, docs/vision.md,
   docs/architecture.md, docs/roadmap.md.
 
 ---
@@ -937,7 +937,7 @@
   "user-disabled" — accepted for MVP; a dedicated `status` column is a later increment
   if the meanings need to diverge. Cost bounded to N active agents per profile change
   (explicitly **not** per task — the literal "redesign before every task" was rejected).
-- Links: [tasks/active/001-founder-aware-agent-specialization.md](../tasks/active/001-founder-aware-agent-specialization.md).
+- Links: [tasks/completed/001-founder-aware-agent-specialization.md](../tasks/completed/001-founder-aware-agent-specialization.md).
 
 ## ADR-002 — Engineering meta-layer as the development "factory"
 

@@ -9,15 +9,15 @@
 
 | Step | Stage | Agent | Consumes | Produces |
 |---|-------|-------|----------|----------|
-| 1 | Analyze + define | [eng-product](../agents/product.md) | the founder's request | user stories, **acceptance criteria**, success metrics; roadmap priority; task in `tasks/backlog/` |
-| 2 | Plan | [eng-planner](../agents/planner.md) | the defined need | requirements breakdown, milestones, ordered task list; move task to `tasks/active/` |
-| 3 | Architect | [eng-architect](../agents/architect.md) | approved plan | **Architecture** section: data model + Alembic, API, file placement, integration points, risks; an ADR in [decisions.md](../docs/decisions.md) if significant |
-| 4 | Execute | [eng-executor](../agents/executor.md) | architecture | code + tests/verification; task → `review` |
-| 5 | Review | [eng-reviewer](../agents/reviewer.md) | the diff | findings list + verdict (approve / changes-requested) |
-| 6 | QA | [eng-qa](../agents/qa.md) | reviewed change | Pass/Fail per acceptance criterion (shown output) |
-| 6a | Security | [eng-security](../agents/security.md) | sensitive change* | security report + Pass/Fail |
+| 1 | Analyze + define | [eng-product](../.claude/agents/eng-product.md) | the founder's request | user stories, **acceptance criteria**, success metrics; roadmap priority; task in `tasks/backlog/` |
+| 2 | Plan | [eng-planner](../.claude/agents/eng-planner.md) | the defined need | requirements breakdown, milestones, ordered task list; move task to `tasks/active/` |
+| 3 | Architect | [eng-architect](../.claude/agents/eng-architect.md) | approved plan | **Architecture** section: data model + Alembic, API, file placement, integration points, risks; an ADR in [decisions.md](../docs/decisions.md) if significant |
+| 4 | Execute | [eng-executor](../.claude/agents/eng-executor.md) | architecture | code + tests/verification; task → `review` |
+| 5 | Review | [eng-reviewer](../.claude/agents/eng-reviewer.md) | the diff | findings list + verdict (approve / changes-requested) |
+| 6 | QA | [eng-qa](../.claude/agents/eng-qa.md) | reviewed change | Pass/Fail per acceptance criterion (shown output) |
+| 6a | Security | [eng-security](../.claude/agents/eng-security.md) | sensitive change* | security report + Pass/Fail |
 | 7 | Document | executor / product | shipped change | update `docs/` + code comments as needed |
-| 8 | Update roadmap | [eng-product](../agents/product.md) | done change | move item to Shipped in [roadmap.md](../docs/roadmap.md); task → `tasks/completed/` |
+| 8 | Update roadmap | [eng-product](../.claude/agents/eng-product.md) | done change | move item to Shipped in [roadmap.md](../docs/roadmap.md); task → `tasks/completed/` |
 
 \* **Security (6a) is mandatory** when the change touches auth, secrets, permissions,
 the approval gate, or external input — see [standards/security.md](../standards/security.md).
@@ -34,7 +34,7 @@ sends the task back to the responsible stage.
 - **After Analyze** — acceptance criteria + success metrics exist and are testable.
 - **After Plan** — user confirms scope before architecture.
 - **After Architect** — user signs off on schema/API changes before execution.
-- **After Review/QA/Security** — blockers loop back to the [executor](../agents/executor.md) until clean.
+- **After Review/QA/Security** — blockers loop back to the [executor](../.claude/agents/eng-executor.md) until clean.
 - **Before done** — all acceptance criteria pass with shown output; docs + roadmap updated.
 
 ## Self-improvement (after the task)

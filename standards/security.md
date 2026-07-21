@@ -2,7 +2,7 @@
 
 > The **policy** (the rules every change must satisfy). The audit *process* that
 > enforces it is [skills/security_audit.md](../skills/security_audit.md); the
-> [security agent](../agents/security.md) runs it. Non-negotiable.
+> [security agent](../.claude/agents/eng-security.md) runs it. Non-negotiable.
 
 ## Authentication & authorization
 
@@ -48,8 +48,8 @@
 
 - Findings are ranked **blocker / should-fix / nit**. A **blocker** fails the
   security gate and blocks [release](../workflows/release.md).
-- The [QA](../agents/qa.md) and [reviewer](../agents/reviewer.md) also check these,
-  but a sensitive change gets a dedicated [security](../agents/security.md) pass.
+- The [QA](../.claude/agents/eng-qa.md) and [reviewer](../.claude/agents/eng-reviewer.md) also check these,
+  but a sensitive change gets a dedicated [security](../.claude/agents/eng-security.md) pass.
 
 See also: [docs/requirements.md](../docs/requirements.md) (the 3-tier model and
 known gaps).

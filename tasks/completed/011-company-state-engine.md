@@ -15,7 +15,7 @@ links: [docs/superpowers/specs/2026-06-22-company-state-engine-design.md, docs/d
 > moat: a canonical, living model of the company fed by passive multi-channel observation and
 > surfaced where the founder already works. **Slice 1** proves the Observe→Remember→Sync loop
 > end-to-end with a single local source (Obsidian). Full design + rationale:
-> [spec](../docs/superpowers/specs/2026-06-22-company-state-engine-design.md). The *how*
+> [spec](../../docs/superpowers/specs/2026-06-22-company-state-engine-design.md). The *how*
 > (exact schema, reconciler internals, parsing rules) is for `eng-architect`/`eng-executor`.
 
 ## Objective

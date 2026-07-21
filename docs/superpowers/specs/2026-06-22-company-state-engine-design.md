@@ -3,7 +3,7 @@
 - Date: 2026-06-22
 - Status: approved (brainstorm), pending implementation plan
 - Author: engineering org (this session)
-- Related: ADR-009 (docs/decisions.md), ADR-008 (n8n), tasks/backlog/011-company-state-engine.md
+- Related: ADR-009 (docs/decisions.md), ADR-008 (n8n), tasks/completed/011-company-state-engine.md
 
 > This spec records a **strategic repositioning** of Founder OS and the **first build
 > slice** that proves it. It is the source of truth that `readme.md`, `docs/vision.md`,
@@ -168,7 +168,7 @@ fully local-first, no OAuth, dogfoodable on the founder's machine.
 4. `docs/roadmap.md` — State Engine becomes the flagship (Phase 1 + Obsidian slice); n8n →
    optional/later.
 5. `docs/decisions.md` — **ADR-009** (architecture + positioning shift + n8n demotion).
-6. `tasks/backlog/011-company-state-engine.md` — the product+plan task file.
+6. `tasks/completed/011-company-state-engine.md` — the product+plan task file.
 
 ## 11. Out of scope (slice 1 — explicit)
 

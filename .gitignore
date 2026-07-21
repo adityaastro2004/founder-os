@@ -35,7 +35,13 @@ Thumbs.db
 *.swo
 
 # ── Claude / AI tools ────────────────
-.claude/
+# Settings stay local (machine-specific permissions); the eng-* subagent
+# definitions are tracked — CLAUDE.md §7 makes them the mandatory workflow and
+# §10 links to them, so a fresh clone must have them.
+.claude/*
+!.claude/agents/
+.claude/agents/*
+!.claude/agents/eng-*.md
 
 # ── Node ─────────────────────────────
 node_modules/
@@ -49,3 +55,6 @@ out/
 .vercel
 .env*
 !.env*.example
+
+# Auto-generated project context snapshot (stack/git); regenerated on demand.
+docs/context.md

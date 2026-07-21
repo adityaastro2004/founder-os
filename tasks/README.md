@@ -19,11 +19,11 @@ frontmatter distinguishes `in-progress` / `blocked` / `review`.
 
 | State | Location | Owner |
 |-------|----------|-------|
-| BACKLOG | `backlog/` | [product](../agents/product.md) → [planner](../agents/planner.md) |
-| ACTIVE | `active/` (`status: in-progress`) | [architect](../agents/architect.md) / [executor](../agents/executor.md) |
+| BACKLOG | `backlog/` | [product](../.claude/agents/eng-product.md) → [planner](../.claude/agents/eng-planner.md) |
+| ACTIVE | `active/` (`status: in-progress`) | [architect](../.claude/agents/eng-architect.md) / [executor](../.claude/agents/eng-executor.md) |
 | BLOCKED | `active/` (`status: blocked`, note why) | whoever is blocked |
-| REVIEW | `active/` (`status: review`) | [reviewer](../agents/reviewer.md) / [qa](../agents/qa.md) / [security](../agents/security.md) |
-| DONE | `completed/` (`status: done`) | [product](../agents/product.md) updates [roadmap](../docs/roadmap.md) |
+| REVIEW | `active/` (`status: review`) | [reviewer](../.claude/agents/eng-reviewer.md) / [qa](../.claude/agents/eng-qa.md) / [security](../.claude/agents/eng-security.md) |
+| DONE | `completed/` (`status: done`) | [product](../.claude/agents/eng-product.md) updates [roadmap](../docs/roadmap.md) |
 
 ## Naming
 
@@ -38,8 +38,8 @@ Objective · Owner agent · Dependencies · Acceptance criteria · Status. Use
 ## Creating a task
 
 Copy [TEMPLATE.md](TEMPLATE.md) to `backlog/NNN-slug.md` and fill it in. The
-[product](../agents/product.md) agent owns objective/criteria/metrics; the
-[planner](../agents/planner.md) adds the breakdown and moves it to `active/`; later
+[product](../.claude/agents/eng-product.md) agent owns objective/criteria/metrics; the
+[planner](../.claude/agents/eng-planner.md) adds the breakdown and moves it to `active/`; later
 stages append their sections and move it to `completed/` when done.
 
 > Task files are durable project history — keep them honest and up to date.
