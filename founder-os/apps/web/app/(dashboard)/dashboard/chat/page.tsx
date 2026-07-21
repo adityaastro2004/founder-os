@@ -17,6 +17,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { Markdown } from "@/app/_components/ui";
 
 // Chat state and the in-flight run live in ChatProvider (dashboard layout),
 // so navigating to another tab never interrupts a running agent.
@@ -53,7 +54,7 @@ function Message({ message }: { message: ChatMessage }) {
     return (
       <div className="flex justify-end">
         <div className="max-w-[85%] rounded-2xl rounded-br-md bg-surface-muted px-4 py-2.5 text-sm leading-relaxed text-ink sm:max-w-[75%]">
-          <div className="whitespace-pre-wrap">{message.content}</div>
+          <div className="whitespace-pre-wrap break-words">{message.content}</div>
         </div>
       </div>
     );
@@ -69,7 +70,11 @@ function Message({ message }: { message: ChatMessage }) {
             : "text-ink"
         )}
       >
-        <div className="whitespace-pre-wrap">{message.content}</div>
+        {message.error ? (
+          <div className="whitespace-pre-wrap break-words">{message.content}</div>
+        ) : (
+          <Markdown>{message.content}</Markdown>
+        )}
       </div>
 
       {/* Meta info for assistant messages */}
