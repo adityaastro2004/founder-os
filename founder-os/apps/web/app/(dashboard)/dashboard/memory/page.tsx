@@ -18,6 +18,15 @@ import {
   X,
 } from "lucide-react";
 import { clsx } from "clsx";
+import {
+  PageHeader,
+  Card,
+  Button,
+  Input,
+  Textarea,
+  Select,
+  EmptyState,
+} from "@/app/_components/ui";
 
 /* ── Types ─────────────────────────────────────────── */
 interface MemoryEntry {
@@ -55,17 +64,7 @@ interface Chapter {
   count: number;
 }
 
-/* ── Page Type Badge ──────────────────────────────── */
-const typeColors: Record<string, string> = {
-  event: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
-  decision: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
-  milestone: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
-  metric: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
-  insight: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
-  note: "bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]",
-};
-
-/* ── Memory Card ──────────────────────────────────── */
+/* ── Memory card ──────────────────────────────────── */
 function MemoryCard({
   memory,
   expanded,
@@ -86,98 +85,105 @@ function MemoryCard({
   return (
     <div
       className={clsx(
-        "p-4 rounded-lg border transition-colors",
+        "rounded-card border bg-surface p-4 transition-colors duration-150",
         memory.is_pinned
-          ? "border-[var(--color-text-muted)] bg-[var(--color-surface-subtle)]"
-          : "border-[var(--color-border)] hover:bg-[var(--color-surface-subtle)]"
+          ? "border-accent/40 bg-accent-soft/30"
+          : "border-line hover:bg-surface-muted/40"
       )}
     >
       <div className="flex items-start gap-3">
         <div className="mt-0.5 shrink-0">
           {memory.is_pinned ? (
-            <Pin className="w-4 h-4 text-[var(--color-text)]" />
+            <Pin className="h-4 w-4 text-accent-text" aria-hidden="true" />
           ) : (
-            <Brain className="w-4 h-4 text-[var(--color-text-secondary)]" />
+            <Brain className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           )}
         </div>
-        <button onClick={onToggle} className="flex-1 text-left min-w-0">
-          <p className="text-sm font-medium">{memory.title}</p>
+        <button type="button" onClick={onToggle} className="min-w-0 flex-1 text-left">
+          <p className="text-sm font-medium text-ink">{memory.title}</p>
           {memory.summary && (
-            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5 line-clamp-1">
+            <p className="mt-0.5 line-clamp-1 text-xs text-ink-secondary">
               {memory.summary}
             </p>
           )}
-          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            <span
-              className={clsx(
-                "text-[10px] px-1.5 py-0.5 rounded-full font-medium",
-                typeColors[memory.page_type] || typeColors.note
-              )}
-            >
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium text-ink-secondary">
               {memory.page_type}
             </span>
             {memory.chapter && (
-              <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-0.5">
-                <BookOpen className="w-3 h-3" />
+              <span className="flex items-center gap-0.5 text-[10px] text-ink-secondary">
+                <BookOpen className="h-3 w-3" aria-hidden="true" />
                 {memory.chapter}
               </span>
             )}
             {memory.occurred_at && (
-              <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-0.5">
-                <Clock className="w-3 h-3" />
+              <span className="flex items-center gap-0.5 text-[10px] text-ink-secondary">
+                <Clock className="h-3 w-3" aria-hidden="true" />
                 {new Date(memory.occurred_at).toLocaleDateString()}
               </span>
             )}
-            <span className="text-[10px] text-[var(--color-text-muted)] flex items-center gap-0.5">
-              <Star className="w-3 h-3" />
+            <span className="flex items-center gap-0.5 text-[10px] text-ink-secondary">
+              <Star className="h-3 w-3" aria-hidden="true" />
               {(memory.importance * 100).toFixed(0)}%
             </span>
           </div>
         </button>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex shrink-0 items-center gap-1">
           <button
+            type="button"
             onClick={onPin}
             disabled={pinning}
             className={clsx(
-              "p-1.5 rounded-lg transition-colors",
+              "rounded-control p-1.5 transition-colors duration-150",
               memory.is_pinned
-                ? "text-[var(--color-text)] hover:bg-[var(--color-surface-muted)]"
-                : "text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-subtle)]"
+                ? "text-accent-text hover:bg-surface-muted"
+                : "text-ink-muted hover:bg-surface-muted hover:text-ink"
             )}
             title={memory.is_pinned ? "Unpin" : "Pin"}
+            aria-label={memory.is_pinned ? "Unpin memory" : "Pin memory"}
           >
-            {pinning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Pin className="w-3.5 h-3.5" />}
+            {pinning ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Pin className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
           </button>
           <button
+            type="button"
             onClick={onDelete}
             disabled={deleting}
-            className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-surface-subtle)] transition-colors"
+            aria-label="Delete memory"
+            className="rounded-control p-1.5 text-ink-muted transition-colors duration-150 hover:bg-surface-muted hover:text-danger"
           >
-            {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+            {deleting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>
 
       {expanded && (
-        <div className="mt-3 pt-3 border-t border-[var(--color-border)] space-y-2">
-          <p className="text-xs text-[var(--color-text-secondary)] whitespace-pre-wrap">
+        <div className="mt-3 space-y-2 border-t border-line-subtle pt-3">
+          <p className="whitespace-pre-wrap text-xs text-ink-secondary">
             {memory.content}
           </p>
           {memory.tags.length > 0 && (
-            <div className="flex gap-1.5 flex-wrap">
+            <div className="flex flex-wrap gap-1.5">
               {memory.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] flex items-center gap-0.5"
+                  className="flex items-center gap-0.5 rounded-full bg-surface-muted px-2 py-0.5 text-[10px] text-ink-secondary"
                 >
-                  <Hash className="w-2.5 h-2.5" />
+                  <Hash className="h-2.5 w-2.5" aria-hidden="true" />
                   {tag}
                 </span>
               ))}
             </div>
           )}
           {memory.scores && (
-            <div className="flex gap-3 text-[10px] text-[var(--color-text-muted)]">
+            <div className="flex gap-3 text-[10px] text-ink-secondary">
               <span>Composite: {memory.scores.composite.toFixed(2)}</span>
               <span>Semantic: {memory.scores.semantic.toFixed(2)}</span>
               <span>Temporal: {memory.scores.temporal.toFixed(2)}</span>
@@ -189,7 +195,7 @@ function MemoryCard({
   );
 }
 
-/* ── Memory Page ──────────────────────────────────── */
+/* ── Memory page ──────────────────────────────────── */
 export default function MemoryPage() {
   const api = useApi();
   const [memories, setMemories] = useState<MemoryEntry[]>([]);
@@ -332,142 +338,130 @@ export default function MemoryPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Memory</h1>
-          <p className="text-[var(--color-text-secondary)] mt-1">
-            Your AI&apos;s long-term memory and context
-          </p>
-        </div>
-        <button
-          onClick={() => setShowStore(!showStore)}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
-        >
-          {showStore ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showStore ? "Cancel" : "Add Memory"}
-        </button>
-      </div>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3">
-          <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] mb-1">
-            <Database className="w-3.5 h-3.5" />
-            Total Memories
-          </div>
-          <p className="text-lg font-bold">{loading ? "—" : totalMemories}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3">
-          <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] mb-1">
-            <Pin className="w-3.5 h-3.5" />
-            Pinned
-          </div>
-          <p className="text-lg font-bold">{loading ? "—" : pinnedCount}</p>
-        </div>
-        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3">
-          <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] mb-1">
-            <Layers className="w-3.5 h-3.5" />
-            Chapters
-          </div>
-          <p className="text-lg font-bold">{loading ? "—" : chapterCount}</p>
-        </div>
-      </div>
-
-      {/* Store Form */}
-      {showStore && (
-        <form
-          onSubmit={handleStore}
-          className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5 space-y-3"
-        >
-          <h3 className="text-sm font-semibold">Store a New Memory</h3>
-          <input
-            type="text"
-            value={storeTitle}
-            onChange={(e) => setStoreTitle(e.target.value)}
-            placeholder="What happened?"
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
-          />
-          <textarea
-            value={storeContent}
-            onChange={(e) => setStoreContent(e.target.value)}
-            placeholder="Full details..."
-            rows={3}
-            className="w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] resize-none placeholder:text-[var(--color-text-muted)]"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <select
-              value={storeType}
-              onChange={(e) => setStoreType(e.target.value)}
-              className="px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none"
-            >
-              <option value="note">Note</option>
-              <option value="event">Event</option>
-              <option value="decision">Decision</option>
-              <option value="milestone">Milestone</option>
-              <option value="metric">Metric</option>
-              <option value="insight">Insight</option>
-            </select>
-            <input
-              type="text"
-              value={storeChapter}
-              onChange={(e) => setStoreChapter(e.target.value)}
-              placeholder="Chapter (e.g., product, hiring)"
-              className="px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={!storeTitle.trim() || !storeContent.trim() || storing}
-            className="px-4 py-2 text-sm font-medium text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
+      <PageHeader
+        title="Memory"
+        description="Your AI's long-term memory and context"
+        actions={
+          <Button
+            variant={showStore ? "secondary" : "primary"}
+            onClick={() => setShowStore(!showStore)}
           >
-            {storing ? (
-              <span className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Storing...
-              </span>
+            {showStore ? (
+              <X className="h-4 w-4" aria-hidden="true" />
             ) : (
-              "Store Memory"
+              <Plus className="h-4 w-4" aria-hidden="true" />
             )}
-          </button>
+            {showStore ? "Cancel" : "Add memory"}
+          </Button>
+        }
+      />
+
+      {/* Stats row */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {[
+          { icon: Database, label: "Total memories", value: totalMemories },
+          { icon: Pin, label: "Pinned", value: pinnedCount },
+          { icon: Layers, label: "Chapters", value: chapterCount },
+        ].map((s) => (
+          <Card key={s.label} className="p-3">
+            <div className="mb-1 flex items-center gap-2 text-xs text-ink-secondary">
+              <s.icon className="h-3.5 w-3.5" aria-hidden="true" />
+              {s.label}
+            </div>
+            <p className="text-lg font-semibold text-ink">{loading ? "—" : s.value}</p>
+          </Card>
+        ))}
+      </div>
+
+      {/* Store form */}
+      {showStore && (
+        <form onSubmit={handleStore}>
+          <Card className="space-y-3 p-5">
+            <h3 className="font-serif text-sm font-semibold text-ink">
+              Store a new memory
+            </h3>
+            <Input
+              type="text"
+              value={storeTitle}
+              onChange={(e) => setStoreTitle(e.target.value)}
+              placeholder="What happened?"
+              aria-label="Memory title"
+            />
+            <Textarea
+              value={storeContent}
+              onChange={(e) => setStoreContent(e.target.value)}
+              placeholder="Full details"
+              aria-label="Memory details"
+              rows={3}
+            />
+            <div className="grid grid-cols-2 gap-3">
+              <Select
+                value={storeType}
+                onChange={(e) => setStoreType(e.target.value)}
+                aria-label="Memory type"
+              >
+                <option value="note">Note</option>
+                <option value="event">Event</option>
+                <option value="decision">Decision</option>
+                <option value="milestone">Milestone</option>
+                <option value="metric">Metric</option>
+                <option value="insight">Insight</option>
+              </Select>
+              <Input
+                type="text"
+                value={storeChapter}
+                onChange={(e) => setStoreChapter(e.target.value)}
+                placeholder="Chapter (e.g. product, hiring)"
+                aria-label="Chapter"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={!storeTitle.trim() || !storeContent.trim()}
+              loading={storing}
+            >
+              {storing ? "Storing" : "Store memory"}
+            </Button>
+          </Card>
         </form>
       )}
 
-      {/* Search & Filter */}
-      <div className="flex flex-col sm:flex-row gap-3">
-        <form onSubmit={handleRecall} className="flex gap-2 flex-1">
+      {/* Search and filter */}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <form onSubmit={handleRecall} className="flex flex-1 gap-2">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-muted)]" />
-            <input
+            <Search
+              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted"
+              aria-hidden="true"
+            />
+            <Input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Recall memories..."
-              className="w-full pl-10 pr-4 py-2.5 text-sm rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] outline-none focus:border-[var(--color-text-muted)] placeholder:text-[var(--color-text-muted)]"
+              placeholder="Recall memories"
+              aria-label="Search memories"
+              className="pl-10"
             />
           </div>
-          <button
-            type="submit"
-            disabled={searching}
-            className="px-4 py-2.5 text-sm font-medium text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] disabled:opacity-50 transition-colors"
-          >
-            {searching ? <Loader2 className="w-4 h-4 animate-spin" /> : "Recall"}
-          </button>
+          <Button type="submit" loading={searching}>
+            {searching ? "Recalling" : "Recall"}
+          </Button>
         </form>
 
-        {/* Chapter Filter */}
+        {/* Chapter filter */}
         {chapters.length > 0 && (
-          <div className="flex gap-1.5 items-center flex-wrap">
+          <div className="flex flex-wrap items-center gap-1.5">
             <button
               key="__all__"
+              type="button"
               onClick={() => {
                 setSelectedChapter(null);
               }}
               className={clsx(
-                "px-2.5 py-1.5 text-xs rounded-lg transition-colors",
+                "rounded-control px-2.5 py-1.5 text-xs transition-colors duration-150",
                 !selectedChapter
-                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
+                  ? "bg-surface-muted font-medium text-ink"
+                  : "text-ink-secondary hover:bg-surface-muted/60"
               )}
             >
               All
@@ -475,14 +469,15 @@ export default function MemoryPage() {
             {chapters.map((ch, idx) => (
               <button
                 key={`ch-${idx}-${ch.name}`}
+                type="button"
                 onClick={() => {
                   setSelectedChapter(ch.name);
                 }}
                 className={clsx(
-                  "px-2.5 py-1.5 text-xs rounded-lg transition-colors",
+                  "rounded-control px-2.5 py-1.5 text-xs transition-colors duration-150",
                   selectedChapter === ch.name
-                    ? "bg-[var(--color-surface-muted)] text-[var(--color-text)] font-medium"
-                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
+                    ? "bg-surface-muted font-medium text-ink"
+                    : "text-ink-secondary hover:bg-surface-muted/60"
                 )}
               >
                 {ch.name} ({ch.count})
@@ -492,21 +487,24 @@ export default function MemoryPage() {
         )}
       </div>
 
-      {/* Memory List */}
+      {/* Memory list */}
       <div className="space-y-2">
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
+            <Loader2 className="h-6 w-6 animate-spin text-ink-muted" aria-hidden="true" />
           </div>
         ) : memories.length === 0 ? (
-          <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-12 text-center">
-            <Brain className="w-12 h-12 text-[var(--color-text-muted)] mx-auto mb-3" />
-            <h2 className="text-lg font-semibold mb-2">No memories yet</h2>
-            <p className="text-sm text-[var(--color-text-secondary)] max-w-sm mx-auto">
-              Memories are stored automatically as your agents work, or you can
-              add them manually.
-            </p>
-          </div>
+          <EmptyState
+            icon={Brain}
+            title="No memories yet"
+            body="They'll accumulate automatically as your agents work, or you can add one yourself."
+            action={
+              <Button onClick={() => setShowStore(true)}>
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add memory
+              </Button>
+            }
+          />
         ) : (
           memories.map((m) => (
             <MemoryCard

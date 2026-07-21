@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { DIRECT_API_URL } from "@/lib/api";
 import {
-  Lightbulb,
   Loader2,
   Sparkles,
   RefreshCw,
@@ -17,6 +16,7 @@ import {
   FileText,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { PageHeader, Card, Button, EmptyState } from "@/app/_components/ui";
 
 /* ── Types ─────────────────────────────────────────── */
 interface ContentIdea {
@@ -33,66 +33,67 @@ interface ContentIdea {
   created_at: string;
 }
 
-/* ── Content Idea Card ─────────────────────────────── */
+/* ── Content idea card ─────────────────────────────── */
 function IdeaCard({ idea }: { idea: ContentIdea }) {
   const [expanded, setExpanded] = useState(false);
 
   const priorityColor =
     idea.priority >= 8
-      ? "bg-green-50 text-green-700 border-green-200"
+      ? "bg-success-soft text-success border-success/20"
       : idea.priority >= 5
-      ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-      : "bg-[var(--color-surface-subtle)] text-[var(--color-text-muted)] border-[var(--color-border)]";
+        ? "bg-warning-soft text-warning border-warning/20"
+        : "bg-surface-muted text-ink-secondary border-line";
 
   return (
-    <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] overflow-hidden">
+    <Card className="overflow-hidden">
       <button
+        type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full text-left px-5 py-4 hover:bg-[var(--color-surface-subtle)] transition-colors"
+        className="w-full px-5 py-4 text-left transition-colors duration-150 hover:bg-surface-muted/40"
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
+          <div className="min-w-0 flex-1">
+            <div className="mb-1 flex flex-wrap items-center gap-2">
               {idea.content_type && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] uppercase tracking-wider">
-                  <Tag className="w-2.5 h-2.5" />
+                <span className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-medium text-ink-secondary">
+                  <Tag className="h-2.5 w-2.5" aria-hidden="true" />
                   {idea.content_type}
                 </span>
               )}
               <span
                 className={clsx(
-                  "inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full border",
+                  "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium",
                   priorityColor
                 )}
               >
-                <BarChart2 className="w-2.5 h-2.5" />
+                <BarChart2 className="h-2.5 w-2.5" aria-hidden="true" />
                 Priority {idea.priority}/10
               </span>
             </div>
-            <p className="text-sm font-semibold leading-snug">{idea.title}</p>
+            <p className="text-sm font-semibold leading-snug text-ink">{idea.title}</p>
             {idea.target_audience && (
-              <p className="text-xs text-[var(--color-text-muted)] mt-1 flex items-center gap-1">
-                <Users className="w-3 h-3" />
+              <p className="mt-1 flex items-center gap-1 text-xs text-ink-secondary">
+                <Users className="h-3 w-3" aria-hidden="true" />
                 {idea.target_audience}
               </p>
             )}
           </div>
           {expanded ? (
-            <ChevronUp className="w-4 h-4 text-[var(--color-text-muted)] shrink-0 mt-0.5" />
+            <ChevronUp className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-[var(--color-text-muted)] shrink-0 mt-0.5" />
+            <ChevronDown className="mt-0.5 h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
           )}
         </div>
       </button>
 
       {expanded && (
-        <div className="px-5 pb-5 space-y-4 border-t border-[var(--color-border-subtle)]">
+        <div className="space-y-4 border-t border-line-subtle px-5 pb-5">
           {idea.description && (
             <div className="pt-4">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-1">
+              <p className="mb-1 text-[11px] font-semibold text-ink-secondary">
                 Description
               </p>
-              <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+              <p className="text-sm leading-relaxed text-ink-secondary">
                 {idea.description}
               </p>
             </div>
@@ -100,16 +101,16 @@ function IdeaCard({ idea }: { idea: ContentIdea }) {
 
           {idea.hooks.length > 0 && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+              <p className="mb-2 text-[11px] font-semibold text-ink-secondary">
                 Hooks
               </p>
               <ul className="space-y-1.5">
                 {idea.hooks.map((hook, i) => (
                   <li
                     key={i}
-                    className="text-sm text-[var(--color-text-secondary)] flex items-start gap-2"
+                    className="flex items-start gap-2 text-sm text-ink-secondary"
                   >
-                    <span className="text-[var(--color-text-muted)] font-mono text-xs mt-0.5 shrink-0">
+                    <span className="mt-0.5 shrink-0 font-mono text-xs text-ink-muted">
                       {i + 1}.
                     </span>
                     {hook}
@@ -121,16 +122,16 @@ function IdeaCard({ idea }: { idea: ContentIdea }) {
 
           {idea.key_points.length > 0 && (
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
-                Key Points
+              <p className="mb-2 text-[11px] font-semibold text-ink-secondary">
+                Key points
               </p>
               <ul className="space-y-1.5">
                 {idea.key_points.map((point, i) => (
                   <li
                     key={i}
-                    className="text-sm text-[var(--color-text-secondary)] flex items-start gap-2"
+                    className="flex items-start gap-2 text-sm text-ink-secondary"
                   >
-                    <Target className="w-3 h-3 text-[var(--color-text-muted)] mt-0.5 shrink-0" />
+                    <Target className="mt-0.5 h-3 w-3 shrink-0 text-ink-muted" aria-hidden="true" />
                     {point}
                   </li>
                 ))}
@@ -138,7 +139,7 @@ function IdeaCard({ idea }: { idea: ContentIdea }) {
             </div>
           )}
 
-          <div className="flex items-center gap-3 pt-1 text-[10px] text-[var(--color-text-muted)]">
+          <div className="flex items-center gap-3 pt-1 text-[10px] text-ink-secondary">
             {idea.source_type && <span>Source: {idea.source_type}</span>}
             <span>
               {new Date(idea.created_at).toLocaleDateString("en-US", {
@@ -150,11 +151,11 @@ function IdeaCard({ idea }: { idea: ContentIdea }) {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
-/* ── Main Page ─────────────────────────────────────── */
+/* ── Main page ─────────────────────────────────────── */
 export default function ContentIdeasPage() {
   const { getToken } = useAuth();
   const [ideas, setIdeas] = useState<ContentIdea[]>([]);
@@ -228,49 +229,36 @@ export default function ContentIdeasPage() {
   );
 
   return (
-    <div className="space-y-6 max-w-3xl">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Lightbulb className="w-6 h-6" />
-            Content Ideas
-          </h1>
-          <p className="text-[var(--color-text-secondary)] mt-1">
-            AI-generated content ideas tailored to your business
-          </p>
-        </div>
-        <button
-          onClick={handleGenerate}
-          disabled={generating}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--color-accent)] text-[var(--color-accent-foreground)] text-sm font-medium rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
-        >
-          {generating ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Sparkles className="w-4 h-4" />
-          )}
-          {generating ? "Generating..." : "Generate Ideas"}
-        </button>
-      </div>
+    <div className="max-w-3xl space-y-6">
+      <PageHeader
+        title="Content ideas"
+        description="AI-generated content ideas tailored to your business"
+        actions={
+          <Button onClick={handleGenerate} loading={generating}>
+            {!generating && <Sparkles className="h-4 w-4" aria-hidden="true" />}
+            {generating ? "Generating" : "Generate ideas"}
+          </Button>
+        }
+      />
 
       {/* Error */}
       {error && (
-        <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+        <div className="rounded-control border border-danger/20 bg-danger-soft p-4 text-sm text-danger">
           {error}
         </div>
       )}
 
       {/* Filter bar */}
       {contentTypes.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex flex-wrap items-center gap-2">
           <button
+            type="button"
             onClick={() => setFilterType("")}
             className={clsx(
-              "px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors",
+              "rounded-control border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
               filterType === ""
-                ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] border-transparent"
-                : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
+                ? "border-transparent bg-accent text-white"
+                : "border-line text-ink-secondary hover:bg-surface-muted/60"
             )}
           >
             All
@@ -278,12 +266,13 @@ export default function ContentIdeasPage() {
           {contentTypes.map((type) => (
             <button
               key={type}
+              type="button"
               onClick={() => setFilterType(type === filterType ? "" : type)}
               className={clsx(
-                "px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors capitalize",
+                "rounded-control border px-3 py-1.5 text-xs font-medium capitalize transition-colors duration-150",
                 filterType === type
-                  ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] border-transparent"
-                  : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)]"
+                  ? "border-transparent bg-accent text-white"
+                  : "border-line text-ink-secondary hover:bg-surface-muted/60"
               )}
             >
               {type}
@@ -291,10 +280,11 @@ export default function ContentIdeasPage() {
           ))}
           {ideas.length > 0 && (
             <button
+              type="button"
               onClick={fetchIdeas}
-              className="ml-auto flex items-center gap-1.5 text-xs text-[var(--color-text-muted)] hover:text-[var(--color-text-secondary)] transition-colors"
+              className="ml-auto flex items-center gap-1.5 text-xs text-ink-secondary transition-colors duration-150 hover:text-ink"
             >
-              <RefreshCw className="w-3 h-3" />
+              <RefreshCw className="h-3 w-3" aria-hidden="true" />
               Refresh
             </button>
           )}
@@ -305,38 +295,25 @@ export default function ContentIdeasPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-3">
-            <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
-            <p className="text-xs text-[var(--color-text-muted)]">
-              Loading ideas...
-            </p>
+            <Loader2 className="h-6 w-6 animate-spin text-ink-muted" aria-hidden="true" />
+            <p className="text-xs text-ink-secondary">Loading ideas</p>
           </div>
         </div>
       ) : ideas.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-14 h-14 rounded-full bg-[var(--color-surface-muted)] flex items-center justify-center mb-4">
-            <FileText className="w-7 h-7 text-[var(--color-text-muted)]" />
-          </div>
-          <h3 className="text-base font-semibold mb-1">No content ideas yet</h3>
-          <p className="text-sm text-[var(--color-text-secondary)] max-w-xs mb-5">
-            Generate personalised content ideas based on your business profile
-            and goals.
-          </p>
-          <button
-            onClick={handleGenerate}
-            disabled={generating}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[var(--color-accent)] text-[var(--color-accent-foreground)] text-sm font-medium rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
-          >
-            {generating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            {generating ? "Generating..." : "Generate Ideas"}
-          </button>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="No content ideas yet"
+          body="Generate personalised ideas based on your business profile and goals."
+          action={
+            <Button onClick={handleGenerate} loading={generating}>
+              {!generating && <Sparkles className="h-4 w-4" aria-hidden="true" />}
+              {generating ? "Generating" : "Generate ideas"}
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-3">
-          <p className="text-xs text-[var(--color-text-muted)]">
+          <p className="text-xs text-ink-secondary">
             {ideas.length} idea{ideas.length !== 1 ? "s" : ""}
           </p>
           {ideas.map((idea) => (

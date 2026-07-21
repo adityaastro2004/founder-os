@@ -8,11 +8,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-paper">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/20 lg:hidden"
+          className="fixed inset-0 z-40 bg-ink/20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -21,9 +21,11 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main content area */}
-      <div className="lg:pl-[var(--sidebar-width)] flex flex-col min-h-screen">
+      <div className="flex min-h-screen flex-col lg:pl-[var(--sidebar-width)]">
         <Header onMenuClick={() => setSidebarOpen(true)} />
-        <main className="flex-1 px-5 py-6 md:px-8 md:py-8 lg:px-10 lg:py-8">{children}</main>
+        <main className="flex-1 px-5 py-6 md:px-8 md:py-8 lg:px-10">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   );

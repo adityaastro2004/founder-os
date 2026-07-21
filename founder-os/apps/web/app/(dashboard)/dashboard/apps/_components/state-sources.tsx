@@ -78,12 +78,12 @@ function reportSummary(report: Record<string, unknown>): string {
 }
 
 const inputClass =
-  "w-full px-3 py-2 text-sm rounded-lg border border-[var(--color-border)] bg-white placeholder:text-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text)] transition-all";
+  "w-full px-3 py-2 text-sm rounded-control border border-line bg-surface placeholder:text-ink-secondary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-all";
 
 const labelClass =
-  "block text-xs font-medium text-[var(--color-text-secondary)] mb-1.5";
+  "block text-xs font-medium text-ink-secondary mb-1.5";
 
-const helpClass = "text-[11px] text-[var(--color-text-muted)] mt-1.5";
+const helpClass = "text-[11px] text-ink-secondary mt-1.5";
 
 /* ── Add-source form ── */
 
@@ -166,17 +166,17 @@ function AddSourceForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] p-5 space-y-4"
+      className="rounded-control border border-line bg-surface-muted/40 p-5 space-y-4"
     >
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">
+        <h3 className="font-serif text-sm font-semibold text-ink">
           {type === "notion" ? "Connect Notion" : "Connect Obsidian"}
         </h3>
         <button
           type="button"
           onClick={onCancel}
           aria-label="Close form"
-          className="p-2 -m-1 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text)] transition-colors"
+          className="p-2 -m-1 rounded-control text-ink-secondary hover:text-ink hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors"
         >
           <X className="w-4 h-4" />
         </button>
@@ -185,7 +185,7 @@ function AddSourceForm({
       {error && (
         <div
           role="alert"
-          className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700"
+          className="flex items-start gap-2 rounded-control border border-danger/20 bg-danger-soft px-3 py-2.5 text-xs text-danger"
         >
           <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
           {error}
@@ -232,7 +232,7 @@ function AddSourceForm({
                 type="button"
                 onClick={() => setShowToken((s) => !s)}
                 aria-label={showToken ? "Hide token" : "Show token"}
-                className="absolute right-1 top-1/2 -translate-y-1/2 p-2 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text)]"
+                className="absolute right-1 top-1/2 -translate-y-1/2 p-2 rounded-md text-ink-secondary hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
               >
                 {showToken ? (
                   <EyeOff className="w-4 h-4" />
@@ -320,7 +320,7 @@ function AddSourceForm({
           type="submit"
           disabled={submitting}
           aria-busy={submitting}
-          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-[var(--color-accent)] text-[var(--color-accent-foreground)] rounded-lg hover:bg-[var(--color-accent-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text)] disabled:opacity-50 transition-colors"
+          className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-accent text-white rounded-control hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 transition-colors"
         >
           {submitting ? (
             <>
@@ -337,12 +337,12 @@ function AddSourceForm({
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-xs font-medium text-[var(--color-text-secondary)] rounded-lg hover:bg-[var(--color-surface-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text)] transition-colors"
+          className="px-4 py-2 text-xs font-medium text-ink-secondary rounded-control hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors"
         >
           Cancel
         </button>
         {type === "notion" && submitting && (
-          <span className="text-[11px] text-[var(--color-text-muted)]">
+          <span className="text-[11px] text-ink-secondary">
             Checking the token against your root page…
           </span>
         )}
@@ -357,13 +357,13 @@ const statusChip: Record<
   StateSource["status"],
   { label: string; className: string }
 > = {
-  active: { label: "Active", className: "bg-green-50 text-green-700" },
+  active: { label: "Active", className: "bg-success-soft text-success" },
   paused: {
     label: "Paused",
-    className: "bg-[var(--color-surface-muted)] text-[var(--color-text-muted)]",
+    className: "bg-surface-muted text-ink-secondary",
   },
-  syncing: { label: "Syncing", className: "bg-blue-50 text-blue-700" },
-  error: { label: "Error", className: "bg-red-50 text-red-700" },
+  syncing: { label: "Syncing", className: "bg-accent-soft text-accent-text" },
+  error: { label: "Error", className: "bg-danger-soft text-danger" },
 };
 
 function SourceRow({
@@ -395,18 +395,18 @@ function SourceRow({
   }, [confirmDelete]);
 
   const iconButton =
-    "p-2 rounded-lg text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text)] disabled:opacity-40 transition-colors";
+    "p-2 rounded-control text-ink-secondary hover:text-ink hover:bg-surface-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 transition-colors";
 
   return (
-    <li className="flex flex-col gap-2 rounded-lg border border-[var(--color-border-subtle)] bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+    <li className="flex flex-col gap-2 rounded-card border border-line bg-surface p-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface-muted)]">
-          <Icon className="h-4.5 w-4.5 text-[var(--color-text-muted)]" />
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-control bg-surface-muted">
+          <Icon className="h-4.5 w-4.5 text-ink-secondary" />
         </div>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold">{source.name}</span>
-            <span className="text-[10px] uppercase tracking-wider font-medium text-[var(--color-text-muted)]">
+            <span className="text-[10px] uppercase tracking-wider font-medium text-ink-secondary">
               {source.type}
             </span>
             <span
@@ -420,7 +420,7 @@ function SourceRow({
             </span>
             {source.health && !source.health.ok && (
               <span
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600"
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"
                 title={source.health.detail}
               >
                 <AlertCircle className="h-3 w-3" />
@@ -428,24 +428,24 @@ function SourceRow({
               </span>
             )}
           </div>
-          <p className="mt-0.5 truncate text-xs text-[var(--color-text-muted)]">
+          <p className="mt-0.5 truncate text-xs text-ink-secondary">
             {configHint}
             {source.last_synced_at &&
               ` · synced ${timeAgo(source.last_synced_at)}`}
           </p>
           {source.status === "error" && source.last_error && (
-            <p className="mt-1 text-xs text-red-600 line-clamp-2">
+            <p className="mt-1 text-xs text-danger line-clamp-2">
               {source.last_error}
             </p>
           )}
           {source.health && !source.health.ok && (
-            <p className="mt-1 text-xs text-amber-600 line-clamp-2">
+            <p className="mt-1 text-xs text-warning line-clamp-2">
               {source.health.detail}
             </p>
           )}
           {source.last_sync_report &&
             reportSummary(source.last_sync_report) && (
-              <p className="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              <p className="mt-1 text-[11px] text-ink-secondary">
                 Last sync: {reportSummary(source.last_sync_report)}
               </p>
             )}
@@ -489,7 +489,7 @@ function SourceRow({
             onClick={onDelete}
             disabled={busy !== null}
             aria-label={`Confirm removing ${source.name}`}
-            className="flex items-center gap-1 rounded-lg bg-red-600 px-3 py-2 text-[11px] font-medium text-white hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1 rounded-control bg-danger px-3 py-2 text-[11px] font-medium text-white hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-danger disabled:opacity-50 transition-colors"
           >
             {busy === "delete" ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -505,7 +505,7 @@ function SourceRow({
             disabled={busy !== null}
             aria-label={`Remove ${source.name}`}
             title="Remove source"
-            className={clsx(iconButton, "hover:text-red-600")}
+            className={clsx(iconButton, "hover:text-danger")}
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -664,18 +664,20 @@ export default function StateSourcesSection() {
   };
 
   const addButton =
-    "flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] hover:border-[var(--color-text-muted)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text)] transition-colors";
+    "flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-control border border-line text-ink-secondary hover:text-ink hover:border-ink-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors";
 
   return (
-    <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-6">
+    <div className="rounded-card border border-line bg-surface p-6">
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[var(--color-accent)] flex items-center justify-center">
-            <Database className="w-5 h-5 text-[var(--color-accent-foreground)]" />
+          <div className="w-10 h-10 rounded-control bg-accent flex items-center justify-center">
+            <Database className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h2 className="text-base font-semibold">Company State Sources</h2>
-            <p className="text-xs text-[var(--color-text-muted)]">
+            <h2 className="font-serif text-base font-semibold text-ink">
+              Company state sources
+            </h2>
+            <p className="text-xs text-ink-secondary">
               Sync Notion or Obsidian into your living company model — both
               ways
             </p>
@@ -706,14 +708,14 @@ export default function StateSourcesSection() {
       {notice && (
         <div
           role="status"
-          className="mb-4 flex items-start justify-between gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-subtle)] px-3 py-2.5 text-xs text-[var(--color-text-secondary)]"
+          className="mb-4 flex items-start justify-between gap-2 rounded-control border border-line bg-surface-muted/40 px-3 py-2.5 text-xs text-ink-secondary"
         >
           <span>{notice}</span>
           <button
             type="button"
             onClick={() => setNotice(null)}
             aria-label="Dismiss"
-            className="p-1 -m-1 rounded text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-text)]"
+            className="p-1 -m-1 rounded text-ink-secondary hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -739,30 +741,30 @@ export default function StateSourcesSection() {
           {[0, 1].map((i) => (
             <li
               key={i}
-              className="h-16 animate-pulse rounded-lg bg-[var(--color-surface-muted)]"
+              className="h-16 animate-pulse rounded-control bg-surface-muted"
             />
           ))}
         </ul>
       ) : loadError ? (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm text-red-700">{loadError}</p>
+        <div className="flex items-center justify-between gap-3 rounded-control border border-danger/20 bg-danger-soft px-4 py-3">
+          <p className="text-sm text-danger">{loadError}</p>
           <button
             type="button"
             onClick={() => {
               setSources(null);
               void load();
             }}
-            className="shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 transition-colors"
+            className="shrink-0 rounded-control px-3 py-1.5 text-xs font-medium text-danger hover:bg-danger-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-danger transition-colors"
           >
             Retry
           </button>
         </div>
       ) : sources.length === 0 ? (
         adding === null && (
-          <div className="rounded-lg border border-dashed border-[var(--color-border)] px-6 py-8 text-center">
-            <Database className="mx-auto h-6 w-6 text-[var(--color-text-muted)]" />
+          <div className="rounded-control border border-dashed border-line px-6 py-8 text-center">
+            <Database className="mx-auto h-6 w-6 text-ink-secondary" />
             <p className="mt-2 text-sm font-medium">No sources connected yet</p>
-            <p className="mx-auto mt-1 max-w-md text-xs text-[var(--color-text-muted)]">
+            <p className="mx-auto mt-1 max-w-md text-xs text-ink-secondary">
               Connect your Notion workspace or Obsidian vault and Founder OS
               keeps a unified, living model of your company in sync — goals,
               projects, tasks, and decisions with full provenance.

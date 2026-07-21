@@ -18,25 +18,86 @@ import {
   CalendarDays,
   CreditCard,
   X,
+  type LucideIcon,
 } from "lucide-react";
 
-const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Chat", href: "/dashboard/chat", icon: MessageSquare },
-  { name: "Agents", href: "/dashboard/agents", icon: Bot },
-  { name: "Tasks", href: "/dashboard/tasks", icon: ListTodo },
-  { name: "Planner", href: "/dashboard/planner", icon: CalendarDays },
-  { name: "Memory", href: "/dashboard/memory", icon: Brain },
-  { name: "Knowledge", href: "/dashboard/knowledge", icon: BookOpen },
-  { name: "Content Ideas", href: "/dashboard/content-ideas", icon: Lightbulb },
-  { name: "Automations", href: "/dashboard/workflows", icon: Zap },
-  { name: "Apps", href: "/dashboard/apps", icon: Blocks },
+type NavItem = { name: string; href: string; icon: LucideIcon };
+
+const navGroups: { section: string | null; items: NavItem[] }[] = [
+  {
+    section: null,
+    items: [{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard }],
+  },
+  {
+    section: "Work",
+    items: [
+      { name: "Chat", href: "/dashboard/chat", icon: MessageSquare },
+      { name: "Agents", href: "/dashboard/agents", icon: Bot },
+      { name: "Tasks", href: "/dashboard/tasks", icon: ListTodo },
+      { name: "Planner", href: "/dashboard/planner", icon: CalendarDays },
+    ],
+  },
+  {
+    section: "Knowledge",
+    items: [
+      { name: "Memory", href: "/dashboard/memory", icon: Brain },
+      { name: "Knowledge", href: "/dashboard/knowledge", icon: BookOpen },
+      { name: "Content ideas", href: "/dashboard/content-ideas", icon: Lightbulb },
+    ],
+  },
+  {
+    section: "System",
+    items: [
+      { name: "Automations", href: "/dashboard/workflows", icon: Zap },
+      { name: "Apps", href: "/dashboard/apps", icon: Blocks },
+    ],
+  },
 ];
 
-const bottomNav = [
+const bottomNav: NavItem[] = [
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
+
+function NavLink({
+  item,
+  isActive,
+  onClose,
+  running,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  onClose: () => void;
+  running?: boolean;
+}) {
+  return (
+    <Link
+      href={item.href}
+      onClick={onClose}
+      className={clsx(
+        "flex items-center gap-2.5 rounded-control px-3 py-2 text-[13px] font-medium transition-colors duration-150",
+        isActive
+          ? "bg-surface text-ink"
+          : "text-ink-secondary hover:bg-paper/60 hover:text-ink"
+      )}
+    >
+      <item.icon
+        className={clsx(
+          "h-4 w-4 shrink-0",
+          isActive ? "text-accent" : "text-ink-muted"
+        )}
+        aria-hidden="true"
+      />
+      {item.name}
+      {running && (
+        <span
+          className="ml-auto h-1.5 w-1.5 animate-pulse rounded-full bg-success"
+          title="Agent run in progress"
+        />
+      )}
+    </Link>
+  );
+}
 
 export function Sidebar({
   open,
@@ -55,92 +116,71 @@ export function Sidebar({
     Agents: agentChatPending,
   };
 
+  const isActive = (href: string) =>
+    pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+
   return (
     <aside
       className={clsx(
-        "fixed inset-y-0 left-0 z-50 w-[var(--sidebar-width)] bg-white border-r border-[var(--color-border)] flex flex-col transition-transform duration-200 ease-in-out",
+        "fixed inset-y-0 left-0 z-50 flex w-[var(--sidebar-width)] flex-col border-r border-line bg-surface-muted transition-transform duration-200 ease-in-out",
         "lg:translate-x-0",
         open ? "translate-x-0" : "-translate-x-full"
       )}
     >
       {/* Brand */}
-      <div className="flex items-center justify-between h-14 px-4">
+      <div className="flex h-14 items-center justify-between px-4">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-md bg-[var(--color-accent)] flex items-center justify-center">
-            <span className="text-[var(--color-accent-foreground)] font-bold text-xs">F</span>
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent">
+            <span className="text-xs font-bold text-white">F</span>
           </div>
-          <span className="font-semibold text-sm tracking-tight">
+          <span className="font-serif text-[15px] font-semibold tracking-tight text-ink">
             Founder OS
           </span>
         </Link>
         <button
+          type="button"
           onClick={onClose}
-          className="lg:hidden p-1 rounded-md hover:bg-[var(--color-surface-muted)] transition-colors"
+          aria-label="Close menu"
+          className="-m-1 rounded-control p-2 transition-colors duration-150 hover:bg-paper/60 lg:hidden"
         >
-          <X className="w-4 h-4 text-[var(--color-text-muted)]" />
+          <X className="h-4 w-4 text-ink-muted" aria-hidden="true" />
         </button>
       </div>
 
       {/* Main navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navigation.map((item) => {
-          const isActive =
-            pathname === item.href ||
-            (item.href !== "/dashboard" && pathname.startsWith(item.href));
-
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={onClose}
-              className={clsx(
-                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors duration-100",
-                isActive
-                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)]"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-text)]"
-              )}
-            >
-              <item.icon
-                className={clsx(
-                  "w-4 h-4 shrink-0",
-                  isActive
-                    ? "text-[var(--color-text)]"
-                    : "text-[var(--color-text-muted)]"
-                )}
-              />
-              {item.name}
-              {runningDot[item.name] && (
-                <span
-                  className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--color-success)] animate-pulse"
-                  title="Agent run in progress"
+      <nav className="flex-1 overflow-y-auto px-3 pb-4 pt-2">
+        {navGroups.map((group) => (
+          <div key={group.section ?? "top"}>
+            {group.section && (
+              <p className="px-3 pb-1 pt-5 text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+                {group.section}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.name}
+                  item={item}
+                  isActive={isActive(item.href)}
+                  onClose={onClose}
+                  running={runningDot[item.name]}
                 />
-              )}
-            </Link>
-          );
-        })}
+              ))}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Bottom navigation */}
-      <div className="px-3 py-3 border-t border-[var(--color-border)] space-y-0.5">
-        {bottomNav.map((item) => {
-          const isActive = pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={onClose}
-              className={clsx(
-                "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-colors duration-100",
-                isActive
-                  ? "bg-[var(--color-surface-muted)] text-[var(--color-text)]"
-                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-subtle)] hover:text-[var(--color-text)]"
-              )}
-            >
-              <item.icon className="w-4 h-4 shrink-0 text-[var(--color-text-muted)]" />
-              {item.name}
-            </Link>
-          );
-        })}
+      <div className="space-y-0.5 border-t border-line px-3 py-3">
+        {bottomNav.map((item) => (
+          <NavLink
+            key={item.name}
+            item={item}
+            isActive={pathname.startsWith(item.href)}
+            onClose={onClose}
+          />
+        ))}
       </div>
     </aside>
   );

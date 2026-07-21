@@ -26,6 +26,7 @@ import {
   Eye,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { PageHeader, Card, Button } from "@/app/_components/ui";
 
 /* ── Types ───────────────────────────────────────────── */
 interface TaskListItem {
@@ -92,30 +93,30 @@ interface ReviewStats {
 
 /* ── Agent colors ────────────────────────────────────── */
 const agentColors: Record<string, string> = {
-  orchestrator: "bg-neutral-900 dark:bg-neutral-100",
-  planner: "bg-neutral-800 dark:bg-neutral-200",
-  content: "bg-neutral-700 dark:bg-neutral-300",
-  research: "bg-neutral-600 dark:bg-neutral-400",
-  support: "bg-neutral-300 dark:bg-neutral-600",
-  unknown: "bg-neutral-200 dark:bg-neutral-700",
+  orchestrator: "bg-ink",
+  planner: "bg-ink-secondary",
+  content: "bg-accent",
+  research: "bg-success",
+  support: "bg-warning",
+  unknown: "bg-ink-muted",
 };
 
 /* ── Status styling ──────────────────────────────────── */
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  pending: { label: "Pending", color: "text-[var(--color-text-muted)] bg-[var(--color-surface-muted)]", icon: Clock },
-  pending_review: { label: "Needs Review", color: "text-[var(--color-warning)] bg-[var(--color-warning)]/5", icon: Eye },
-  completed: { label: "Completed", color: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]", icon: CheckCircle2 },
-  approved: { label: "Approved", color: "text-[var(--color-success)] bg-[var(--color-success)]/5", icon: CheckCircle2 },
-  rejected: { label: "Rejected", color: "text-[var(--color-danger)] bg-[var(--color-danger)]/5", icon: XCircle },
-  failed: { label: "Failed", color: "text-[var(--color-danger)] bg-[var(--color-danger)]/5", icon: AlertTriangle },
-  running: { label: "Running", color: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]", icon: Loader2 },
+  pending: { label: "Pending", color: "text-ink-secondary bg-surface-muted", icon: Clock },
+  pending_review: { label: "Needs review", color: "text-warning bg-warning-soft", icon: Eye },
+  completed: { label: "Completed", color: "text-ink-secondary bg-surface-muted", icon: CheckCircle2 },
+  approved: { label: "Approved", color: "text-success bg-success-soft", icon: CheckCircle2 },
+  rejected: { label: "Rejected", color: "text-danger bg-danger-soft", icon: XCircle },
+  failed: { label: "Failed", color: "text-danger bg-danger-soft", icon: AlertTriangle },
+  running: { label: "Running", color: "text-ink-secondary bg-surface-muted", icon: Loader2 },
 };
 
 const priorityLabels: Record<number, { label: string; color: string }> = {
-  1: { label: "Low", color: "text-[var(--color-text-muted)]" },
-  2: { label: "Medium", color: "text-[var(--color-text-secondary)]" },
-  3: { label: "High", color: "text-[var(--color-warning)]" },
-  4: { label: "Critical", color: "text-[var(--color-danger)]" },
+  1: { label: "Low", color: "text-ink-secondary" },
+  2: { label: "Medium", color: "text-ink-secondary" },
+  3: { label: "High", color: "text-warning" },
+  4: { label: "Critical", color: "text-danger" },
 };
 
 /* ── Time formatting ─────────────────────────────────── */
@@ -131,19 +132,19 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-/* ── StatusBadge component ───────────────────────────── */
+/* ── Status badge ────────────────────────────────────── */
 function StatusBadge({ status }: { status: string }) {
   const cfg = statusConfig[status] ?? statusConfig.pending!;
   const Icon = cfg!.icon;
   return (
-    <span className={clsx("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium", cfg.color)}>
-      <Icon className={clsx("w-3 h-3", status === "running" && "animate-spin")} />
+    <span className={clsx("inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium", cfg.color)}>
+      <Icon className={clsx("h-3 w-3", status === "running" && "animate-spin")} aria-hidden="true" />
       {cfg.label}
     </span>
   );
 }
 
-/* ── Star rating component ───────────────────────────── */
+/* ── Star rating ─────────────────────────────────────── */
 function StarRating({
   value,
   onChange,
@@ -158,18 +159,21 @@ function StarRating({
       {[1, 2, 3, 4, 5].map((s) => (
         <button
           key={s}
+          type="button"
           disabled={readonly}
           onClick={() => onChange?.(s)}
+          aria-label={`Rate ${s} of 5`}
           className={clsx(
-            "transition-colors",
-            readonly ? "cursor-default" : "cursor-pointer hover:text-[var(--color-text-secondary)]"
+            "transition-colors duration-150",
+            readonly ? "cursor-default" : "cursor-pointer hover:text-ink-secondary"
           )}
         >
           <Star
             className={clsx(
-              "w-4 h-4",
-              s <= value ? "text-[var(--color-warning)] fill-[var(--color-warning)]" : "text-neutral-300 dark:text-neutral-600"
+              "h-4 w-4",
+              s <= value ? "fill-warning text-warning" : "text-line"
             )}
+            aria-hidden="true"
           />
         </button>
       ))}
@@ -177,7 +181,7 @@ function StarRating({
   );
 }
 
-/* ── Task List Row ───────────────────────────────────── */
+/* ── Task list row ───────────────────────────────────── */
 function TaskRow({
   task,
   selected,
@@ -187,59 +191,56 @@ function TaskRow({
   selected: boolean;
   onClick: () => void;
 }) {
-  const gradient = agentColors[task.agent_name] || agentColors.unknown;
-  const pri = priorityLabels[task.priority] ?? { label: "Low", color: "text-gray-500" };
+  const accentBg = agentColors[task.agent_name] || agentColors.unknown;
+  const pri = priorityLabels[task.priority] ?? { label: "Low", color: "text-ink-secondary" };
 
   return (
     <button
+      type="button"
       onClick={onClick}
       className={clsx(
-        "w-full text-left px-4 py-3 flex items-start gap-3 transition-colors border-l-[3px]",
+        "flex w-full items-start gap-3 border-l-[3px] px-4 py-3 text-left transition-colors duration-150",
         selected
-          ? "bg-[var(--color-surface-muted)] border-l-[var(--color-text)]"
-          : "hover:bg-[var(--color-surface-muted)] border-l-transparent"
+          ? "border-l-accent bg-surface-muted"
+          : "border-l-transparent hover:bg-surface-muted/60"
       )}
     >
       <div
         className={clsx(
-          "w-8 h-8 rounded-md flex items-center justify-center shrink-0 mt-0.5",
-          gradient
+          "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
+          accentBg
         )}
       >
-        <Bot className="w-4 h-4 text-[var(--color-surface)] dark:text-[var(--color-text)]" />
+        <Bot className="h-4 w-4 text-white" aria-hidden="true" />
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <p className="text-sm font-medium truncate">{task.title}</p>
+      <div className="min-w-0 flex-1">
+        <div className="mb-0.5 flex items-center gap-2">
+          <p className="truncate text-sm font-medium text-ink">{task.title}</p>
           {task.requires_approval && task.status !== "approved" && (
-            <span className="shrink-0 w-2 h-2 rounded-full bg-[var(--color-warning)]" title="Needs approval" />
+            <span className="h-2 w-2 shrink-0 rounded-full bg-warning" title="Needs approval" />
           )}
         </div>
-        <div className="flex items-center gap-2 mb-1">
+        <div className="mb-1 flex items-center gap-2">
           <StatusBadge status={task.status} />
           <span className={clsx("text-[10px] font-medium", pri.color)}>{pri.label}</span>
         </div>
         {task.output_preview && (
-          <p className="text-xs text-[var(--color-text-secondary)] line-clamp-1">
+          <p className="line-clamp-1 text-xs text-ink-secondary">
             {task.output_preview}
           </p>
         )}
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-[10px] text-[var(--color-text-muted)]">
-            {task.agent_display_name}
-          </span>
-          <span className="text-[10px] text-[var(--color-text-muted)]">·</span>
-          <span className="text-[10px] text-[var(--color-text-muted)]">
-            {formatDate(task.created_at)}
-          </span>
+        <div className="mt-1 flex items-center gap-2 text-[10px] text-ink-secondary">
+          <span>{task.agent_display_name}</span>
+          <span>·</span>
+          <span>{formatDate(task.created_at)}</span>
         </div>
       </div>
-      <ChevronRight className="w-4 h-4 text-[var(--color-text-muted)] shrink-0 mt-2" />
+      <ChevronRight className="mt-2 h-4 w-4 shrink-0 text-ink-muted" aria-hidden="true" />
     </button>
   );
 }
 
-/* ── Task Detail Panel ───────────────────────────────── */
+/* ── Task detail panel ───────────────────────────────── */
 function TaskDetailPanel({
   taskId,
   api,
@@ -375,25 +376,29 @@ function TaskDetailPanel({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-ink-muted" aria-hidden="true" />
       </div>
     );
   }
 
   if (!task) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <AlertTriangle className="w-10 h-10 text-[var(--color-danger)] mb-3" />
-        <p className="font-semibold">Task not found</p>
-        <button onClick={onBack} className="mt-3 text-sm text-[var(--color-text-secondary)] hover:underline">
+      <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+        <AlertTriangle className="mb-3 h-10 w-10 text-danger" aria-hidden="true" />
+        <p className="font-semibold text-ink">Task not found</p>
+        <button
+          type="button"
+          onClick={onBack}
+          className="mt-3 text-sm text-ink-secondary hover:underline"
+        >
           Back to list
         </button>
       </div>
     );
   }
 
-  const gradient = agentColors[task.agent_name] || agentColors.unknown;
+  const accentBg = agentColors[task.agent_name] || agentColors.unknown;
   const latestOutput = task.outputs?.length
     ? [...task.outputs].sort((a, b) => b.version - a.version)[0]
     : null;
@@ -401,26 +406,28 @@ function TaskDetailPanel({
   const canReview = ["completed", "pending_review", "pending"].includes(task.status);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="px-5 py-3 border-b border-[var(--color-border)] flex items-center gap-3">
+      <div className="flex items-center gap-3 border-b border-line px-5 py-3">
         <button
+          type="button"
           onClick={onBack}
-          className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors lg:hidden"
+          aria-label="Back to list"
+          className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted lg:hidden"
         >
-          <ArrowLeft className="w-4 h-4" />
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </button>
         <div
           className={clsx(
-            "w-8 h-8 rounded-md flex items-center justify-center",
-            gradient
+            "flex h-8 w-8 items-center justify-center rounded-md",
+            accentBg
           )}
         >
-          <Bot className="w-4 h-4 text-[var(--color-surface)] dark:text-[var(--color-text)]" />
+          <Bot className="h-4 w-4 text-white" aria-hidden="true" />
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-sm truncate">{task.title}</p>
-          <p className="text-xs text-[var(--color-text-secondary)]">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-ink">{task.title}</p>
+          <p className="text-xs text-ink-secondary">
             {task.agent_display_name} · {formatDate(task.created_at)}
           </p>
         </div>
@@ -428,21 +435,21 @@ function TaskDetailPanel({
       </div>
 
       {/* Body — scrollable */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-5">
+      <div className="flex-1 space-y-5 overflow-y-auto p-5">
         {/* Description */}
         {task.description && (
           <div>
-            <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-1">
+            <p className="mb-1 text-xs font-semibold text-ink-secondary">
               Description
             </p>
-            <p className="text-sm text-[var(--color-text-primary)]">{task.description}</p>
+            <p className="text-sm text-ink">{task.description}</p>
           </div>
         )}
 
         {/* Metadata */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { label: "Priority", value: (priorityLabels[task.priority] ?? { label: "Low", color: "text-gray-500" }).label },
+            { label: "Priority", value: (priorityLabels[task.priority] ?? { label: "Low", color: "" }).label },
             { label: "Attempts", value: String(task.attempts) },
             { label: "Tokens", value: task.tokens_used ? task.tokens_used.toLocaleString() : "—" },
             {
@@ -450,51 +457,48 @@ function TaskDetailPanel({
               value: task.cost_usd != null ? `$${task.cost_usd.toFixed(4)}` : "—",
             },
           ].map((m) => (
-            <div
-              key={m.label}
-              className="bg-[var(--color-surface-muted)] rounded-lg px-3 py-2"
-            >
-              <p className="text-[10px] text-[var(--color-text-muted)] mb-0.5">{m.label}</p>
-              <p className="text-sm font-semibold">{m.value}</p>
+            <div key={m.label} className="rounded-control bg-surface-muted px-3 py-2">
+              <p className="mb-0.5 text-[10px] text-ink-secondary">{m.label}</p>
+              <p className="text-sm font-semibold text-ink">{m.value}</p>
             </div>
           ))}
         </div>
 
         {/* Error */}
         {task.error_message && (
-          <div className="bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 rounded-lg px-4 py-3">
-            <p className="text-xs font-semibold text-[var(--color-danger)] mb-1 flex items-center gap-1">
-              <AlertTriangle className="w-3.5 h-3.5" /> Error
+          <div className="rounded-control border border-danger/20 bg-danger-soft px-4 py-3">
+            <p className="mb-1 flex items-center gap-1 text-xs font-semibold text-danger">
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" /> Error
             </p>
-            <p className="text-xs text-[var(--color-danger)] font-mono">{task.error_message}</p>
+            <p className="font-mono text-xs text-danger">{task.error_message}</p>
           </div>
         )}
 
         {/* Output */}
         {latestOutput && !editMode && (
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
-                <FileText className="w-3.5 h-3.5" />
+            <div className="mb-2 flex items-center justify-between">
+              <p className="flex items-center gap-1.5 text-xs font-semibold text-ink-secondary">
+                <FileText className="h-3.5 w-3.5" aria-hidden="true" />
                 Output{" "}
-                <span className="text-[10px] font-normal text-[var(--color-text-muted)]">
+                <span className="text-[10px] font-normal text-ink-muted">
                   v{latestOutput.version}
                 </span>
               </p>
               {latestOutput.word_count && (
-                <span className="text-[10px] text-[var(--color-text-muted)]">
+                <span className="text-[10px] text-ink-secondary">
                   {latestOutput.word_count} words
                 </span>
               )}
             </div>
-            <div className="bg-[var(--color-surface-muted)] rounded-xl p-4 text-sm whitespace-pre-wrap leading-relaxed max-h-[400px] overflow-y-auto">
+            <div className="max-h-[400px] overflow-y-auto whitespace-pre-wrap rounded-card bg-surface-muted p-4 text-sm leading-relaxed text-ink">
               {latestOutput.content || "No content"}
             </div>
             {latestOutput.user_rating && (
               <div className="mt-2 flex items-center gap-2">
                 <StarRating value={latestOutput.user_rating} readonly />
                 {latestOutput.user_feedback && (
-                  <span className="text-xs text-[var(--color-text-secondary)] italic">
+                  <span className="text-xs italic text-ink-secondary">
                     &quot;{latestOutput.user_feedback}&quot;
                   </span>
                 )}
@@ -506,147 +510,133 @@ function TaskDetailPanel({
         {/* Edit mode */}
         {editMode && (
           <div>
-            <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Pencil className="w-3.5 h-3.5" />
-              Edit Output
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink-secondary">
+              <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+              Edit output
             </p>
             <textarea
               value={editContent}
               onChange={(e) => setEditContent(e.target.value)}
-              className="w-full h-64 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-sm font-mono resize-none focus:outline-none focus:ring-1 focus:ring-[var(--color-text-muted)]"
+              aria-label="Edited output"
+              className="h-64 w-full resize-none rounded-control border border-line bg-surface p-4 font-mono text-sm text-ink focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <input
               value={editNotes}
               onChange={(e) => setEditNotes(e.target.value)}
               placeholder="Notes about your edits (optional)"
-              className="mt-2 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-text-muted)]"
+              aria-label="Edit notes"
+              className="mt-2 w-full rounded-control border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-1 focus:ring-accent"
             />
-            <div className="flex gap-2 mt-3">
-              <button
-                onClick={handleEdit}
-                disabled={actionLoading === "edit"}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
-              >
-                {actionLoading === "edit" ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="w-4 h-4" />
+            <div className="mt-3 flex gap-2">
+              <Button onClick={handleEdit} loading={actionLoading === "edit"}>
+                {actionLoading !== "edit" && (
+                  <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
                 )}
-                Save & Approve
-              </button>
-              <button
-                onClick={() => setEditMode(false)}
-                className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
-              >
+                Save and approve
+              </Button>
+              <Button variant="ghost" onClick={() => setEditMode(false)}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Reject mode */}
         {rejectMode && (
-          <div className="bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 rounded-lg p-4">
-            <p className="text-xs font-semibold text-[var(--color-danger)] mb-2 flex items-center gap-1.5">
-              <XCircle className="w-3.5 h-3.5" />
-              Reject Task
+          <div className="rounded-card border border-danger/20 bg-danger-soft p-4">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-danger">
+              <XCircle className="h-3.5 w-3.5" aria-hidden="true" />
+              Reject task
             </p>
             <textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Reason for rejection..."
-              className="w-full h-24 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--color-text-muted)]"
+              placeholder="Reason for rejection"
+              aria-label="Rejection reason"
+              className="h-24 w-full resize-none rounded-control border border-line bg-surface p-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-1 focus:ring-accent"
             />
-            <div className="flex items-center gap-3 mt-2">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <div className="mt-2 flex items-center gap-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-ink">
                 <input
                   type="checkbox"
                   checked={retryOnReject}
                   onChange={(e) => setRetryOnReject(e.target.checked)}
-                  className="w-4 h-4 rounded border-[var(--color-border)]"
+                  className="h-4 w-4 rounded border-line accent-[#c96442]"
                 />
-                <RotateCcw className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
+                <RotateCcw className="h-3.5 w-3.5 text-ink-secondary" aria-hidden="true" />
                 Retry with agent
               </label>
             </div>
-            <div className="flex gap-2 mt-3">
-              <button
+            <div className="mt-3 flex gap-2">
+              <Button
+                variant="danger"
                 onClick={handleReject}
-                disabled={!rejectReason.trim() || actionLoading === "reject"}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-danger)] rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
+                disabled={!rejectReason.trim()}
+                loading={actionLoading === "reject"}
               >
-                {actionLoading === "reject" ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <XCircle className="w-4 h-4" />
+                {actionLoading !== "reject" && (
+                  <XCircle className="h-4 w-4" aria-hidden="true" />
                 )}
                 Reject
-              </button>
-              <button
-                onClick={() => setRejectMode(false)}
-                className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
-              >
+              </Button>
+              <Button variant="ghost" onClick={() => setRejectMode(false)}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Feedback mode */}
         {feedbackMode && (
-          <div className="bg-[var(--color-surface-muted)] border border-[var(--color-border)] rounded-lg p-4">
-            <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-2 flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5" />
-              Leave Feedback
+          <div className="rounded-card border border-line bg-surface-muted p-4">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-ink-secondary">
+              <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+              Leave feedback
             </p>
             <div className="mb-3">
-              <p className="text-xs text-[var(--color-text-secondary)] mb-1">Rating</p>
+              <p className="mb-1 text-xs text-ink-secondary">Rating</p>
               <StarRating value={feedbackRating} onChange={setFeedbackRating} />
             </div>
             <textarea
               value={feedbackComments}
               onChange={(e) => setFeedbackComments(e.target.value)}
-              placeholder="Comments (optional)..."
-              className="w-full h-20 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-[var(--color-text-muted)]"
+              placeholder="Comments (optional)"
+              aria-label="Feedback comments"
+              className="h-20 w-full resize-none rounded-control border border-line bg-surface p-3 text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-1 focus:ring-accent"
             />
-            <div className="flex gap-2 mt-3">
-              <button
+            <div className="mt-3 flex gap-2">
+              <Button
                 onClick={handleFeedback}
-                disabled={feedbackRating === 0 || actionLoading === "feedback"}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
+                disabled={feedbackRating === 0}
+                loading={actionLoading === "feedback"}
               >
-                {actionLoading === "feedback" ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Star className="w-4 h-4" />
+                {actionLoading !== "feedback" && (
+                  <Star className="h-4 w-4" aria-hidden="true" />
                 )}
                 Submit
-              </button>
-              <button
-                onClick={() => setFeedbackMode(false)}
-                className="px-4 py-2 text-sm font-medium rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
-              >
+              </Button>
+              <Button variant="ghost" onClick={() => setFeedbackMode(false)}>
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {/* Approval notes */}
         {task.approval_notes && (
-          <div className="bg-[var(--color-surface-muted)] rounded-xl px-4 py-3">
-            <p className="text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
-              Review Notes
+          <div className="rounded-card bg-surface-muted px-4 py-3">
+            <p className="mb-1 text-xs font-semibold text-ink-secondary">
+              Review notes
             </p>
-            <p className="text-sm">{task.approval_notes}</p>
+            <p className="text-sm text-ink">{task.approval_notes}</p>
           </div>
         )}
 
         {/* Output version history */}
         {task.outputs.length > 1 && (
           <div>
-            <p className="text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-              Version History
+            <p className="mb-2 text-xs font-semibold text-ink-secondary">
+              Version history
             </p>
             <div className="space-y-1">
               {[...task.outputs]
@@ -654,10 +644,10 @@ function TaskDetailPanel({
                 .map((o) => (
                   <div
                     key={o.id}
-                    className="flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--color-surface-muted)] text-xs"
+                    className="flex items-center justify-between rounded-control bg-surface-muted px-3 py-2 text-xs"
                   >
-                    <span className="font-medium">v{o.version}</span>
-                    <span className="text-[var(--color-text-muted)]">
+                    <span className="font-medium text-ink">v{o.version}</span>
+                    <span className="text-ink-secondary">
                       {o.word_count} words · {formatDate(o.created_at)}
                     </span>
                   </div>
@@ -669,64 +659,68 @@ function TaskDetailPanel({
 
       {/* Action bar */}
       {actionError && (
-        <div className="mx-5 mb-2 p-3 rounded-lg bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20">
-          <p className="text-xs text-[var(--color-danger)] flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+        <div className="mx-5 mb-2 rounded-control border border-danger/20 bg-danger-soft p-3">
+          <p className="flex items-center gap-1.5 text-xs text-danger">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {actionError}
           </p>
         </div>
       )}
       {canReview && !editMode && !rejectMode && !feedbackMode && (
-        <div className="px-5 py-3 border-t border-[var(--color-border)] flex items-center gap-2 bg-[var(--color-surface)]">
+        <div className="flex items-center gap-2 border-t border-line bg-surface px-5 py-3">
           <button
+            type="button"
             onClick={handleApprove}
             disabled={!!actionLoading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-success)] rounded-lg hover:opacity-90 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control bg-success px-4 py-2 text-sm font-medium text-white transition-opacity duration-150 hover:opacity-90 disabled:opacity-50"
           >
             {actionLoading === "approve" ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
-              <ThumbsUp className="w-4 h-4" />
+              <ThumbsUp className="h-4 w-4" aria-hidden="true" />
             )}
             Approve
           </button>
           <button
+            type="button"
             onClick={() => {
               setRejectMode(true);
               setEditMode(false);
               setFeedbackMode(false);
             }}
             disabled={!!actionLoading}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border border-[var(--color-danger)]/30 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/5 transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control border border-danger/30 px-4 py-2 text-sm font-medium text-danger transition-colors duration-150 hover:bg-danger-soft disabled:opacity-50"
           >
-            <ThumbsDown className="w-4 h-4" />
+            <ThumbsDown className="h-4 w-4" aria-hidden="true" />
             Reject
           </button>
           {latestOutput && (
             <button
+              type="button"
               onClick={() => {
                 setEditMode(true);
                 setRejectMode(false);
                 setFeedbackMode(false);
               }}
               disabled={!!actionLoading}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-surface-muted)] transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-control border border-line px-4 py-2 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface-muted disabled:opacity-50"
             >
-              <Pencil className="w-4 h-4" />
+              <Pencil className="h-4 w-4" aria-hidden="true" />
               Edit
             </button>
           )}
           <div className="flex-1" />
           <button
+            type="button"
             onClick={() => {
               setFeedbackMode(true);
               setEditMode(false);
               setRejectMode(false);
             }}
             disabled={!!actionLoading}
-            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-xl hover:bg-[var(--color-surface-muted)] transition-colors text-[var(--color-text-secondary)] disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 rounded-control px-3 py-2 text-sm font-medium text-ink-secondary transition-colors duration-150 hover:bg-surface-muted disabled:opacity-50"
           >
-            <MessageSquare className="w-4 h-4" />
+            <MessageSquare className="h-4 w-4" aria-hidden="true" />
             Feedback
           </button>
         </div>
@@ -735,7 +729,7 @@ function TaskDetailPanel({
   );
 }
 
-/* ── Main Page ───────────────────────────────────────── */
+/* ── Main page ───────────────────────────────────────── */
 export default function TasksPage() {
   const api = useApi();
   const [tasks, setTasks] = useState<TaskListItem[]>([]);
@@ -788,108 +782,112 @@ export default function TasksPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Task Review</h1>
-          <p className="text-[var(--color-text-secondary)] mt-1">
-            Review, approve, and edit agent outputs
-          </p>
-        </div>
-        <button
-          onClick={fetchTasks}
-          className="p-2 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
-          title="Refresh"
-        >
-          <RefreshCw className="w-4 h-4 text-[var(--color-text-secondary)]" />
-        </button>
-      </div>
+      <PageHeader
+        title="Tasks"
+        description="Review, approve, and edit agent outputs"
+        actions={
+          <button
+            type="button"
+            onClick={fetchTasks}
+            className="rounded-control p-2 transition-colors duration-150 hover:bg-surface-muted"
+            title="Refresh"
+            aria-label="Refresh"
+          >
+            <RefreshCw className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
+          </button>
+        }
+      />
 
       {/* Stats bar */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {[
-            { label: "Pending", value: stats.pending_review, icon: Eye, iconColor: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]" },
-            { label: "Approved", value: stats.approved_today, icon: ThumbsUp, iconColor: "text-[var(--color-success)] bg-[var(--color-success)]/5" },
-            { label: "Rejected", value: stats.rejected_today, icon: ThumbsDown, iconColor: "text-[var(--color-danger)] bg-[var(--color-danger)]/5" },
-            { label: "Edited", value: stats.edited_today, icon: Pencil, iconColor: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]" },
-            { label: "Total", value: stats.total_tasks, icon: ListTodo, iconColor: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]" },
+            { label: "Pending", value: stats.pending_review, icon: Eye, iconColor: "text-ink-secondary bg-surface-muted" },
+            { label: "Approved", value: stats.approved_today, icon: ThumbsUp, iconColor: "text-success bg-success-soft" },
+            { label: "Rejected", value: stats.rejected_today, icon: ThumbsDown, iconColor: "text-danger bg-danger-soft" },
+            { label: "Edited", value: stats.edited_today, icon: Pencil, iconColor: "text-ink-secondary bg-surface-muted" },
+            { label: "Total", value: stats.total_tasks, icon: ListTodo, iconColor: "text-ink-secondary bg-surface-muted" },
             {
-              label: "Avg Rating",
+              label: "Avg rating",
               value: stats.avg_rating ? stats.avg_rating.toFixed(1) : "—",
               icon: Star,
-              iconColor: "text-[var(--color-warning)] bg-[var(--color-warning)]/5",
+              iconColor: "text-warning bg-warning-soft",
             },
           ].map((s) => (
-            <div
-              key={s.label}
-              className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3 flex items-center gap-2.5"
-            >
-              <div className={clsx("p-2 rounded-md", s.iconColor)}>
-                <s.icon className="w-4 h-4" />
+            <Card key={s.label} className="flex items-center gap-2.5 p-3">
+              <div className={clsx("rounded-md p-2", s.iconColor)}>
+                <s.icon className="h-4 w-4" aria-hidden="true" />
               </div>
               <div>
-                <p className="text-lg font-semibold leading-tight tabular-nums">{s.value}</p>
-                <p className="text-[10px] text-[var(--color-text-muted)]">{s.label}</p>
+                <p className="text-lg font-semibold leading-tight tabular-nums text-ink">{s.value}</p>
+                <p className="text-[10px] text-ink-secondary">{s.label}</p>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
       {/* Main content — list + detail split */}
-      <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] overflow-hidden min-h-[400px] sm:min-h-[600px] flex">
+      <Card className="flex min-h-[400px] overflow-hidden sm:min-h-[600px]">
         {/* Task list panel */}
         <div
           className={clsx(
-            "w-full lg:w-[380px] lg:border-r border-[var(--color-border)] flex flex-col shrink-0",
+            "flex w-full shrink-0 flex-col border-line lg:w-[380px] lg:border-r",
             selectedId && "hidden lg:flex"
           )}
         >
           {/* Filters */}
-          <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center gap-2">
+          <div className="flex items-center gap-2 border-b border-line px-4 py-3">
             <div className="relative flex-1">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none w-full text-xs pl-7 pr-6 py-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] cursor-pointer"
+                aria-label="Filter by status"
+                className="w-full cursor-pointer appearance-none rounded-control border border-line bg-surface py-1.5 pl-7 pr-6 text-xs text-ink"
               >
                 <option value="">All statuses</option>
                 <option value="pending">Pending</option>
-                <option value="pending_review">Needs Review</option>
+                <option value="pending_review">Needs review</option>
                 <option value="completed">Completed</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="failed">Failed</option>
               </select>
-              <Filter className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
-              <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-muted)]" />
+              <Filter
+                className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted"
+                aria-hidden="true"
+              />
+              <ChevronDown
+                className="absolute right-1.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-ink-muted"
+                aria-hidden="true"
+              />
             </div>
             <button
+              type="button"
               onClick={() => setNeedsReview(!needsReview)}
               className={clsx(
-                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors",
+                "inline-flex items-center gap-1.5 rounded-control border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
                 needsReview
-                  ? "border-[var(--color-warning)]/30 bg-[var(--color-warning)]/5 text-[var(--color-warning)]"
-                  : "border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)]"
+                  ? "border-warning/30 bg-warning-soft text-warning"
+                  : "border-line text-ink-secondary hover:bg-surface-muted"
               )}
             >
-              <Sparkles className="w-3.5 h-3.5" />
-              Needs Review
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              Needs review
             </button>
           </div>
 
           {/* Task list */}
-          <div className="flex-1 overflow-y-auto divide-y divide-[var(--color-border)]">
+          <div className="flex-1 divide-y divide-line-subtle overflow-y-auto">
             {loading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
+                <Loader2 className="h-6 w-6 animate-spin text-ink-muted" aria-hidden="true" />
               </div>
             ) : tasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-                <ListTodo className="w-12 h-12 text-[var(--color-text-muted)] mb-4" />
-                <h3 className="text-lg font-semibold mb-1">No tasks found</h3>
-                <p className="text-sm text-[var(--color-text-secondary)] max-w-xs">
+              <div className="flex flex-col items-center justify-center px-6 py-20 text-center">
+                <ListTodo className="mb-4 h-10 w-10 text-ink-muted" strokeWidth={1.5} aria-hidden="true" />
+                <h3 className="mb-1 font-serif text-lg font-semibold text-ink">No tasks found</h3>
+                <p className="max-w-xs text-sm text-ink-secondary">
                   {needsReview
                     ? "No tasks are currently waiting for your review."
                     : "Tasks will appear here as agents complete their work."}
@@ -909,7 +907,7 @@ export default function TasksPage() {
 
           {/* Footer */}
           {tasks.length > 0 && (
-            <div className="px-4 py-2 border-t border-[var(--color-border)] text-xs text-[var(--color-text-muted)]">
+            <div className="border-t border-line px-4 py-2 text-xs text-ink-secondary">
               Showing {tasks.length} of {total} tasks
             </div>
           )}
@@ -918,7 +916,7 @@ export default function TasksPage() {
         {/* Detail panel */}
         <div
           className={clsx(
-            "flex-1 min-w-0",
+            "min-w-0 flex-1",
             !selectedId && "hidden lg:flex"
           )}
         >
@@ -930,17 +928,17 @@ export default function TasksPage() {
               onAction={handleAction}
             />
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center p-8">
-              <FileText className="w-16 h-16 text-[var(--color-text-muted)] mb-4" />
-              <h3 className="text-lg font-semibold mb-1">Select a task</h3>
-              <p className="text-sm text-[var(--color-text-secondary)] max-w-sm">
+            <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+              <FileText className="mb-4 h-12 w-12 text-ink-muted" strokeWidth={1.5} aria-hidden="true" />
+              <h3 className="mb-1 font-serif text-lg font-semibold text-ink">Select a task</h3>
+              <p className="max-w-sm text-sm text-ink-secondary">
                 Choose a task from the list to review its output, approve, edit,
                 or reject it.
               </p>
             </div>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

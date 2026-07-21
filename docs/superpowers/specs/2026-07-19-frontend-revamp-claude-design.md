@@ -88,7 +88,7 @@ Rule: pages compose these primitives; one-off styles inside pages are allowed on
 - Tokens live in `@theme`; the old `:root`/`.dark` blocks and Clerk internal-class hacks are removed from `globals.css`.
 - **No new npm dependencies.**
 - **Branch note**: the sidebar/root layout currently depend on uncommitted `feat/background-chat-runs` work (ChatProvider, chat-store). Implementation builds on top of that branch (or after it merges) — not off `origin/main`.
-- Task file: `tasks/active/020-frontend-revamp-claude-design.md` (020 = next free ID).
+- Task file: `tasks/completed/021-frontend-revamp-claude-design.md` (was 020 at planning time; renumbered — 020 was claimed on main by chat semantic memory).
 
 ## 7. Verification / acceptance
 

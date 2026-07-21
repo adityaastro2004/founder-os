@@ -33,6 +33,7 @@ import {
   formatExact,
   successRatio,
 } from "../types";
+import { Card, Button } from "@/app/_components/ui";
 
 /* ── Run status badge ───────────────────────────────────── */
 function RunStatusBadge({ status }: { status: string }) {
@@ -41,11 +42,11 @@ function RunStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={clsx(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium",
+        "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium",
         cfg.color
       )}
     >
-      <Icon className={clsx("w-3 h-3", cfg.spin && "animate-spin")} />
+      <Icon className={clsx("h-3 w-3", cfg.spin && "animate-spin")} aria-hidden="true" />
       {cfg.label}
     </span>
   );
@@ -58,35 +59,33 @@ function StepRow({ step, index }: { step: WorkflowStep; index: number }) {
   return (
     <div className="flex items-start gap-3">
       {/* Connector + index */}
-      <div className="flex flex-col items-center shrink-0">
-        <div className="w-7 h-7 rounded-md bg-[var(--color-surface-muted)] flex items-center justify-center text-[11px] font-semibold text-[var(--color-text-secondary)]">
+      <div className="flex shrink-0 flex-col items-center">
+        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-muted text-[11px] font-semibold text-ink-secondary">
           {index + 1}
         </div>
       </div>
-      <div className="flex-1 min-w-0 pb-1">
-        <div className="flex items-center gap-2 mb-1 flex-wrap">
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)] uppercase tracking-wider">
-            <Icon className="w-2.5 h-2.5" />
+      <div className="min-w-0 flex-1 pb-1">
+        <div className="mb-1 flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium text-ink-secondary">
+            <Icon className="h-2.5 w-2.5" aria-hidden="true" />
             {step.type}
           </span>
           {step.agent && (
-            <span className="text-[11px] font-medium text-[var(--color-text-secondary)]">
+            <span className="text-[11px] font-medium text-ink-secondary">
               {step.agent}
             </span>
           )}
           {step.tool && (
-            <span className="text-[11px] font-mono text-[var(--color-text-muted)]">
+            <span className="font-mono text-[11px] text-ink-secondary">
               {step.tool}
             </span>
           )}
         </div>
         {step.instruction && (
-          <p className="text-xs text-[var(--color-text-primary)]">
-            {step.instruction}
-          </p>
+          <p className="text-xs text-ink">{step.instruction}</p>
         )}
         {step.arguments && Object.keys(step.arguments).length > 0 && (
-          <pre className="mt-1 text-[10px] font-mono text-[var(--color-text-muted)] bg-[var(--color-surface-muted)] rounded-md p-2 overflow-x-auto">
+          <pre className="mt-1 overflow-x-auto rounded-md bg-surface-muted p-2 font-mono text-[10px] text-ink-secondary">
             {JSON.stringify(step.arguments, null, 2)}
           </pre>
         )}
@@ -126,15 +125,15 @@ function RunDetail({
   }, [run.id, api]);
 
   return (
-    <div className="border-t border-[var(--color-border)] bg-[var(--color-surface-subtle)] px-5 py-4 space-y-3">
+    <div className="space-y-3 border-t border-line bg-surface-muted/40 px-5 py-4">
       {loading && (
-        <div className="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          Loading run details…
+        <div className="flex items-center gap-2 text-xs text-ink-secondary">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+          Loading run details
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           { label: "Trigger", value: full.trigger_type || "—" },
           { label: "Started", value: formatExact(full.started_at) },
@@ -146,12 +145,10 @@ function RunDetail({
         ].map((m) => (
           <div
             key={m.label}
-            className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] px-3 py-2"
+            className="rounded-control border border-line bg-surface px-3 py-2"
           >
-            <p className="text-[10px] text-[var(--color-text-muted)] mb-0.5">
-              {m.label}
-            </p>
-            <p className="text-xs font-medium truncate" title={m.value}>
+            <p className="mb-0.5 text-[10px] text-ink-secondary">{m.label}</p>
+            <p className="truncate text-xs font-medium text-ink" title={m.value}>
               {m.value}
             </p>
           </div>
@@ -160,21 +157,21 @@ function RunDetail({
 
       {full.output_summary && (
         <div>
-          <p className="text-[10px] font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <FileText className="w-3 h-3" /> Result
+          <p className="mb-1 flex items-center gap-1.5 text-[10px] font-semibold text-ink-secondary">
+            <FileText className="h-3 w-3" aria-hidden="true" /> Result
           </p>
-          <div className="bg-[var(--color-surface)] rounded-lg border border-[var(--color-border)] p-3 text-xs whitespace-pre-wrap leading-relaxed max-h-[280px] overflow-y-auto">
+          <div className="max-h-[280px] overflow-y-auto whitespace-pre-wrap rounded-control border border-line bg-surface p-3 text-xs leading-relaxed text-ink">
             {full.output_summary}
           </div>
         </div>
       )}
 
       {full.error_message && (
-        <div className="bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20 rounded-lg px-3 py-2">
-          <p className="text-[10px] font-semibold text-[var(--color-danger)] mb-1 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" /> Error
+        <div className="rounded-control border border-danger/20 bg-danger-soft px-3 py-2">
+          <p className="mb-1 flex items-center gap-1 text-[10px] font-semibold text-danger">
+            <AlertTriangle className="h-3 w-3" aria-hidden="true" /> Error
           </p>
-          <p className="text-xs text-[var(--color-danger)] font-mono whitespace-pre-wrap">
+          <p className="whitespace-pre-wrap font-mono text-xs text-danger">
             {full.error_message}
           </p>
         </div>
@@ -195,27 +192,29 @@ function RunRow({
   return (
     <div>
       <button
+        type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full text-left px-5 py-3 flex items-center gap-3 hover:bg-[var(--color-surface-muted)] transition-colors"
+        className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors duration-150 hover:bg-surface-muted/60"
       >
         <RunStatusBadge status={run.status} />
-        <span className="text-xs text-[var(--color-text-secondary)]">
+        <span className="text-xs text-ink-secondary">
           {run.trigger_type || "—"}
         </span>
-        <span className="text-xs text-[var(--color-text-muted)]">
+        <span className="text-xs text-ink-secondary">
           {formatRelative(run.started_at)}
         </span>
         <div className="flex-1" />
         {run.error_message && (
-          <span className="text-[11px] text-[var(--color-danger)] truncate max-w-[200px] hidden sm:inline">
+          <span className="hidden max-w-[200px] truncate text-[11px] text-danger sm:inline">
             {run.error_message}
           </span>
         )}
         <ChevronRight
           className={clsx(
-            "w-4 h-4 text-[var(--color-text-muted)] transition-transform",
+            "h-4 w-4 text-ink-muted transition-transform duration-150",
             open && "rotate-90"
           )}
+          aria-hidden="true"
         />
       </button>
       {open && <RunDetail run={run} api={api} />}
@@ -275,19 +274,23 @@ export default function WorkflowDetailPage() {
     }
   }
 
+  const backLink = (
+    <Link
+      href="/dashboard/workflows"
+      className="inline-flex items-center gap-1.5 text-sm text-ink-secondary transition-colors duration-150 hover:text-ink"
+    >
+      <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+      Automations
+    </Link>
+  );
+
   /* ── Loading ── */
   if (loading) {
     return (
       <div className="space-y-8">
-        <Link
-          href="/dashboard/workflows"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Workflows
-        </Link>
+        {backLink}
         <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-muted)]" />
+          <Loader2 className="h-6 w-6 animate-spin text-ink-muted" aria-hidden="true" />
         </div>
       </div>
     );
@@ -297,25 +300,20 @@ export default function WorkflowDetailPage() {
   if (error || !workflow) {
     return (
       <div className="space-y-8">
-        <Link
-          href="/dashboard/workflows"
-          className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Workflows
-        </Link>
-        <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-12 flex flex-col items-center justify-center text-center">
-          <AlertTriangle className="w-12 h-12 text-[var(--color-danger)] mb-4" />
-          <h2 className="text-lg font-semibold mb-2">
+        {backLink}
+        <Card className="flex flex-col items-center justify-center p-12 text-center">
+          <AlertTriangle className="mb-4 h-10 w-10 text-danger" aria-hidden="true" />
+          <h2 className="mb-2 font-serif text-lg font-semibold text-ink">
             {error || "Workflow not found"}
           </h2>
           <button
+            type="button"
             onClick={fetchAll}
-            className="mt-1 text-sm text-[var(--color-text-secondary)] hover:underline"
+            className="mt-1 text-sm text-ink-secondary hover:underline"
           >
             Try again
           </button>
-        </div>
+        </Card>
       </div>
     );
   }
@@ -328,78 +326,64 @@ export default function WorkflowDetailPage() {
   return (
     <div className="space-y-8">
       {/* Back */}
-      <Link
-        href="/dashboard/workflows"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Workflows
-      </Link>
+      {backLink}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-serif text-[28px] font-semibold tracking-tight text-ink">
               {workflow.name}
             </h1>
             <span
               className={clsx(
-                "inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full",
+                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium",
                 workflow.is_active
-                  ? "text-[var(--color-success)] bg-[var(--color-success)]/5"
-                  : "text-[var(--color-text-muted)] bg-[var(--color-surface-muted)]"
+                  ? "bg-success-soft text-success"
+                  : "bg-surface-muted text-ink-secondary"
               )}
             >
-              <CircleDot className="w-2.5 h-2.5" />
+              <CircleDot className="h-2.5 w-2.5" aria-hidden="true" />
               {workflow.is_active ? "Active" : "Paused"}
             </span>
           </div>
           {workflow.description && (
-            <p className="text-[var(--color-text-secondary)] mt-1">
+            <p className="mt-1 text-sm text-ink-secondary">
               {workflow.description}
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
           {editorUrl && (
             <a
               href={editorUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-muted)] transition-colors"
+              className="inline-flex items-center gap-1.5 rounded-control border border-line px-4 py-2 text-sm font-medium text-ink-secondary transition-colors duration-150 hover:bg-surface-muted"
               title="Open in the n8n editor"
             >
-              <ExternalLink className="w-4 h-4" />
-              View / Edit in n8n
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+              View / edit in n8n
             </a>
           )}
-          <button
-            onClick={handleRunNow}
-            disabled={running}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-[var(--color-accent-foreground)] bg-[var(--color-accent)] rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-50"
-          >
-            {running ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Play className="w-4 h-4" />
-            )}
-            {running ? "Starting…" : "Run now"}
-          </button>
+          <Button onClick={handleRunNow} loading={running}>
+            {!running && <Play className="h-4 w-4" aria-hidden="true" />}
+            {running ? "Starting" : "Run now"}
+          </Button>
         </div>
       </div>
 
       {runError && (
-        <div className="p-3 rounded-lg bg-[var(--color-danger)]/5 border border-[var(--color-danger)]/20">
-          <p className="text-xs text-[var(--color-danger)] flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+        <div className="rounded-control border border-danger/20 bg-danger-soft p-3">
+          <p className="flex items-center gap-1.5 text-xs text-danger">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {runError}
           </p>
         </div>
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
           {
             label: "Schedule",
@@ -428,55 +412,50 @@ export default function WorkflowDetailPage() {
             icon: CheckCircle2,
           },
         ].map((s) => (
-          <div
-            key={s.label}
-            className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-3 flex items-center gap-2.5"
-          >
-            <div className="p-2 rounded-md bg-[var(--color-surface-muted)] text-[var(--color-text-secondary)]">
-              <s.icon className="w-4 h-4" />
+          <Card key={s.label} className="flex items-center gap-2.5 p-3">
+            <div className="rounded-md bg-surface-muted p-2 text-ink-secondary">
+              <s.icon className="h-4 w-4" aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <p
                 className={clsx(
-                  "text-sm font-semibold leading-tight truncate",
+                  "truncate text-sm font-semibold leading-tight text-ink",
                   s.mono && "font-mono text-xs"
                 )}
                 title={s.value}
               >
                 {s.value}
               </p>
-              <p className="text-[10px] text-[var(--color-text-muted)]">
-                {s.label}
-              </p>
+              <p className="text-[10px] text-ink-secondary">{s.label}</p>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Steps (read-only IR) */}
-      <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] p-5">
-        <h2 className="text-sm font-semibold mb-1 flex items-center gap-2">
-          <Bot className="w-4 h-4 text-[var(--color-text-secondary)]" />
+      <Card className="p-5">
+        <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold text-ink">
+          <Bot className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           What this workflow does
         </h2>
-        <p className="text-xs text-[var(--color-text-secondary)] mb-4">
+        <p className="mb-4 text-xs text-ink-secondary">
           The trigger and ordered steps the AI generated. To change them, use
-          &quot;View / Edit in n8n&quot; above.
+          &quot;View / edit in n8n&quot; above.
         </p>
 
         {/* Trigger */}
         {trigger && (
-          <div className="mb-4 inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg bg-[var(--color-surface-muted)]">
+          <div className="mb-4 inline-flex items-center gap-2 rounded-control bg-surface-muted px-3 py-1.5 text-xs">
             {trigger.type === "cron" ? (
-              <CalendarClock className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
+              <CalendarClock className="h-3.5 w-3.5 text-ink-secondary" aria-hidden="true" />
             ) : (
-              <Zap className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
+              <Zap className="h-3.5 w-3.5 text-ink-secondary" aria-hidden="true" />
             )}
-            <span className="font-medium capitalize">
+            <span className="font-medium capitalize text-ink">
               {trigger.type} trigger
             </span>
             {trigger.cron && (
-              <span className="font-mono text-[var(--color-text-muted)]">
+              <span className="font-mono text-ink-secondary">
                 {trigger.cron}
                 {trigger.timezone ? ` · ${trigger.timezone}` : ""}
               </span>
@@ -485,7 +464,7 @@ export default function WorkflowDetailPage() {
         )}
 
         {steps.length === 0 ? (
-          <p className="text-sm text-[var(--color-text-muted)]">
+          <p className="text-sm text-ink-secondary">
             No steps available for this workflow.
           </p>
         ) : (
@@ -495,43 +474,45 @@ export default function WorkflowDetailPage() {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Run history */}
-      <div className="bg-white rounded-lg border border-[var(--color-border-subtle)] overflow-hidden">
-        <div className="px-5 py-3 border-b border-[var(--color-border)] flex items-center justify-between">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <History className="w-4 h-4 text-[var(--color-text-secondary)]" />
+      <Card className="overflow-hidden">
+        <div className="flex items-center justify-between border-b border-line px-5 py-3">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-ink">
+            <History className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
             Run history
-            <span className="text-xs font-normal text-[var(--color-text-muted)]">
+            <span className="text-xs font-normal text-ink-secondary">
               ({runs.length})
             </span>
           </h2>
           <button
+            type="button"
             onClick={fetchAll}
-            className="p-1.5 rounded-lg hover:bg-[var(--color-surface-muted)] transition-colors"
+            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
             title="Refresh runs"
+            aria-label="Refresh runs"
           >
-            <RefreshCw className="w-3.5 h-3.5 text-[var(--color-text-secondary)]" />
+            <RefreshCw className="h-3.5 w-3.5 text-ink-secondary" aria-hidden="true" />
           </button>
         </div>
         {runs.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-            <History className="w-10 h-10 text-[var(--color-text-muted)] mb-3" />
-            <p className="text-sm font-medium mb-1">No runs yet</p>
-            <p className="text-xs text-[var(--color-text-secondary)] max-w-xs">
+          <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
+            <History className="mb-3 h-9 w-9 text-ink-muted" strokeWidth={1.5} aria-hidden="true" />
+            <p className="mb-1 text-sm font-medium text-ink">No runs yet</p>
+            <p className="max-w-xs text-xs text-ink-secondary">
               Trigger this workflow with &quot;Run now&quot; or wait for its
               schedule — each run will appear here.
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[var(--color-border)]">
+          <div className="divide-y divide-line-subtle">
             {runs.map((run) => (
               <RunRow key={run.id} run={run} api={api} />
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

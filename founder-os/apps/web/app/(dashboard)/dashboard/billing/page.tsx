@@ -16,6 +16,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { clsx } from "clsx";
+import { PageHeader, Card, Badge } from "@/app/_components/ui";
 
 /* ── Types ─────────────────────────────────────────── */
 interface Plan {
@@ -48,32 +49,13 @@ const PLAN_CONFIG: Record<
   string,
   {
     icon: React.ElementType;
-    gradient: string;
-    badge: string;
     popular?: boolean;
   }
 > = {
-  free: {
-    icon: Zap,
-    gradient: "from-gray-50 to-gray-100",
-    badge: "bg-gray-100 text-gray-600",
-  },
-  starter: {
-    icon: Sparkles,
-    gradient: "from-blue-50 to-indigo-50",
-    badge: "bg-blue-50 text-blue-700",
-    popular: true,
-  },
-  pro: {
-    icon: Crown,
-    gradient: "from-violet-50 to-purple-50",
-    badge: "bg-violet-50 text-violet-700",
-  },
-  enterprise: {
-    icon: Building2,
-    gradient: "from-amber-50 to-orange-50",
-    badge: "bg-amber-50 text-amber-700",
-  },
+  free: { icon: Zap },
+  starter: { icon: Sparkles, popular: true },
+  pro: { icon: Crown },
+  enterprise: { icon: Building2 },
 };
 
 const FEATURE_LABELS: Record<string, string> = {
@@ -93,28 +75,19 @@ const FEATURE_LABELS: Record<string, string> = {
   sla: "SLA guarantee",
 };
 
-/* ── Status Badge ─────────────────────────────────── */
+/* ── Status badge ─────────────────────────────────── */
 function StatusBadge({ status }: { status: string }) {
-  const config: Record<string, { color: string; label: string }> = {
-    active: { color: "text-emerald-700 bg-emerald-50 border-emerald-200", label: "Active" },
-    trial: { color: "text-blue-700 bg-blue-50 border-blue-200", label: "Trial" },
-    past_due: { color: "text-amber-700 bg-amber-50 border-amber-200", label: "Past Due" },
-    canceled: { color: "text-red-700 bg-red-50 border-red-200", label: "Canceled" },
+  const config: Record<string, { tone: "success" | "accent" | "warning" | "danger"; label: string }> = {
+    active: { tone: "success", label: "Active" },
+    trial: { tone: "accent", label: "Trial" },
+    past_due: { tone: "warning", label: "Past due" },
+    canceled: { tone: "danger", label: "Canceled" },
   };
   const c = config[status] ?? config.trial!;
-  return (
-    <span
-      className={clsx(
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border",
-        c.color
-      )}
-    >
-      {c.label}
-    </span>
-  );
+  return <Badge tone={c.tone}>{c.label}</Badge>;
 }
 
-/* ── Usage Bar ────────────────────────────────────── */
+/* ── Usage bar ────────────────────────────────────── */
 function UsageBar({
   used,
   limit,
@@ -128,20 +101,16 @@ function UsageBar({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-sm">
-        <span className="text-[var(--color-text-secondary)]">Tasks this month</span>
-        <span className={clsx("font-medium tabular-nums", isFull && "text-[var(--color-danger)]")}>
+        <span className="text-ink-secondary">Tasks this month</span>
+        <span className={clsx("font-medium tabular-nums text-ink", isFull && "text-danger")}>
           {used.toLocaleString()} / {limit.toLocaleString()}
         </span>
       </div>
-      <div className="h-2 rounded-full bg-[var(--color-surface-muted)] overflow-hidden">
+      <div className="h-2 overflow-hidden rounded-full bg-surface-muted">
         <div
           className={clsx(
             "h-full rounded-full transition-all duration-500 ease-out",
-            isFull
-              ? "bg-[var(--color-danger)]"
-              : isHigh
-                ? "bg-[var(--color-warning)]"
-                : "bg-[var(--color-accent)]"
+            isFull ? "bg-danger" : isHigh ? "bg-warning" : "bg-accent"
           )}
           style={{ width: `${pct}%` }}
         />
@@ -150,7 +119,7 @@ function UsageBar({
   );
 }
 
-/* ── Plan Card ────────────────────────────────────── */
+/* ── Plan card ────────────────────────────────────── */
 function PlanCard({
   plan,
   currentTier,
@@ -174,36 +143,33 @@ function PlanCard({
   return (
     <div
       className={clsx(
-        "relative rounded-xl border p-6 flex flex-col transition-all duration-200",
+        "relative flex flex-col rounded-card border bg-surface p-6 transition-colors duration-150",
         isCurrent
-          ? "border-[var(--color-accent)] bg-[var(--color-surface)] ring-1 ring-[var(--color-accent)]/10"
-          : "border-[var(--color-border-subtle)] bg-[var(--color-surface)] hover:border-[var(--color-border)] hover:shadow-sm"
+          ? "border-accent ring-1 ring-accent/10"
+          : "border-line hover:bg-surface-muted/30"
       )}
     >
       {/* Popular badge */}
       {config.popular && !isCurrent && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="px-3 py-1 bg-[var(--color-accent)] text-[var(--color-accent-foreground)] text-[10px] font-semibold uppercase tracking-wider rounded-full">
-            Most Popular
+          <span className="rounded-full bg-accent px-3 py-1 text-[10px] font-semibold text-white">
+            Most popular
           </span>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-3 mb-4">
-        <div
-          className={clsx(
-            "w-9 h-9 rounded-lg flex items-center justify-center bg-gradient-to-br",
-            config.gradient
-          )}
-        >
-          <Icon className="w-4.5 h-4.5 text-[var(--color-text-secondary)]" />
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-muted">
+          <Icon className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
         </div>
         <div>
-          <h3 className="font-semibold text-sm">{plan.display_name || plan.name}</h3>
+          <h3 className="font-serif text-sm font-semibold text-ink">
+            {plan.display_name || plan.name}
+          </h3>
           {isCurrent && (
-            <span className="text-[10px] font-medium text-[var(--color-accent)] uppercase tracking-wider">
-              Current Plan
+            <span className="text-[10px] font-medium text-accent-text">
+              Current plan
             </span>
           )}
         </div>
@@ -213,19 +179,19 @@ function PlanCard({
       <div className="mb-4">
         {isFreePlan ? (
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold tracking-tight">$0</span>
-            <span className="text-sm text-[var(--color-text-muted)]">forever</span>
+            <span className="text-3xl font-semibold tracking-tight text-ink">$0</span>
+            <span className="text-sm text-ink-secondary">forever</span>
           </div>
         ) : (
           <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold tracking-tight">
+            <span className="text-3xl font-semibold tracking-tight text-ink">
               ${plan.price_monthly_usd}
             </span>
-            <span className="text-sm text-[var(--color-text-muted)]">/mo</span>
+            <span className="text-sm text-ink-secondary">/mo</span>
           </div>
         )}
         {plan.price_yearly_usd && !isFreePlan && (
-          <p className="text-xs text-[var(--color-text-muted)] mt-1">
+          <p className="mt-1 text-xs text-ink-secondary">
             ${plan.price_yearly_usd}/yr (save{" "}
             {Math.round(
               100 - (plan.price_yearly_usd / ((plan.price_monthly_usd || 1) * 12)) * 100
@@ -236,12 +202,12 @@ function PlanCard({
       </div>
 
       {/* Description */}
-      <p className="text-sm text-[var(--color-text-secondary)] mb-5 leading-relaxed">
+      <p className="mb-5 text-sm leading-relaxed text-ink-secondary">
         {plan.description || "—"}
       </p>
 
       {/* Limits */}
-      <div className="space-y-2.5 mb-6 flex-1">
+      <div className="mb-6 flex-1 space-y-2.5">
         <LimitRow label="Tasks / month" value={plan.monthly_task_limit} unlimited={(plan.monthly_task_limit ?? 0) > 99999} />
         <LimitRow label="Agents" value={plan.agent_limit} />
         <LimitRow label="Workflows" value={plan.workflow_limit} />
@@ -251,14 +217,14 @@ function PlanCard({
 
       {/* Features */}
       {plan.features && plan.features.length > 0 && (
-        <div className="border-t border-[var(--color-border-subtle)] pt-4 mb-5">
-          <p className="text-[10px] font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-2.5">
+        <div className="mb-5 border-t border-line-subtle pt-4">
+          <p className="mb-2.5 text-[10px] font-medium text-ink-secondary">
             Includes
           </p>
           <ul className="space-y-1.5">
             {plan.features.map((f: string) => (
-              <li key={f} className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]">
-                <Check className="w-3.5 h-3.5 text-[var(--color-success)] shrink-0" />
+              <li key={f} className="flex items-center gap-2 text-sm text-ink-secondary">
+                <Check className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden="true" />
                 {FEATURE_LABELS[f] || f}
               </li>
             ))}
@@ -269,35 +235,38 @@ function PlanCard({
       {/* Action button */}
       {isCurrent ? (
         <button
+          type="button"
           disabled
-          className="w-full py-2.5 px-4 rounded-lg text-sm font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] cursor-default"
+          className="w-full cursor-default rounded-control border border-line px-4 py-2.5 text-sm font-medium text-ink-muted"
         >
-          Current Plan
+          Current plan
         </button>
       ) : isFreePlan || isDowngrade ? (
         <button
+          type="button"
           disabled
-          className="w-full py-2.5 px-4 rounded-lg text-sm font-medium border border-[var(--color-border)] text-[var(--color-text-muted)] cursor-default"
+          className="w-full cursor-default rounded-control border border-line px-4 py-2.5 text-sm font-medium text-ink-muted"
         >
-          {isDowngrade ? "Downgrade via Portal" : "Free"}
+          {isDowngrade ? "Downgrade via portal" : "Free"}
         </button>
       ) : (
         <button
+          type="button"
           onClick={() => onUpgrade(plan.name)}
           disabled={loading}
           className={clsx(
-            "w-full py-2.5 px-4 rounded-lg text-sm font-medium transition-all duration-150 flex items-center justify-center gap-2",
+            "flex w-full items-center justify-center gap-2 rounded-control px-4 py-2.5 text-sm font-medium transition-colors duration-150",
             config.popular
-              ? "bg-[var(--color-accent)] text-[var(--color-accent-foreground)] hover:bg-[var(--color-accent-hover)]"
-              : "border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-surface-muted)]"
+              ? "bg-accent text-white hover:bg-accent-hover"
+              : "border border-accent text-accent-text hover:bg-accent-soft/50"
           )}
         >
           {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
             <>
               Upgrade
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
             </>
           )}
         </button>
@@ -317,8 +286,8 @@ function LimitRow({
 }) {
   return (
     <div className="flex items-center justify-between text-sm">
-      <span className="text-[var(--color-text-secondary)]">{label}</span>
-      <span className="font-medium tabular-nums">
+      <span className="text-ink-secondary">{label}</span>
+      <span className="font-medium tabular-nums text-ink">
         {unlimited ? "Unlimited" : value?.toLocaleString() ?? "—"}
       </span>
     </div>
@@ -342,7 +311,7 @@ export default function BillingPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") {
-      setToast({ type: "success", message: "Subscription activated! Welcome aboard 🎉" });
+      setToast({ type: "success", message: "Subscription activated. Welcome aboard." });
       // Clean URL
       window.history.replaceState({}, "", "/dashboard/billing");
     } else if (params.get("canceled") === "true") {
@@ -415,25 +384,27 @@ export default function BillingPage() {
   const currentTier = status?.subscription_tier || "free";
 
   return (
-    <div className="space-y-8 max-w-6xl">
+    <div className="space-y-8">
       {/* Toast */}
       {toast && (
         <div
           className={clsx(
-            "flex items-center gap-3 p-4 rounded-lg border animate-in fade-in slide-in-from-top-2 duration-300",
+            "flex items-center gap-3 rounded-control border p-4",
             toast.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-              : "bg-red-50 border-red-200 text-red-800"
+              ? "border-success/20 bg-success-soft text-success"
+              : "border-danger/20 bg-danger-soft text-danger"
           )}
         >
           {toast.type === "success" ? (
-            <CheckCircle2 className="w-4.5 h-4.5 shrink-0" />
+            <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
           ) : (
-            <AlertCircle className="w-4.5 h-4.5 shrink-0" />
+            <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
           )}
-          <p className="text-sm font-medium flex-1">{toast.message}</p>
+          <p className="flex-1 text-sm font-medium">{toast.message}</p>
           <button
+            type="button"
             onClick={() => setToast(null)}
+            aria-label="Dismiss"
             className="text-sm opacity-60 hover:opacity-100"
           >
             ×
@@ -441,36 +412,35 @@ export default function BillingPage() {
         </div>
       )}
 
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Billing</h1>
-        <p className="text-[var(--color-text-secondary)] mt-1">
-          Manage your subscription and usage
-        </p>
-      </div>
+      <PageHeader
+        title="Billing"
+        description="Manage your subscription and usage"
+      />
 
       {/* Current plan + usage card */}
       {status && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Current plan */}
-          <div className="bg-white rounded-xl border border-[var(--color-border-subtle)] p-6">
-            <div className="flex items-center justify-between mb-4">
+          <Card className="p-6">
+            <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-                  <CreditCard className="w-5 h-5 text-[var(--color-text-secondary)]" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface-muted">
+                  <CreditCard className="h-5 w-5 text-ink-secondary" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-medium">
-                    Current Plan
+                  <p className="text-xs font-medium text-ink-secondary">
+                    Current plan
                   </p>
-                  <p className="text-lg font-semibold capitalize">{status.subscription_tier}</p>
+                  <p className="text-lg font-semibold capitalize text-ink">
+                    {status.subscription_tier}
+                  </p>
                 </div>
               </div>
               <StatusBadge status={status.subscription_status} />
             </div>
 
             {status.trial_ends_at && (
-              <p className="text-xs text-[var(--color-text-muted)] mb-3">
+              <p className="mb-3 text-xs text-ink-secondary">
                 Trial ends:{" "}
                 {new Date(status.trial_ends_at).toLocaleDateString("en-US", {
                   month: "long",
@@ -482,50 +452,49 @@ export default function BillingPage() {
 
             {status.has_payment_method && (
               <button
+                type="button"
                 onClick={handlePortal}
                 disabled={portalLoading}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium border border-[var(--color-border)] hover:bg-[var(--color-surface-muted)] transition-colors"
+                className="inline-flex items-center gap-2 rounded-control border border-line px-4 py-2 text-sm font-medium text-ink transition-colors duration-150 hover:bg-surface-muted"
               >
                 {portalLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 ) : (
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 )}
-                Manage Subscription
+                Manage subscription
               </button>
             )}
-          </div>
+          </Card>
 
           {/* Usage */}
-          <div className="bg-white rounded-xl border border-[var(--color-border-subtle)] p-6">
-            <p className="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-medium mb-4">
-              Usage
-            </p>
+          <Card className="p-6">
+            <p className="mb-4 text-xs font-medium text-ink-secondary">Usage</p>
             <UsageBar used={status.monthly_tasks_used} limit={status.monthly_task_limit} />
-            <p className="text-xs text-[var(--color-text-muted)] mt-3">
+            <p className="mt-3 text-xs text-ink-secondary">
               Resets at the start of each billing cycle
             </p>
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Plans grid */}
       <div>
-        <h2 className="text-sm font-medium text-[var(--color-text-muted)] uppercase tracking-wider mb-4">
-          Available Plans
+        <h2 className="mb-4 text-[13px] font-medium text-ink-secondary">
+          Available plans
         </h2>
 
         {loading ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-5 h-5 animate-spin text-[var(--color-text-muted)]" />
+            <Loader2 className="h-5 w-5 animate-spin text-ink-muted" aria-hidden="true" />
           </div>
         ) : plans.length === 0 ? (
-          <div className="text-center py-16 text-[var(--color-text-secondary)]">
-            <CreditCard className="w-8 h-8 mx-auto mb-3 text-[var(--color-text-muted)]" />
+          <div className="py-16 text-center text-ink-secondary">
+            <CreditCard className="mx-auto mb-3 h-8 w-8 text-ink-muted" aria-hidden="true" />
             <p className="text-sm">No plans available. Configure Stripe to see pricing.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {plans.map((plan) => (
               <PlanCard
                 key={plan.name}
@@ -540,13 +509,13 @@ export default function BillingPage() {
       </div>
 
       {/* Test mode notice */}
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
-        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-control border border-warning/20 bg-warning-soft p-4">
+        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden="true" />
         <div>
-          <p className="text-sm font-medium text-amber-800">Stripe Test Mode</p>
-          <p className="text-xs text-amber-700 mt-0.5">
+          <p className="text-sm font-medium text-ink">Stripe test mode</p>
+          <p className="mt-0.5 text-xs text-ink-secondary">
             Payments are in test mode. Use card{" "}
-            <code className="px-1.5 py-0.5 bg-amber-100 rounded text-[11px] font-mono">
+            <code className="rounded bg-surface-muted px-1.5 py-0.5 font-mono text-[11px]">
               4242 4242 4242 4242
             </code>{" "}
             with any future expiry and CVC.

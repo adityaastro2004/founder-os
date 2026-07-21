@@ -1,78 +1,82 @@
 @import "tailwindcss";
 
-/* ── Design Tokens — Light & Clean ─────────────────── */
-:root {
-  color-scheme: light;
+/* ── Design tokens — warm paper & ink ──────────────── */
+@theme {
+  --color-paper: #faf9f5;
   --color-surface: #ffffff;
-  --color-surface-subtle: #f9fafb;
-  --color-surface-muted: #f3f4f6;
-  --color-border: #e5e7eb;
-  --color-border-subtle: #f3f4f6;
-  --color-text: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-muted: #9ca3af;
-  --color-accent: #111827;
-  --color-accent-hover: #1f2937;
-  --color-accent-foreground: #ffffff;
-  --color-success: #16a34a;
-  --color-warning: #d97706;
-  --color-danger: #dc2626;
-  --sidebar-width: 240px;
-  --radius: 10px;
+  --color-surface-muted: #f0eee6;
+  --color-line: #e8e6dd;
+  --color-line-subtle: #f0eee6;
+  --color-ink: #1f1e1d;
+  --color-ink-secondary: #63605b;
+  --color-ink-muted: #a6a29a;
+  --color-accent: #c96442;
+  --color-accent-hover: #b04e2f;
+  --color-accent-text: #b04e2f; /* accent as small text on paper — AA-safe */
+  --color-accent-soft: #f1e5de;
+  --color-success: #4c8055;
+  --color-success-soft: #e8efe6;
+  --color-warning: #b9741c;
+  --color-warning-soft: #f5ecdc;
+  --color-danger: #bf4232;
+  --color-danger-soft: #f6e4e0;
+  --radius-card: 12px;
+  --radius-control: 8px;
+  --font-serif: var(--font-source-serif), georgia, "times new roman", serif;
+  --font-sans: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-/* ── Dark mode (opt-in via class only) ─────────────── */
-.dark {
-  --color-surface: #0a0a0a;
-  --color-surface-subtle: #111111;
-  --color-surface-muted: #1a1a1a;
-  --color-border: #262626;
-  --color-border-subtle: #1a1a1a;
-  --color-text: #fafafa;
-  --color-text-secondary: #a3a3a3;
-  --color-text-muted: #525252;
-  --color-accent: #fafafa;
-  --color-accent-hover: #d4d4d4;
-  --color-accent-foreground: #0a0a0a;
+:root {
+  color-scheme: light;
+  --sidebar-width: 248px;
 }
 
 /* ── Base ──────────────────────────────────────────── */
-html, body {
+html,
+body {
   max-width: 100vw;
   overflow-x: hidden;
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
 body {
-  color: var(--color-text);
-  background: var(--color-surface);
+  color: var(--color-ink);
+  background: var(--color-paper);
+  font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 * {
-  border-color: var(--color-border);
+  border-color: var(--color-line);
 }
 
 /* ── Scrollbar ─────────────────────────────────────── */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+::-webkit-scrollbar-thumb { background: var(--color-line); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-ink-muted); }
 
 /* ── Focus ring ────────────────────────────────────── */
 *:focus-visible {
-  outline: 2px solid var(--color-border);
+  outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 /* ── Selection ─────────────────────────────────────── */
 ::selection {
-  background: var(--color-accent);
-  color: var(--color-accent-foreground);
+  background: var(--color-accent-soft);
+  color: var(--color-ink);
 }
 
-/* ── Clerk component overrides ─────────────────────── */
-.cl-card { border-radius: var(--radius) !important; }
-.cl-internal-b3fm6y { background: var(--color-accent) !important; }
+/* ── Reduced motion ────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

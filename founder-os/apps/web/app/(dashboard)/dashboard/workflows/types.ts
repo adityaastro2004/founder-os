@@ -80,35 +80,35 @@ export interface RunStatusConfig {
 
 const PENDING_STATUS: RunStatusConfig = {
   label: "Pending",
-  color: "text-[var(--color-text-muted)] bg-[var(--color-surface-muted)]",
+  color: "text-ink-secondary bg-surface-muted",
   icon: Clock,
 };
 
 export const runStatusConfig: Record<string, RunStatusConfig> = {
   running: {
     label: "Running",
-    color: "text-[var(--color-text-secondary)] bg-[var(--color-surface-muted)]",
+    color: "text-ink-secondary bg-surface-muted",
     icon: Loader2,
     spin: true,
   },
   completed: {
     label: "Completed",
-    color: "text-[var(--color-success)] bg-[var(--color-success)]/5",
+    color: "text-success bg-success-soft",
     icon: CheckCircle2,
   },
   failed: {
     label: "Failed",
-    color: "text-[var(--color-danger)] bg-[var(--color-danger)]/5",
+    color: "text-danger bg-danger-soft",
     icon: AlertTriangle,
   },
   awaiting_approval: {
-    label: "Awaiting Approval",
-    color: "text-[var(--color-warning)] bg-[var(--color-warning)]/5",
+    label: "Awaiting approval",
+    color: "text-warning bg-warning-soft",
     icon: PauseCircle,
   },
   cancelled: {
     label: "Cancelled",
-    color: "text-[var(--color-text-muted)] bg-[var(--color-surface-muted)]",
+    color: "text-ink-secondary bg-surface-muted",
     icon: XCircle,
   },
   pending: PENDING_STATUS,

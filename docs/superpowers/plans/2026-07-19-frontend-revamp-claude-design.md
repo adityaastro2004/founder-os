@@ -47,14 +47,14 @@
 
 **Files:**
 - Create: worktree `feat/frontend-revamp-claude` from `cd6286c`
-- Create: `tasks/active/020-frontend-revamp-claude-design.md`
+- Create: `tasks/active/021-frontend-revamp-claude-design.md`
 - Add: `docs/superpowers/specs/2026-07-19-frontend-revamp-claude-design.md`, `docs/superpowers/plans/2026-07-19-frontend-revamp-claude-design.md` (copy from main checkout)
 
 **Steps:**
 
 - [ ] **1.1** Create the worktree: `git worktree add <scratch>/revamp -b feat/frontend-revamp-claude cd6286c` (or the native EnterWorktree tool). All subsequent work happens there.
 - [ ] **1.2** Copy the spec + this plan into the worktree (they only exist in the main checkout's untracked files).
-- [ ] **1.3** Write `tasks/active/020-frontend-revamp-claude-design.md` following `tasks/TEMPLATE.md`: goal = spec §Decisions, acceptance = spec §7, status = active.
+- [ ] **1.3** Write `tasks/active/021-frontend-revamp-claude-design.md` following `tasks/TEMPLATE.md`: goal = spec §Decisions, acceptance = spec §7, status = active.
 - [ ] **1.4** Commit: `docs(revamp): spec + plan + task 020 for the Claude-style frontend revamp`
 
 ### Task 2: Design tokens, fonts, brand.md
