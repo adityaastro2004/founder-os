@@ -50,6 +50,23 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Tool output re-enters the message list and is re-sent on EVERY subsequent
+# round of the loop — an unbounded result (crawled page, busy calendar dump)
+# multiplies across rounds. ~2k tokens is enough for any tool to act on.
+_TOOL_RESULT_MAX_CHARS = 8000
+
+
+def _clip_tool_result(content: str) -> str:
+    """Truncate oversized tool output before it joins the conversation."""
+    if len(content) <= _TOOL_RESULT_MAX_CHARS:
+        return content
+    dropped = len(content) - _TOOL_RESULT_MAX_CHARS
+    return (
+        content[:_TOOL_RESULT_MAX_CHARS]
+        + f"\n…[tool output truncated: {dropped} chars dropped. "
+        "Re-call with narrower arguments if you need the rest.]"
+    )
+
 
 # ============================================================================
 # Execution data types
@@ -252,11 +269,11 @@ class ExecutionEngine:
             )
             pending_approvals.extend(new_pending)
 
-            # -- Append tool results as messages ----------------
+            # -- Append tool results as messages (clipped — see above) --
             for tr in tool_results:
                 messages.append(LLMMessage(
                     role=Role.TOOL_RESULT,
-                    content=tr.content,
+                    content=_clip_tool_result(tr.content),
                     tool_call_id=tr.tool_call_id,
                 ))
 

@@ -239,61 +239,43 @@ class MCPGoogleCalendarProvider(ToolProvider):
         ToolSchema(
             name="gcal_smart_delete",
             description=(
-                "Smart bulk-delete of calendar events. "
-                "By default (ai_only=true) only deletes AI-generated events "
-                "(with [PLANNER], [OPS], etc. tags or 'Founder OS' markers). "
-                "Set ai_only=false to delete ANY events matching the keyword "
-                "and time range. Supports filtering by agent tag, keyword, or "
-                "deleting all matched events. Use dry_run=true to preview first."
+                "Bulk-delete calendar events. Default ai_only=true deletes only "
+                "AI-generated/Founder OS events; ai_only=false deletes ANY events "
+                "matching keyword + time range. Preview with dry_run=true first."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "time_min": {
                         "type": "string",
-                        "description": (
-                            "Start of time range in ISO format (default: now). "
-                            "Example: '2026-03-06T00:00:00'"
-                        ),
+                        "description": "Range start, ISO datetime (default: now)",
                     },
                     "time_max": {
                         "type": "string",
-                        "description": (
-                            "End of time range in ISO format (default: 7 days from now). "
-                            "Example: '2026-03-13T23:59:59'"
-                        ),
+                        "description": "Range end, ISO datetime (default: now + 7 days)",
                     },
                     "agent_filter": {
                         "type": "string",
                         "description": (
-                            "Only delete events from a specific agent. "
-                            "Values: PLANNER, OPS, CONTENT, RESEARCH, PRODUCT, SUPPORT. "
-                            "Leave empty to match ALL Founder OS events."
+                            "Only this agent's events: PLANNER, OPS, CONTENT, "
+                            "RESEARCH, PRODUCT, or SUPPORT. Empty = all Founder OS events."
                         ),
                     },
                     "keyword": {
                         "type": "string",
-                        "description": (
-                            "Optional keyword to match in event title. "
-                            "Only events whose summary contains this keyword "
-                            "(case-insensitive) will be deleted."
-                        ),
+                        "description": "Only events whose title contains this (case-insensitive)",
                     },
                     "ai_only": {
                         "type": "boolean",
                         "description": (
-                            "If true (default), only delete AI-generated / Founder OS events. "
-                            "If false, delete ANY events matching the keyword and time range "
-                            "(useful for deleting user-created events by title keyword)."
+                            "true (default): only AI-generated/Founder OS events; "
+                            "false: any events matching keyword + range"
                         ),
                         "default": True,
                     },
                     "dry_run": {
                         "type": "boolean",
-                        "description": (
-                            "If true, list the events that WOULD be deleted "
-                            "without actually deleting them. Default: false."
-                        ),
+                        "description": "true: preview matches without deleting (default false)",
                         "default": False,
                     },
                     "max_results": {
