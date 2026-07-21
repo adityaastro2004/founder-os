@@ -145,6 +145,75 @@ async def _extract_insights_background(
     except Exception as exc:
         logger.warning("Background insight extraction failed: %s", exc)
 
+
+# ── Background chat→memory capture (task 020 / ADR-014) ────
+# Documented, filterable provenance constants (AC-3): the Curator and the
+# State Engine `system` feed filter chat pages on source/page_type;
+# metadata.session_id is the same-session recall-exclusion key (AC-11).
+
+_CHAT_MEMORY_MIN_INPUT_CHARS = 10   # mirrors the insights guard
+_CHAT_MEMORY_TITLE_CHARS = 100      # user-message excerpt cap (" …" marker)
+_CHAT_MEMORY_USER_CHARS = 600       # stored user-side cap (" …" marker)
+_CHAT_MEMORY_RESPONSE_CHARS = 1400  # stored assistant-side cap (" …" marker)
+_CHAT_MEMORY_PAGE_TYPE = "conversation"
+_CHAT_MEMORY_SOURCE = "chat"
+_CHAT_MEMORY_CHAPTER = "conversations"
+
+
+def _excerpt(text: str, cap: int) -> str:
+    text = text.strip()
+    return text if len(text) <= cap else text[:cap] + " …"
+
+
+async def _store_chat_memory_background(
+    user_id: str,
+    agent_name: str,
+    user_message: str,
+    agent_response: str,
+    session_id: str | None = None,
+) -> None:
+    """
+    Fire-and-forget: persist the turn's semantics to memory_pages (ADR-014).
+
+    Embedding only — zero LLM completions; an embedding failure still stores
+    the page (NULL embedding). Failures are logged and swallowed — the chat
+    response is never blocked. Only the user message and the final assistant
+    text are persisted, never tool outputs. Everything else uses async_store
+    defaults: importance 0.5, decay 0.001, review_in_days None.
+    """
+    # Skip trivial turns — nothing worth remembering (AC-2)
+    if not user_message or len(user_message.strip()) < _CHAT_MEMORY_MIN_INPUT_CHARS:
+        return
+    if not agent_response or not agent_response.strip():
+        return
+
+    try:
+        from app.memory.manager import get_memory_manager
+
+        title = (
+            f"Chat ({agent_name}): "
+            f"{_excerpt(user_message, _CHAT_MEMORY_TITLE_CHARS)}"
+        )
+        content = (
+            f"User: {_excerpt(user_message, _CHAT_MEMORY_USER_CHARS)}\n\n"
+            f"Assistant: {_excerpt(agent_response, _CHAT_MEMORY_RESPONSE_CHARS)}"
+        )
+        await get_memory_manager().async_store(
+            user_id=user_id,
+            title=title,
+            content=content,
+            page_type=_CHAT_MEMORY_PAGE_TYPE,
+            source=_CHAT_MEMORY_SOURCE,
+            chapter=_CHAT_MEMORY_CHAPTER,
+            tags=["chat", agent_name],
+            metadata={"session_id": session_id or "", "agent": agent_name},
+            is_pinned=False,
+            auto_embed=True,
+        )
+    except Exception as exc:
+        logger.warning("Background chat memory store failed: %s", sl(str(exc)))
+
+
 def _resolve_planner_user_id(clerk_user_id: str) -> str:
     """Resolve the user_store key for a Clerk user.
 
@@ -345,6 +414,15 @@ async def run_agent(
         session_id=body.session_id,
     ))
 
+    # Fire-and-forget chat→memory capture (ADR-014)
+    asyncio.create_task(_store_chat_memory_background(
+        user_id=user.user_id,
+        agent_name=agent_name,
+        user_message=body.message,
+        agent_response=result.content or "",
+        session_id=body.session_id,
+    ))
+
     ph = get_posthog()
     if ph is not None:
         ph.capture(
@@ -501,6 +579,15 @@ async def chat_with_agent(
         session_id=session_id,
     ))
 
+    # Fire-and-forget chat→memory capture (ADR-014)
+    asyncio.create_task(_store_chat_memory_background(
+        user_id=user.user_id,
+        agent_name=agent_name,
+        user_message=body.message,
+        agent_response=result.content or "",
+        session_id=session_id,
+    ))
+
     ph = get_posthog()
     if ph is not None:
         ph.capture(
@@ -642,6 +729,15 @@ async def orchestrate(
 
     # Fire-and-forget insight extraction
     asyncio.create_task(_extract_insights_background(
+        user_id=user.user_id,
+        agent_name="orchestrator",
+        user_message=body.message,
+        agent_response=result.content or "",
+        session_id=body.session_id,
+    ))
+
+    # Fire-and-forget chat→memory capture (ADR-014)
+    asyncio.create_task(_store_chat_memory_background(
         user_id=user.user_id,
         agent_name="orchestrator",
         user_message=body.message,
@@ -831,6 +927,15 @@ async def orchestrate_stream(
 
             # Fire-and-forget insight extraction
             asyncio.create_task(_extract_insights_background(
+                user_id=user.user_id,
+                agent_name="orchestrator",
+                user_message=body.message,
+                agent_response=result.content or "",
+                session_id=body.session_id,
+            ))
+
+            # Fire-and-forget chat→memory capture (ADR-014)
+            asyncio.create_task(_store_chat_memory_background(
                 user_id=user.user_id,
                 agent_name="orchestrator",
                 user_message=body.message,

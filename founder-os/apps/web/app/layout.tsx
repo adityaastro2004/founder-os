@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Source_Serif_4 } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { PostHogIdentify } from "./_components/posthog-identify";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -50,7 +51,10 @@ export default function RootLayout({
           defined on :root and resolve nested var()s there, not on <body>. */}
       <body className="antialiased">
         {hasClerk ? (
-          <ClerkProvider appearance={clerkAppearance}>{children}</ClerkProvider>
+          <ClerkProvider appearance={clerkAppearance}>
+            {children}
+            <PostHogIdentify />
+          </ClerkProvider>
         ) : (
           children
         )}

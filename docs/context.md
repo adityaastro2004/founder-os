@@ -1,6 +1,6 @@
 # Project context (auto)
 
-Generated: 2026-07-03T16:31:38.934Z
+Generated: 2026-07-19T16:38:28.808Z
 
 ## Detected stack
 
@@ -8,56 +8,53 @@ Generated: 2026-07-03T16:31:38.934Z
 
 ## Git
 
-- Branch: `phase0-foundation-revamp`
-- HEAD: `a410c9f`
+- Branch: `feat/background-chat-runs`
+- HEAD: `cd6286c`
 
 ## Recent commits
 
-- `a410c9f` audit(phase0): close-out verification — all 7 spec criteria met; live tier 14/14 green _(Aditya Jain, 2026-07-03)_
-- `4c9a958` test(phase0): RAG suite client timeout 60→300s — agent-chat section runs 30-90s+ on local ollama, flaked at 60s in soak (testing.md rule 5) _(Aditya Jain, 2026-07-03)_
-- `01f3f40` test(phase0): RAG agent-grounding check FAIL→WARN — LLM content-quality assertion flaked in close-out soak, passed on immediate re-run (testing.md rule 4); retrieval stays hard-asserted structurally _(Aditya Jain, 2026-07-03)_
-- `d0db615` chore(phase0): record security + review gate outcomes in task 012 _(Aditya Jain, 2026-07-03)_
-- `6e7e223` fix(phase0): eng-reviewer findings — B1 stale calendar import in test_e2e_pipeline (crashed suite), S1 same in test_system token-copy path, S2 idempotent adapter registration, N1 turbo.json formatting, N2 crawler test noted in testing.md _(Aditya Jain, 2026-07-03)_
-- `81e3825` docs(phase0): ADR-010, testing standard rewrite (3 tiers), architecture integrations+testing sections, roadmap phase table _(Aditya Jain, 2026-07-03)_
-- `1f86319` ci(phase0): run pytest unit tier in backend job _(Aditya Jain, 2026-07-03)_
-- `70018b5` chore(phase0): turbo test → API unit tier (apps/api joins npm workspace) _(Aditya Jain, 2026-07-03)_
-- `1811ee3` refactor(phase0): calendar → integrations/google_calendar + first adapter (behavior-preserving) _(Aditya Jain, 2026-07-03)_
-- `80c8c86` feat(phase0): integration adapter framework — base ABC + registry (ADR-010) _(Aditya Jain, 2026-07-03)_
-- `597dc77` audit(phase0): record F1-F3 fix dispositions + eng-security PASS _(Aditya Jain, 2026-07-03)_
-- `6de8d3a` fix(phase0): F3 hybrid search scored 0.0 — root cause: Postgres inferred float params as bigint in the RRF division, integer-dividing every score to 0 (ranking ties) _(Aditya Jain, 2026-07-03)_
-- `36bc612` fix(phase0): F2 approval gate — explicit 'ask' preference now gates; root cause: unset was conflated with 'ask' so check() auto-approved both _(Aditya Jain, 2026-07-03)_
-- `d0b5c6e` fix(phase0): F1 plan-generation timeout — root cause: two sequential 4k-token LLM calls take 486s on local ollama vs the test's fixed 300s cap _(Aditya Jain, 2026-07-03)_
-- `5e85d79` test(phase0): pytest harness — unit/regression/live tiers, 13 scripts wrapped _(Aditya Jain, 2026-07-03)_
-- `1fe9991` audit(phase0): complete — §10 §11 PASS; ranked fix list F1-F3 + founder items B1-B2 _(Aditya Jain, 2026-07-03)_
-- `2c469f3` audit(phase0): §7 calendar (config PASS, push BLOCKED on OAuth) + §9 approval gate FAIL (F2: 'ask' pref no-op) _(Aditya Jain, 2026-07-03)_
-- `ca04fa5` audit(phase0): §8 workflows — PASS (AOV + n8n suites green, n8n reachable) _(Aditya Jain, 2026-07-03)_
-- `a18ac04` audit(phase0): §3 agent layer — PASS (live LLM round-trip verified) _(Aditya Jain, 2026-07-03)_
-- `84eefaf` audit(phase0): core suites — §4 §5 PASS, §6 FAIL (plan-gen timeout F1) _(Aditya Jain, 2026-07-03)_
+- `cd6286c` feat(chat): keep agent chats running across tab navigation _(Aditya Jain, 2026-07-18)_
+- `5bdbc95` Merge pull request #12 from adityaastro2004/chore/deploy-env-sync _(Aditya Raj Jain, 2026-07-16)_
+- `8a22668` ci(deploy): sync LLM provider keys from GitHub secrets into server .env _(Aditya Jain, 2026-07-16)_
+- `e640b90` Merge pull request #10 from adityaastro2004/chore/postcss-override _(Aditya Raj Jain, 2026-07-14)_
+- `99b0a68` Merge pull request #11 from adityaastro2004/schema-baseline-migration _(Aditya Raj Jain, 2026-07-14)_
+- `1d08450` chore(security): override postcss to ^8.5.10 (closes final Dependabot alert) _(Aditya Jain, 2026-07-14)_
+- `da6feaa` feat(db): 0000_baseline — alembic alone bootstraps a fresh DB (task 016, ADR-011) _(Aditya Jain, 2026-07-14)_
+- `cb40e17` Merge pull request #8 from adityaastro2004/chore/security-dep-bumps _(Aditya Raj Jain, 2026-07-14)_
+- `9313001` Merge pull request #9 from adityaastro2004/adityaastro2004-patch-1 _(Aditya Raj Jain, 2026-07-11)_
+- `aa74575` add deployed link in readme _(Aditya Raj Jain, 2026-07-11)_
+- `a581680` chore(security): dependency bumps for 78 Dependabot alerts _(Aditya Jain, 2026-07-11)_
+- `b0e8ca3` Merge pull request #7 from adityaastro2004/phase2-notion-adapter _(Aditya Raj Jain, 2026-07-11)_
+- `1e09320` ci(deploy): complete CD — SSM RunCommand via GitHub OIDC _(Aditya Jain, 2026-07-11)_
+- `63e8253` fix(retrieval): embeddings honor EMBEDDING_* settings, decoupled from LLM_PROVIDER; knowledge_routes converged onto get_default_embedder _(Aditya Jain, 2026-07-11)_
+- `b89bfbf` Merge pull request #6 from adityaastro2004/phase2-notion-adapter _(Aditya Raj Jain, 2026-07-11)_
+- `c68dae6` fix(notion): eng-reviewer findings — B1 Settings crash on founder .env (+token echo), B2 containment relations, B3 conflict-path tombstone; S1 sorted incremental search+early-stop, S2 title pre-pass, S3 no cursor advance past errors, S4 typed transport retries, S5 latest-asserter tombstone guard (architect-line), S6 E2E hardening, S7 adapter composition tests, S8 recursive blocks; §3.5 strictness + nits _(Aditya Jain, 2026-07-11)_
+- `97f34c9` test(notion): accept NOTION_ACCESS_TOKEN as env fallback for the live suite _(Aditya Jain, 2026-07-10)_
+- `460b342` fix(notion): eng-security findings — S1 id pattern+canonical assert, S2 managed-chain exclusion + partial-ledger persistence, S3 walk-time pagination cap; nits: Retry-After clamp, prune verify-or-drop (+root-parent fix), title normalize, validate-then-upsert, conflict-path restore reactivation _(Aditya Jain, 2026-07-09)_
+- `22e9899` test(notion): T8 live E2E — self-seeding workspace, pagination/safety/toggle/trash/token-hygiene flow; loud skip when unconfigured (a skip does NOT satisfy the task-015 gate) _(Aditya Jain, 2026-07-09)_
+- `ffcffe1` feat(notion): T7 — adapter (cursor walk, tombstone diff, ledgered outbound), service D4, task D7, routes D6 (SecretStr token→integrations upsert, live validation), lifespan D9 _(Aditya Jain, 2026-07-09)_
 
 ## Inferred recent decisions
 
-- `6e7e223` fix(phase0): eng-reviewer findings — B1 stale calendar import in test_e2e_pipeline (crashed suite), S1 same in test_system token-copy path, S2 idempotent adapter registration, N1 turbo.json formatting, N2 crawler test noted in testing.md
-- `81e3825` docs(phase0): ADR-010, testing standard rewrite (3 tiers), architecture integrations+testing sections, roadmap phase table
-- `1811ee3` refactor(phase0): calendar → integrations/google_calendar + first adapter (behavior-preserving)
-- `80c8c86` feat(phase0): integration adapter framework — base ABC + registry (ADR-010)
-- `597dc77` audit(phase0): record F1-F3 fix dispositions + eng-security PASS
-- `6de8d3a` fix(phase0): F3 hybrid search scored 0.0 — root cause: Postgres inferred float params as bigint in the RRF division, integer-dividing every score to 0 (ranking ties)
-- `36bc612` fix(phase0): F2 approval gate — explicit 'ask' preference now gates; root cause: unset was conflated with 'ask' so check() auto-approved both
-- `d0b5c6e` fix(phase0): F1 plan-generation timeout — root cause: two sequential 4k-token LLM calls take 486s on local ollama vs the test's fixed 300s cap
-- `1fe9991` audit(phase0): complete — §10 §11 PASS; ranked fix list F1-F3 + founder items B1-B2
+- `cd6286c` feat(chat): keep agent chats running across tab navigation
+- `da6feaa` feat(db): 0000_baseline — alembic alone bootstraps a fresh DB (task 016, ADR-011)
+- `63e8253` fix(retrieval): embeddings honor EMBEDDING_* settings, decoupled from LLM_PROVIDER; knowledge_routes converged onto get_default_embedder
+- `c68dae6` fix(notion): eng-reviewer findings — B1 Settings crash on founder .env (+token echo), B2 containment relations, B3 conflict-path tombstone; S1 sorted incremental search+early-stop, S2 title pre-pass, S3 no cursor advance past errors, S4 typed transport retries, S5 latest-asserter tombstone guard (architect-line), S6 E2E hardening, S7 adapter composition tests, S8 recursive blocks; §3.5 strictness + nits
+- `460b342` fix(notion): eng-security findings — S1 id pattern+canonical assert, S2 managed-chain exclusion + partial-ledger persistence, S3 walk-time pagination cap; nits: Retry-After clamp, prune verify-or-drop (+root-parent fix), title normalize, validate-then-upsert, conflict-path restore reactivation
+- `ffcffe1` feat(notion): T7 — adapter (cursor walk, tombstone diff, ledgered outbound), service D4, task D7, routes D6 (SecretStr token→integrations upsert, live validation), lifespan D9
 
 ## Hotspots
 
-- 10x — `reports/2026-07-03-phase0-audit.md`
-- 4x — `docs/roadmap.md`
-- 4x — `founder-os/apps/api/app/main.py`
-- 4x — `founder-os/apps/api/.env.example`
-- 3x — `founder-os/apps/api/test_rag_pipeline.py`
-- 3x — `docs/context.md`
-- 3x — `founder-os/apps/api/test_system.py`
-- 3x — `standards/testing.md`
-- 3x — `docs/architecture.md`
-- 3x — `docs/decisions.md`
+- 11x — `reports/2026-07-03-phase0-audit.md`
+- 9x — `docs/roadmap.md`
+- 7x — `founder-os/apps/api/app/main.py`
+- 6x — `docs/architecture.md`
+- 6x — `founder-os/apps/api/app/api/state_routes.py`
+- 6x — `founder-os/apps/api/app/config.py`
+- 6x — `founder-os/apps/api/.env.example`
+- 5x — `standards/testing.md`
+- 5x — `founder-os/apps/api/requirements.txt`
+- 5x — `founder-os/apps/api/app/state/reconciler.py`
 
 ## Top-level tree
 
@@ -81,6 +78,7 @@ Generated: 2026-07-03T16:31:38.934Z
 .claude/skills/security_audit/
 .claude/worktrees/
 .claude/worktrees/compassionate-nobel/
+.claude/worktrees/frontend-revamp-claude/
 .claude/worktrees/heuristic-northcutt/
 .turbo/
 .turbo/cache/
@@ -100,11 +98,17 @@ docs/superpowers/plans/
 docs/superpowers/specs/
 docs/vision.md
 founder-os/
+founder-os/.env.local
 founder-os/.env.production.example
 founder-os/.npmrc
 founder-os/.turbo/
 founder-os/.turbo/cache/
 founder-os/.turbo/preferences/
+founder-os/.vercel/
+founder-os/.vercel/.env.production.local
+founder-os/.vercel/README.txt
+founder-os/.vercel/output/
+founder-os/.vercel/project.json
 founder-os/Caddyfile
 founder-os/README.md
 founder-os/apps/
@@ -135,7 +139,11 @@ readme.md
 reports/
 reports/2026-07-03-phase0-audit.md
 reports/2026-07-03-phase0-retro.md
+reports/2026-07-07-phase1-retro.md
+reports/2026-07-14-task016-retro.md
 reports/README.md
+scripts/
+scripts/deploy-server.sh
 skills/
 skills/analyze.md
 skills/debug.md
@@ -152,15 +160,18 @@ tasks/
 tasks/README.md
 tasks/TEMPLATE.md
 tasks/active/
-tasks/active/012-phase0-foundation-revamp.md
+tasks/active/015-notion-adapter.md
+tasks/active/017-agent-history-replay-fix-guardrails.md
 tasks/backlog/
 tasks/backlog/004-n8n-workflow-engine.md
 tasks/backlog/004-workflow-execution-engine.md
 tasks/backlog/005-temporal-memory-injection.md
 tasks/backlog/006-reasoning-scaffolding.md
 tasks/backlog/007-feedback-behavior-loop.md
-tasks/backlog/011-company-state-engine.md
 tasks/backlog/013-planner-async-generation.md
+tasks/backlog/014-vault-read-hardening.md
+tasks/backlog/016-alembic-baseline.md
+tasks/backlog/018-event-bus-user-scoping.md
 tasks/completed/
 tasks/completed/001-founder-aware-agent-specialization.md
 tasks/completed/002-agent-strategic-prompt-upgrade.md
@@ -168,6 +179,9 @@ tasks/completed/003-agent-evolution-engine.md
 tasks/completed/008-prod-hardening-core.md
 tasks/completed/009-pdf-rag-goal-autofill.md
 tasks/completed/010-knowledge-tab-file-upload.md
+tasks/completed/011-company-state-engine.md
+tasks/completed/012-phase0-foundation-revamp.md
+tasks/completed/016-schema-baseline-migration.md
 workflows/
 workflows/bug_fix.md
 workflows/new_feature.md

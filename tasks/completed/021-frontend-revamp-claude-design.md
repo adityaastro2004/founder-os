@@ -1,5 +1,5 @@
 ---
-id: 020
+id: 021
 title: Frontend revamp — Claude-style design system
 status: review
 stage: qa
@@ -11,7 +11,11 @@ links:
   - docs/superpowers/plans/2026-07-19-frontend-revamp-claude-design.md
 ---
 
-# 020 — Frontend revamp — Claude-style design system
+# 021 — Frontend revamp — Claude-style design system
+
+> Renumbered from 020 on 2026-07-21: task 020 and ADR-014 were claimed on main
+> by chat semantic memory while this branch was in flight; this task is 021 and
+> its ADR is ADR-015.
 
 > Lives in `tasks/backlog/` → `tasks/active/` → `tasks/completed/` (move the file as
 > state changes — the folder is authoritative).
@@ -91,7 +95,7 @@ Findings:
 - **nit** — `app/_components/ui/tabs.tsx:18,28` — `role="tablist"/"tab"` without
   arrow-key roving focus or `aria-controls`; add keyboard support or drop the
   ARIA tab roles.
-- **nit** — `tasks/active/020-frontend-revamp-claude-design.md:5-6` — still
+- **nit** — `tasks/completed/021-frontend-revamp-claude-design.md:5-6` (this file) — still
   `stage: executor`; update stage/owner as it moves through review → QA.
 - **nit** — `app/(dashboard)/_components/header.tsx` — search input `type`
   changed `text`→`search` (WebKit renders a native clear affordance). Cosmetic;
