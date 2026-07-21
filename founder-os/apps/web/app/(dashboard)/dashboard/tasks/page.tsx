@@ -736,7 +736,11 @@ export default function TasksPage() {
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<ReviewStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Seed the open task from a ?task=<id> deep link (command palette hand-off).
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("task");
+  });
 
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>("");

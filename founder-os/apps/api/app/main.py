@@ -28,6 +28,7 @@ from app.api.evolution_routes import router as evolution_router
 from app.api.billing_routes import router as billing_router
 from app.api.workflow_routes import router as workflow_router
 from app.api.state_routes import router as state_router
+from app.api.search_routes import router as search_router
 from app.config import get_settings
 from app.database import init_db, close_db
 from app.redis import init_redis, close_redis
@@ -161,6 +162,7 @@ app.include_router(evolution_router)
 app.include_router(billing_router)
 app.include_router(workflow_router)
 app.include_router(state_router)
+app.include_router(search_router)
 
 # Dev-only test routes (no auth required)
 if settings.APP_ENV == "development":

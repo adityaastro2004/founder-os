@@ -72,9 +72,14 @@ export default function KnowledgePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [ingesting, setIngesting] = useState(false);
   const [ingestResult, setIngestResult] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
+  // Seed from a ?q=<query> deep link (command palette hand-off).
+  const [searchQuery, setSearchQuery] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("q") ?? "";
+  });
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[] | null>(null);
+  const didAutoSearch = useRef(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
 
@@ -156,22 +161,39 @@ export default function KnowledgePage() {
     }
   };
 
-  const handleSearch = async (e: FormEvent) => {
+  const runSearch = useCallback(
+    async (rawQuery: string) => {
+      const query = rawQuery.trim();
+      if (!query) return;
+      setSearching(true);
+      try {
+        const data = await api("/api/knowledge/search", {
+          method: "POST",
+          body: JSON.stringify({ query, limit: 10 }),
+        });
+        setSearchResults(data.results || []);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    },
+    [api]
+  );
+
+  const handleSearch = (e: FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim() || searching) return;
-    setSearching(true);
-    try {
-      const data = await api("/api/knowledge/search", {
-        method: "POST",
-        body: JSON.stringify({ query: searchQuery.trim(), limit: 10 }),
-      });
-      setSearchResults(data.results || []);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setSearching(false);
-    }
+    if (searching) return;
+    void runSearch(searchQuery);
   };
+
+  // Auto-run the search once when arriving via a ?q= deep link.
+  useEffect(() => {
+    if (didAutoSearch.current) return;
+    didAutoSearch.current = true;
+    if (searchQuery.trim()) void runSearch(searchQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runSearch]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this knowledge item? This cannot be undone.")) return;
