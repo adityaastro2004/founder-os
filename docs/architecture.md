@@ -145,6 +145,27 @@ functions, still called directly by `mcp_tools`/`planner_routes`/`scheduler`;
 `adapter.py` = the uniform seam). Obsidian (task 011), Notion, and Paperclip
 implement the same ABC.
 
+### Connection surface — details & disconnect (task 025)
+
+Credentials live in three different places, so the Apps page reads a normalized
+view rather than the storage shape:
+
+| Connection | Credential home | Connect | Disconnect |
+|---|---|---|---|
+| Google Calendar | `planner_users.gcal_*` | `GET /api/planner/connect` | `POST /api/planner/disconnect` |
+| Notion / Obsidian | `state_sources` + `integrations` | `POST /api/state/sources` | `DELETE /api/state/sources/{id}` |
+| Future OAuth apps | `integrations` | per-app | `DELETE /api/settings/apps/{key}` |
+
+`GET /api/settings/apps` returns `details: AppDetailField[]` (label/value/tone)
+and a `disconnect_url` for connected apps. **`AppDetailField` rows are built
+field-by-field, never spread from an ORM row** — that is what keeps a newly
+added token column from leaking into the client. Pinned by
+`test_connection_details.py`.
+
+Disconnect **revokes upstream first, then always clears locally**. A failed
+Google-side revoke is logged, not raised: otherwise an already-invalidated
+token would leave the user unable to remove the connection.
+
 ## RAG / retrieval — `app/retrieval/`
 
 Chunker → embedder → retriever over `knowledge_items` (pgvector). Embeddings via

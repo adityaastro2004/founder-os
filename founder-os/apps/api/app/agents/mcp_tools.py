@@ -798,8 +798,8 @@ class MCPToolManager:
         # Google Calendar (in-process MCP provider)
         if include_calendar:
             try:
-                from app.user_store import get_user
-                user = get_user(user_id)
+                from app.user_store import get_user_fresh
+                user = get_user_fresh(user_id)
                 if user and user.gcal_connected:
                     providers.append(MCPGoogleCalendarProvider(
                         user_id=user_id,

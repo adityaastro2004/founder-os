@@ -11,6 +11,7 @@ export function Dialog({
   children,
   footer,
   className,
+  side = "center",
 }: {
   open: boolean;
   onClose: () => void;
@@ -18,6 +19,9 @@ export function Dialog({
   children: React.ReactNode;
   footer?: React.ReactNode;
   className?: string;
+  /** "center" is the default modal; "right" is a full-height slide-over used
+   *  for detail panels where the list behind should stay visible. */
+  side?: "center" | "right";
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -33,8 +37,15 @@ export function Dialog({
 
   if (!open) return null;
 
+  const isSheet = side === "right";
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      className={clsx(
+        "fixed inset-0 z-50 flex",
+        isSheet ? "justify-end" : "items-center justify-center p-4",
+      )}
+    >
       <button
         type="button"
         aria-label="Close dialog"
@@ -48,11 +59,14 @@ export function Dialog({
         aria-label={title}
         tabIndex={-1}
         className={clsx(
-          "relative w-full max-w-md rounded-card border border-line bg-surface shadow-xl focus:outline-none",
+          "relative flex flex-col border-line bg-surface shadow-xl focus:outline-none",
+          isSheet
+            ? "h-full w-full max-w-md animate-slide-in-right border-l"
+            : "w-full max-w-md rounded-card border",
           className,
         )}
       >
-        <div className="flex items-center justify-between border-b border-line-subtle px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-line-subtle px-5 py-4">
           <h2 className="font-serif text-base font-semibold text-ink">{title}</h2>
           <button
             type="button"
@@ -63,9 +77,11 @@ export function Dialog({
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        <div className={clsx("px-5 py-4", isSheet && "flex-1 overflow-y-auto")}>
+          {children}
+        </div>
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-line-subtle px-5 py-4">
+          <div className="flex shrink-0 items-center justify-end gap-2 border-t border-line-subtle px-5 py-4">
             {footer}
           </div>
         )}

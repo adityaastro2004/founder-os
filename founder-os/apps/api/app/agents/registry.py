@@ -479,7 +479,9 @@ class AgentRegistry:
             end_datetime: str,
         ) -> str:
             """Check for overlapping events in the given time range."""
-            from app.user_store import get_user as _get_user
+            # Fresh read: a cached profile would report a calendar the user has
+            # since disconnected as still connected.
+            from app.user_store import get_user_fresh as _get_user
             from datetime import datetime as _dt, timedelta
             user_profile = _get_user(_mcp_uid)
             if not user_profile or not user_profile.gcal_connected:

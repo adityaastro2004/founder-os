@@ -34,6 +34,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.auth import require_auth, ClerkUser
 from app.config import get_settings
 from app.database import get_db
+from app.log_sanitize import sl
 from app.posthog_client import get_posthog
 from app.user_store import (
     UserProfile,
@@ -408,6 +409,82 @@ from fastapi.responses import RedirectResponse
 async def legacy_callback_redirect(code: str, state: str):
     """Redirect from old callback path — not typically called directly."""
     return await connect_callback(code=code, state=state)
+
+
+@router.post("/disconnect")
+async def disconnect_gcal(clerk: ClerkUser = Depends(require_auth)):
+    """
+    Disconnect Google Calendar: revoke the grant at Google, then delete our
+    stored tokens. Weekly plans stop being pushed until the user reconnects.
+    """
+    from app.integrations.google_calendar.client import revoke_token
+    from app.user_store import disconnect_gcal, get_user_fresh
+
+    # Fresh read: a cached profile could be stale in either direction, and this
+    # decides whether we 404 the user.
+    user = get_user_fresh(clerk.user_id)
+    if user is None or not user.gcal_connected:
+        raise HTTPException(
+            status_code=404, detail="Google Calendar is not connected."
+        )
+
+    # Revoke upstream first so the grant is genuinely withdrawn, not just
+    # forgotten locally. Revoking the refresh token invalidates the whole grant;
+    # fall back to the access token if we never received one.
+    tokens = user.gcal_tokens or {}
+    revoked, revoke_certain = await revoke_token(
+        tokens.get("refresh_token") or tokens.get("access_token") or ""
+    )
+
+    # Always clear locally — see revoke_token's docstring for why a failed
+    # upstream revoke must not block the user's disconnect. But a FAILED local
+    # delete must never be reported as success: that would tell the user their
+    # credentials are gone while they sit in the database.
+    try:
+        cleared = disconnect_gcal(clerk.user_id)
+    except Exception as exc:
+        logger.error("GCal disconnect DB write failed for %s: %s", sl(clerk.user_id), sl(exc))
+        raise HTTPException(
+            status_code=500,
+            detail="Couldn't remove the stored credentials. Nothing was changed "
+                   "— please retry.",
+        ) from None
+
+    if not cleared:
+        raise HTTPException(
+            status_code=500,
+            detail="Couldn't remove the stored credentials. Nothing was changed "
+                   "— please retry.",
+        )
+
+    ph = get_posthog()
+    if ph is not None:
+        ph.capture(
+            distinct_id=clerk.user_id,
+            event="calendar_disconnected",
+            properties={"calendar_provider": "google", "revoked_upstream": revoked},
+        )
+
+    if revoke_certain:
+        message = "Google Calendar disconnected and access revoked at Google."
+    else:
+        # We deleted our only copy of the token, so the revoke can't be retried
+        # server-side. Say so plainly and point at the page where the user can
+        # finish the job themselves.
+        message = (
+            "Google Calendar disconnected and your stored credentials were "
+            "deleted, but we couldn't reach Google to confirm the access was "
+            "revoked. Please remove Founder OS at "
+            "https://myaccount.google.com/permissions to be certain."
+        )
+
+    return {
+        "status": "disconnected",
+        "gcal_connected": False,
+        "revoked_upstream": revoked,
+        "revocation_confirmed": revoke_certain,
+        "message": message,
+    }
 
 
 # ============================================================================

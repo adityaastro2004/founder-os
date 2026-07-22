@@ -7,6 +7,9 @@ import StateSourcesSection, {
   type SourceType,
   type StateSource,
 } from "./_components/state-sources";
+import ConnectionDetail, {
+  type AppDetailField,
+} from "./_components/connection-detail";
 import {
   BookOpen,
   Calendar,
@@ -22,6 +25,7 @@ import {
   CheckCircle2,
   Clock,
   AlertCircle,
+  ChevronRight,
   ExternalLink,
   Pencil,
   Check,
@@ -51,6 +55,12 @@ interface AppStatus {
   last_sync_at: string | null;
   sync_status: string | null;
   connect_url: string | null;
+  /** Detail rows for the drawer — server-built, connected apps only. */
+  details: AppDetailField[];
+  /** Absent when the app can't be disconnected from the UI. */
+  disconnect_url: string | null;
+  /** HTTP verb for disconnect_url — the server owns this, not the client. */
+  disconnect_method: string | null;
 }
 
 interface FounderProfile {
@@ -352,21 +362,43 @@ function AppCard({
   app,
   onConnect,
   connecting,
+  onOpenDetail,
 }: {
   app: AppStatus;
   onConnect?: (app: AppStatus) => void;
   connecting?: boolean;
+  onOpenDetail?: (app: AppStatus) => void;
 }) {
   const Icon = iconMap[app.icon] || Plug;
   const status = statusConfig[app.status] || statusConfig.coming_soon!;
   const StatusIcon = status!.Icon;
+  const openable = Boolean(onOpenDetail);
 
   return (
     <div
+      // A connected card is a button so the whole surface is one keyboard- and
+      // screen-reader-addressable control; unconnected cards stay plain divs
+      // because their only action is the Connect button inside them.
+      {...(openable
+        ? {
+            role: "button" as const,
+            tabIndex: 0,
+            "aria-label": `View ${app.display_name} connection details`,
+            onClick: () => onOpenDetail?.(app),
+            onKeyDown: (e: React.KeyboardEvent) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onOpenDetail?.(app);
+              }
+            },
+          }
+        : {})}
       className={clsx(
         "rounded-card border bg-surface p-5 transition-colors duration-150",
         app.status === "connected" ? "border-success/30" : "border-line",
-        app.status === "coming_soon" && "opacity-60"
+        app.status === "coming_soon" && "opacity-60",
+        openable &&
+          "cursor-pointer hover:border-success/60 hover:bg-surface-muted/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
       )}
     >
       <div className="mb-3 flex items-start justify-between">
@@ -409,10 +441,17 @@ function AppCard({
           {app.category}
         </span>
         {app.status === "connected" ? (
-          <span className="text-[11px] text-ink-secondary">
+          <span className="flex items-center gap-1.5 text-[11px] text-ink-secondary">
             {app.last_sync_at
               ? `Synced ${new Date(app.last_sync_at).toLocaleDateString()}`
               : "Active"}
+            {openable && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span className="font-medium text-accent-text">Details</span>
+                <ChevronRight className="h-3 w-3" aria-hidden="true" />
+              </>
+            )}
           </span>
         ) : app.connect_url && app.status !== "coming_soon" ? (
           <button
@@ -450,6 +489,9 @@ export default function AppsPage() {
   const [connectError, setConnectError] = useState<string | null>(null);
   const [stateSources, setStateSources] = useState<StateSource[]>([]);
   const [addingSource, setAddingSource] = useState<SourceType | null>(null);
+  const [detailKey, setDetailKey] = useState<string | null>(null);
+  // Bumped after a disconnect so StateSourcesSection refetches its own list.
+  const [sourcesRefreshKey, setSourcesRefreshKey] = useState(0);
 
   const loadData = useCallback(async () => {
     try {
@@ -617,10 +659,60 @@ export default function AppsPage() {
       last_sync_at: lastSync,
       sync_status: null,
       connect_url: "/api/state/sources",
-    };
+      // Detail rows come from the sources themselves, rendered by the drawer's
+      // SourceList; disconnect is per-source, so there is no app-level URL.
+      details: [],
+      disconnect_url: null,
+      disconnect_method: null,
+    } satisfies AppStatus;
   });
 
+  // Disconnect an app whose credentials the backend owns (Google Calendar via
+  // the planner route, integrations-table apps via the settings route). The
+  // server decides which URL applies — the client just calls what it was given.
+  const handleDisconnectApp = useCallback(
+    async (app: {
+      key: string;
+      disconnect_url: string | null;
+      disconnect_method: string | null;
+    }) => {
+      if (!app.disconnect_url) return;
+      // The URL and verb come from the API response, and api() attaches the
+      // Clerk bearer token — so an absolute URL here would ship the session
+      // token off-origin. Only same-origin /api/ paths and known verbs pass.
+      const method = app.disconnect_method ?? "DELETE";
+      if (
+        !/^\/api\/[A-Za-z0-9/_-]*$/.test(app.disconnect_url) ||
+        !["DELETE", "POST"].includes(method)
+      ) {
+        setConnectError(
+          `Refusing to disconnect ${app.key}: the server returned an unexpected endpoint.`
+        );
+        return;
+      }
+      await api(app.disconnect_url, { method });
+      await loadData();
+    },
+    [api, loadData]
+  );
+
+  const handleDisconnectSource = useCallback(
+    async (source: StateSource) => {
+      await api(`/api/state/sources/${source.id}`, { method: "DELETE" });
+      setStateSources((prev) => prev.filter((s) => s.id !== source.id));
+      setSourcesRefreshKey((k) => k + 1);
+    },
+    [api]
+  );
+
   const allApps = [...stateApps, ...apps];
+  // Resolved from the live list rather than stored, so the drawer re-renders
+  // with fresh data after a sync or a disconnect instead of showing a snapshot.
+  // Requiring "connected" also closes the drawer on its own once the last
+  // source behind a card is removed — otherwise it would sit there empty.
+  const detailApp =
+    allApps.find((a) => a.key === detailKey && a.status === "connected") ??
+    null;
   const connectedApps = allApps.filter((a) => a.status === "connected");
   const connectableApps = allApps.filter(
     (a) => a.status === "disconnected" || a.status === "error"
@@ -657,8 +749,11 @@ export default function AppsPage() {
       {/* Business info */}
       <BusinessInfoCard profile={profile} />
 
-      {/* Company state sources (Notion / Obsidian sync management) */}
+      {/* Company state sources (Notion / Obsidian sync management).
+          Remounted on sourcesRefreshKey so a disconnect made in the detail
+          drawer is reflected here without a full page reload. */}
       <StateSourcesSection
+        key={sourcesRefreshKey}
         adding={addingSource}
         onAddingChange={setAddingSource}
         onSourcesChange={setStateSources}
@@ -673,7 +768,11 @@ export default function AppsPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {connectedApps.map((app) => (
-              <AppCard key={app.key} app={app} />
+              <AppCard
+                key={app.key}
+                app={app}
+                onOpenDetail={() => setDetailKey(app.key)}
+              />
             ))}
           </div>
         </div>
@@ -717,6 +816,28 @@ export default function AppsPage() {
           </div>
         </div>
       )}
+
+      {/* Connection detail drawer */}
+      <ConnectionDetail
+        app={detailApp}
+        sources={
+          detailApp ? stateSources.filter((s) => s.type === detailApp.key) : []
+        }
+        onClose={() => setDetailKey(null)}
+        onDisconnectApp={handleDisconnectApp}
+        onDisconnectSource={handleDisconnectSource}
+        onReconnect={(app) => {
+          setDetailKey(null);
+          const full = allApps.find((a) => a.key === app.key);
+          if (full) void handleConnectApp(full);
+        }}
+        onManageSources={() => {
+          setDetailKey(null);
+          document
+            .getElementById("company-state-sources")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }}
+      />
     </div>
   );
 }
