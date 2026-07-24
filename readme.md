@@ -12,7 +12,7 @@ Founder OS sits *above* the tools you already use. Its core is the **Company Sta
 It talks to itself, generates the right workflow for any request on the fly (no drag-and-drop, no manual automation), and keeps a single source of truth so you stop switching between apps and channels.
 
 Built for solo founders and tiny teams who need the output of a 10-person ops team but can't afford one.
-$$
+
 ---
 
 ## The Problem
@@ -96,7 +96,7 @@ The end state: you wake up, open Founder OS, and your AI team has already triage
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │  PostgreSQL 16 + pgvector · Redis 7 · Google Calendar   │   │
-│  │  28 tables · 3 views · 30+ indexes · 4 seed workflows   │   │
+│  │  43 tables · 6 views · 30+ indexes · State Engine core  │   │
 │  └─────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -139,7 +139,7 @@ Next month, when you say the same thing, the workflow will be **different** — 
 
 ### Infrastructure
 - **FastAPI** async API with lifespan management — **64 endpoints** across 9 route groups
-- **PostgreSQL 16 + pgvector** — 24-table core schema + 4 planner/memory tables (28 total), 3 views, 30+ indexes, seed data for agents, workflows, and subscription plans
+- **PostgreSQL 16 + pgvector** — 43 tables (core + Company State Engine + planner/memory), 6 views, 30+ indexes, seed data for agents, workflows, and subscription plans
 - **Redis 7** — caching, working memory, shared memory, pub/sub event bus, approval queue, Celery broker
 - **Alembic** migrations
 - **Clerk JWT auth** (RS256 / JWKS verification)
@@ -362,7 +362,7 @@ Celery-powered async execution:
 | Layer | Technology |
 |-------|------------|
 | API | FastAPI (Python 3.14, async) |
-| Database | PostgreSQL 16 + pgvector (28 tables) |
+| Database | PostgreSQL 16 + pgvector (43 tables, 6 views) |
 | Cache / Memory / Events | Redis 7 |
 | Auth | Clerk (JWT / JWKS) |
 | Task Queue | Celery (Redis broker, 3 queues) |

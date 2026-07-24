@@ -4,10 +4,20 @@ Two halves:
 
 - **Frontend** (Next.js) → **Vercel** free Hobby tier ($0).
 - **Backend** (API + Celery worker + Postgres/pgvector + Redis + optional n8n) →
-  **one small Linux host** via Docker Compose.
+  **one small Linux host**.
 
-> All backend commands below run from the monorepo dir: `founder-os/founder-os/`
-> (the repo is double-nested; the compose file lives there).
+> **Live production topology (what actually runs today):** the backend is on a
+> single **EC2 host in `ap-south-1`**, where `founder-api` and `founder-celery` run
+> as **systemd units** (venv at `apps/api/.venv`), Postgres + Redis run as
+> localhost-only Docker containers, and a cron job dumps Postgres to S3 nightly.
+> CD is fully automated over **AWS SSM RunCommand + GitHub OIDC** — see **Part 4**
+> below. Parts 1–3 below are the
+> self-host-it-yourself recipe (Docker Compose + Caddy) — a valid alternative that
+> the `docker-compose.prod.yml`/`Caddyfile` in the repo still support, but *not*
+> the mechanism the hosted instance uses.
+
+> All Docker Compose commands below run from the monorepo dir:
+> `founder-os/founder-os/` (the repo is double-nested; the compose file lives there).
 
 The single biggest cost lever: **do not self-host Ollama.** An 8B model needs
 ~8–16 GB RAM. Use a hosted LLM with a free tier (Groq / Gemini) so the box stays tiny.
@@ -109,37 +119,56 @@ Either way: the **Security Group** should allow inbound **80 + 443** (Caddy) and
 
 ---
 
-## Part 4 — Automated deploys (GitHub Actions)
+## Part 4 — Automated deploys (GitHub Actions) — *the live mechanism*
 
-[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) deploys the backend on
-every green `main` build: it waits for the **CI** workflow to pass, SSHes into the
-server, pulls the validated commit, and runs `docker compose … up -d --build`.
+This is what the hosted EC2 backend actually uses.
+[`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) deploys the backend
+after the **CI** workflow passes on `main` (or on manual `workflow_dispatch`).
 
-**One-time server prep:**
-```bash
-# On the server: create a deploy key the Action will use
-ssh-keygen -t ed25519 -f ~/deploy_key -N ""
-cat ~/deploy_key.pub >> ~/.ssh/authorized_keys   # authorize it
-cat ~/deploy_key                                  # → copy into the DEPLOY_SSH_KEY secret
-```
+**Transport is AWS SSM RunCommand authorized by GitHub OIDC — there are no SSH keys
+and no long-lived AWS credentials in the repo.** The workflow assumes an IAM role via
+OIDC (trust policy scoped to this repo's `main` ref), then `aws ssm send-command`
+runs [`scripts/deploy-server.sh`](scripts/deploy-server.sh) on the instance. The
+on-server steps (as root, checkout already reset to `origin/main`):
+
+1. **`sync_env`** — patch selected secrets into `apps/api/.env` and **pin
+   `APP_ENV=production` / `DEBUG=false`** (the load-bearing gate that disables the
+   dev-only `x-test-user` auth bypass — a fresh box must never be left at the
+   development default).
+2. `pip install -r requirements.txt` into the venv.
+3. `alembic upgrade head`.
+4. `systemctl restart founder-api founder-celery`.
+5. Health check → **automatic rollback** to the previous SHA on failure. Rollback
+   restores *code but not schema*, so migrations must stay backward-compatible for
+   at least one release.
 
 **Repo secrets** (Settings → Secrets and variables → Actions):
 
-| Secret | Value |
-|---|---|
-| `DEPLOY_HOST` | server IP / hostname |
-| `DEPLOY_USER` | ssh user (`ubuntu`, `deploy`, …) |
-| `DEPLOY_SSH_KEY` | the **private** deploy key (full PEM) |
-| `DEPLOY_PATH` | path to the monorepo dir, e.g. `/home/ubuntu/founder-os/founder-os` |
-| `DEPLOY_PORT` | optional; defaults to 22 |
+| Secret | Required | Purpose |
+|---|---|---|
+| `AWS_DEPLOY_ROLE_ARN` | yes | IAM role assumed via OIDC (`ssm:SendCommand` on the instance). |
+| `EC2_INSTANCE_ID` | yes | Target instance (`i-…`). |
+| `GROQ_API_KEY` | optional | Synced to the server as `OPENAI_API_KEY` (Groq is the OpenAI-compatible provider). |
+| `GEMINI_API_KEY` | optional | Gemini provider. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | optional | Google Calendar OAuth client. |
+| `OAUTH_STATE_SECRET` | optional | Signs OAuth state. |
+| `BACKUP_S3_BUCKET` | optional | Nightly Postgres dump target ([`scripts/backup-db.sh`](scripts/backup-db.sh)); the cron no-ops until it's set. |
 
-The first deploy is still manual (clone repo + create `.env.production` as in Part 1).
-After that, pushes to `main` deploy automatically. `git reset --hard origin/main` keeps
-`.env.production` and the Docker volumes intact (they're gitignored / external).
-Trigger manually anytime via **Actions → Deploy → Run workflow**.
+The optional secrets are re-synced into `apps/api/.env` on **every** deploy — to
+rotate a key, update it here and re-run the workflow. Never commit keys (a set was
+once leaked via `config.py` history and had to be revoked). Trigger a manual deploy
+via **Actions → Deploy → Run workflow**.
 
-> Frontend: connect the repo to **Vercel** (root `founder-os/founder-os/apps/web`) and it
-> auto-deploys `main` on its own — no Action needed.
+**Nightly backups:** `deploy-server.sh` installs `/etc/cron.d/founder-os-db-backup`,
+which runs [`scripts/backup-db.sh`](scripts/backup-db.sh) to `pg_dump` the database
+to S3 (gated on `BACKUP_S3_BUCKET`).
+
+> **Frontend:** the Vercel project is **git-integrated** and auto-deploys merges to
+> `main` on its own — no Action needed. **Never run `vercel deploy --prod` by hand**
+> — a stale-checkout manual deploy reverted production on 2026-07-21. If a manual
+> deploy is truly unavoidable, use the guarded
+> [`scripts/deploy-web.sh`](scripts/deploy-web.sh), which refuses unless `HEAD ==
+> origin/main` and the worktree is clean.
 
 ---
 
