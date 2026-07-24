@@ -16,8 +16,10 @@ tiers deselected by default).
 | **migrations** | `tests/migrations/` | a pgvector Postgres only — no app stack. Creates/drops throwaway DBs via `MIGRATIONS_ADMIN_DSN` (default `postgresql://founder:founder@localhost:5432/postgres`). Opt-in locally, **mandatory in CI** (task 016 / ADR-011) | `pytest -m migrations` |
 | **live** | `tests/live/` + live-marked regressions | the full stack on `localhost:8000` (`./start.sh`), Ollama, `APP_ENV=development` | `pytest -m live` |
 
-`tests/live/test_live_suites.py` wraps all 13 standalone `apps/api/test_*.py`
-scripts (they remain directly runnable: `python3 test_system.py`). The scripts
+`tests/live/test_live_suites.py` wraps 13 of the 15 standalone `apps/api/test_*.py`
+scripts (they remain directly runnable: `python3 test_system.py`).
+`test_security_hardening.py` and `test_planner_onboarding_bridge.py` are **not**
+wrapped — run those two by hand. The scripts
 authenticate via the dev-only `x-test-user` bypass (hard-gated on
 `APP_ENV=development` in `app/auth.py`).
 
