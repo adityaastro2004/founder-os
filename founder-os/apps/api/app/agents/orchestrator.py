@@ -237,12 +237,26 @@ taken with ✅, end with 2-3 **Next Steps**.
         extra_context: str | None = None,
     ) -> AgentResult:
         """
-        Execute the full orchestration loop.
+        Execute the orchestration as a durable LangGraph ``StateGraph``.
 
-        The LLM follows the 4-phase protocol:
-        UNDERSTAND → PLAN → DELEGATE → SYNTHESISE.
+        Replaces the legacy LLM tool-loop (which decided delegations via a
+        ``delegate_task`` tool) with an explicit graph:
+        ``classify → route → specialists → (approval) → hydrate → synthesize``.
+        The execution-engine loop is bypassed for the orchestrator only —
+        specialists still run through their own ``base.run`` with full context.
+
+        Everything ``base.run`` did that is NOT the tool loop is preserved here:
+        the ``agent.started``-equivalent events, query auto-embedding, conversation
+        persistence, and ``after_run`` (which stores ``last_orchestration``).
         """
+        import time
+
+        from app.agents.graph.deps import GraphDeps
+        from app.agents.graph.orchestrator_graph import build_graph
+        from app.agents.graph.state import new_state
+
         self._trace = OrchestrationTrace()
+        start = time.time()
 
         # Emit orchestration.started with rich metadata
         if self.event_bus:
@@ -257,9 +271,7 @@ taken with ✅, end with 2-3 **Next Steps**.
                 },
             ))
 
-        # Continuity context: last_orchestration lives in shared memory and
-        # already renders in <shared_memory> — copying it into working memory
-        # duplicated it in the same prompt. Just record whether it exists.
+        # Record continuity (does a prior orchestration exist?)
         try:
             self._trace.memory_context_loaded = bool(
                 await self.memory.get_from_shared("last_orchestration")
@@ -267,27 +279,45 @@ taken with ✅, end with 2-3 **Next Steps**.
         except Exception as exc:
             logger.warning("Failed to load prior orchestration: %s", exc)
 
-        # Run the LLM loop — tools guide the 4-phase protocol
-        result = await super().run(
+        # Auto-embed the query for on-demand recall (parity with base.run step 1b)
+        if query_embedding is None and self._embedder is not None:
+            try:
+                query_embedding = await self._embedder.embed(user_input)
+            except Exception as exc:
+                logger.warning("Auto-embedding failed, skipping RAG: %s", exc)
+
+        # Persist the user turn (parity with base.run step 3)
+        self.memory.conversation.add_user(user_input)
+
+        # Build the graph from this agent's collaborators and invoke it
+        deps = GraphDeps.from_agent(
+            self,
+            cheap_model=None,               # provider default = the cheap local tier
+            main_model=self.config.model,   # synthesis uses the configured model
+        )
+        checkpointer = getattr(self, "_graph_checkpointer", None)
+        graph = build_graph(deps, checkpointer=checkpointer)
+
+        thread_id = self.session_id or str(self.user_id)
+        config = {"configurable": {"thread_id": thread_id}} if checkpointer else None
+
+        init = new_state(
+            str(self.user_id),
+            self.session_id,
             user_input,
             query_embedding=query_embedding,
-            extra_context=extra_context,
+            extra_context=extra_context or "",
         )
+        final = await graph.ainvoke(init, config=config)
 
-        # Enrich result with orchestration metadata
-        result.delegations = [
-            DelegationResult(
-                from_agent="orchestrator",
-                to_agent=d.target_agent,
-                task=d.task,
-                success=d.success,
-                content=d.result[:500] if d.result else "",
-                error=d.error,
-                tokens_used=d.tokens_used,
-                duration_seconds=d.duration_seconds,
-            )
-            for d in self._trace.delegations
-        ]
+        result = self._result_from_state(final, start)
+
+        # Persist the assistant turn (parity with base.run step 6)
+        if result.content:
+            self.memory.conversation.add_assistant(result.content)
+
+        # Post-run hook — stores last_orchestration (parity with base.run step 8)
+        await self.after_run(user_input, result)
 
         # Emit orchestration.completed with full trace
         if self.event_bus:
@@ -297,7 +327,7 @@ taken with ✅, end with 2-3 **Next Steps**.
                 data={
                     "delegations": self._trace.total_delegations,
                     "agents_used": self._trace.agents_used,
-                    "total_tokens": result.tokens_used + self._trace.total_agent_tokens,
+                    "total_tokens": result.tokens_used,
                     "duration": result.duration_seconds,
                     "phases_completed": self._trace.phases_completed,
                     "retries": self._trace.retries,
@@ -309,6 +339,61 @@ taken with ✅, end with 2-3 **Next Steps**.
             ))
 
         return result
+
+    def _result_from_state(self, final: dict, start: float) -> AgentResult:
+        """Map the final graph state → ``AgentResult`` and populate ``self._trace``.
+
+        Preserves the delegation shape existing callers rely on
+        (``result.delegations`` of ``DelegationResult``). If the graph paused at an
+        approval interrupt, surfaces it via ``pending_approvals`` instead of a body.
+        """
+        import time
+
+        duration = time.time() - start
+
+        # An interrupted run (awaiting human approval) returns the interrupt payload
+        interrupt = final.get("__interrupt__") if isinstance(final, dict) else None
+        if interrupt:
+            self._trace.phases_completed.append("interrupted:approval")
+            return AgentResult(
+                content="",
+                duration_seconds=duration,
+                pending_approvals=[{"reason": "approval_required",
+                                    "session_id": self.session_id}],
+            )
+
+        trace_entries = final.get("trace", []) or []
+        total_tokens = sum(int(t.get("tokens_used", 0) or 0) for t in trace_entries)
+
+        delegations: list[DelegationResult] = []
+        for entry in trace_entries:
+            agent_name = entry.get("agent")
+            if not agent_name:
+                continue  # classify / synthesize bookkeeping rows
+            success = bool(entry.get("success"))
+            delegations.append(DelegationResult(
+                from_agent="orchestrator",
+                to_agent=agent_name,
+                task="",
+                success=success,
+                content=(final.get("results", {}).get(agent_name, "") or "")[:500],
+                error=entry.get("error", "") or "",
+                tokens_used=int(entry.get("tokens_used", 0) or 0),
+            ))
+            if success and agent_name not in self._trace.agents_used:
+                self._trace.agents_used.append(agent_name)
+            self._trace.phases_completed.append(f"delegation:{agent_name}")
+
+        self._trace.total_delegations = len(delegations)
+        self._trace.total_agent_tokens = total_tokens
+
+        return AgentResult(
+            content=final.get("final_answer", "") or "",
+            tokens_used=total_tokens,
+            duration_seconds=duration,
+            model=self.config.model,
+            delegations=delegations,
+        )
 
     # NOTE: no before_run — current_plan and research_findings already render
     # via <shared_memory>; copying them into working memory doubled the tokens.
