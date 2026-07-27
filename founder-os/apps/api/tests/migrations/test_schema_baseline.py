@@ -296,4 +296,4 @@ def test_stamped_at_head_is_noop(db_factory) -> None:
     assert heads.returncode == 0, heads.stderr
     head_lines = [line for line in heads.stdout.splitlines() if "(head)" in line]
     assert len(head_lines) == 1, f"expected exactly one head, got: {heads.stdout!r}"
-    assert "0002_state_engine" in head_lines[0]
+    assert "0003_langgraph_checkpoint" in head_lines[0]

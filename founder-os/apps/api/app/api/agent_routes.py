@@ -287,6 +287,12 @@ class OrchestrationResponse(BaseModel):
     pending_approvals: list[dict] = []
 
 
+class ResumeRequest(BaseModel):
+    """Resume a durable orchestration that paused at an approval interrupt."""
+    session_id: str = Field(..., min_length=1, description="Thread id of the paused run")
+    answer: str = Field(..., description="The founder's approval / clarification answer")
+
+
 # ── Routes ────────────────────────────────────────────────
 
 @router.get("/", response_model=list[AgentInfo])
@@ -769,6 +775,94 @@ async def orchestrate(
         tokens_used=result.tokens_used,
         tool_calls_made=len(result.tool_calls_made),
         tool_names=tool_names_orch,
+        delegations_made=len(result.delegations) if result.delegations else 0,
+        agents_used=agents_used,
+        delegation_details=delegation_details,
+        duration_seconds=round(result.duration_seconds, 2),
+        stop_reason=result.stop_reason,
+        cost_usd=round(result.cost_usd, 6),
+        llm_provider=settings.LLM_PROVIDER,
+        pending_approvals=result.pending_approvals,
+    )
+
+
+@router.post("/orchestrate/resume", response_model=OrchestrationResponse)
+async def orchestrate_resume(
+    body: ResumeRequest,
+    user: ClerkUser = Depends(require_auth),
+    db: AsyncSession = Depends(get_db),
+):
+    """Resume a durable orchestration paused at an approval interrupt.
+
+    Feeds the founder's answer back into the checkpointed graph on the same
+    ``thread_id`` (``session_id``) and runs it to completion. Requires the
+    checkpointer to be available (durability enabled) and a matching paused run.
+    """
+    import time
+
+    from langgraph.types import Command
+
+    from app.agents.graph.checkpointer import get_checkpointer
+    from app.agents.graph.deps import GraphDeps
+    from app.agents.graph.orchestrator_graph import build_graph
+
+    checkpointer = get_checkpointer()
+    if checkpointer is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Durability is disabled — no checkpointer available to resume.",
+        )
+
+    settings = get_settings()
+    redis = get_redis()
+    registry = AgentRegistry(db=db, redis=redis, settings=settings)
+
+    user_uuid = await get_or_create_user_id(user.user_id, db, email=user.email)
+    planner_uid = _resolve_planner_user_id(user.user_id)
+
+    try:
+        agent = await registry.get(
+            "orchestrator",
+            user_id=user_uuid,
+            session_id=body.session_id,
+            planner_user_id=planner_uid,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+
+    deps = GraphDeps.from_agent(agent, cheap_model=None, main_model=agent.config.model)
+    graph = build_graph(deps, checkpointer=checkpointer)
+
+    start = time.time()
+    try:
+        final = await graph.ainvoke(
+            Command(resume=body.answer),
+            config={"configurable": {"thread_id": body.session_id}},
+        )
+    except Exception as exc:
+        logger.exception("orchestrate/resume failed for session %s", body.session_id)
+        raise HTTPException(status_code=500, detail=f"Resume failed: {exc}")
+
+    result = agent._result_from_state(final, start)
+    agents_used = list({d.to_agent for d in result.delegations}) if result.delegations else []
+    delegation_details = [
+        {
+            "agent": d.to_agent,
+            "task": d.task[:200],
+            "success": d.success,
+            "tokens_used": d.tokens_used,
+            "duration_seconds": round(d.duration_seconds, 2),
+            "error": d.error or None,
+        }
+        for d in (result.delegations or [])
+    ]
+
+    return OrchestrationResponse(
+        content=result.content,
+        model=result.model,
+        tokens_used=result.tokens_used,
+        tool_calls_made=0,
+        tool_names=[],
         delegations_made=len(result.delegations) if result.delegations else 0,
         agents_used=agents_used,
         delegation_details=delegation_details,

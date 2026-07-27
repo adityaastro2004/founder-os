@@ -19,6 +19,42 @@
 
 ---
 
+## ADR-017 — Durable orchestration via a LangGraph `StateGraph` (in-place, thin-core)
+
+- Date: 2026-07-27
+- Status: accepted
+- Context: the orchestrator was an in-memory LLM tool-loop (`delegate_task`) that
+  (1) died with the HTTP request — a crash/deploy mid-run lost all completed
+  specialist work and re-paid for it; (2) could not pause for human approval across
+  a session/restart; (3) spent main-model tokens on every routing round. See the
+  spec [docs/superpowers/specs/2026-07-27-langgraph-orchestrator-design.md](superpowers/specs/2026-07-27-langgraph-orchestrator-design.md).
+- Decision: replace the orchestrator's control loop with a compiled LangGraph
+  `StateGraph` (`app/agents/graph/`), in place — `OrchestratorAgent.run()` builds
+  and invokes the graph, keeping every caller unchanged. Only three primitives come
+  from LangGraph — `StateGraph`, `AsyncPostgresSaver`, `interrupt` — and **no
+  LangChain chat models**: nodes call the existing `LLMProvider` (`self.llm`), so
+  the 3-tier provider fallback is preserved. Routing is one cheap-tier `classify`
+  call + zero-token conditional edges (COMPLEX intent escape-hatches to LLM
+  routing). Durability = `AsyncPostgresSaver` keyed on `session_id`; the checkpoint
+  tables are created by Alembic migration `0003_langgraph_checkpoint` via
+  `PostgresSaver.setup()` (rule #8). A `hydrate_context` node re-reads volatile
+  company/task state before synthesis so a resumed run reflects *now*, not when it
+  paused. New endpoint `POST /api/agents/orchestrate/resume`.
+- Consequences: crash-resume + human-in-the-loop across restarts; fewer orchestrator
+  tokens on the common path. Specialists, tools, memory, event bus, and the SSE
+  event contract are untouched (parity-tested). Trade-offs: a new heavy dep
+  (`langgraph` + `langgraph-checkpoint-postgres` → `langchain-core`, `psycopg3`); the
+  checkpointer uses psycopg3, not the app's asyncpg (separate pool, plain DSN);
+  rollout is **in-place with no runtime legacy fallback** (chosen over a feature
+  flag) — the durability/parity test suite is the safety net, and the checkpointer
+  degrades to non-durable rather than blocking startup. Deterministic routing is
+  weaker than LLM routing on ambiguous asks — mitigated by the COMPLEX escape hatch.
+  Follow-up: a dedicated `llm_route` node (v1 reuses `fanout`) and a live parity
+  tier once a stack with Ollama is available.
+- Links: spec + plan under [docs/superpowers/](superpowers/), `app/agents/graph/`,
+  `alembic/versions/0003_langgraph_checkpoint.py`, supersedes the orchestration loop
+  half of [ADR-001](#adr-001--pre-existing-product-architecture-baseline-recorded).
+
 ## ADR-016 — Dark mode via `.dark` token re-values + owned theme provider; markdown chat rendering
 
 - Date: 2026-07-21

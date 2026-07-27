@@ -89,6 +89,8 @@ founder-os/                          ← git root, this CLAUDE.md, meta-layer
     │   ├── api/         ← Python 3.14 / FastAPI backend
     │   │   ├── app/
     │   │   │   ├── agents/      ← PRODUCT runtime agents (base, registry, orchestrator, llm…)
+    │   │   │   │   └── graph/    ← durable LangGraph orchestrator (StateGraph + Postgres
+    │   │   │   │                   checkpointer): state, nodes, edges, deps, checkpointer (ADR-017)
     │   │   │   ├── api/         ← *_routes.py FastAPI routers (~20)
     │   │   │   ├── state/       ← COMPANY STATE ENGINE — service, mirror, reconciler,
     │   │   │   │                   renderer, write_gate, dedup, models (the moat, §1)
