@@ -169,3 +169,77 @@ def make_fanout_node(deps: Any):
         return {"results": results, "trace": trace}
 
     return fanout
+
+
+_SYNTH_SYSTEM = (
+    "You are the founder's chief of staff. Synthesize the specialist work into one "
+    "coherent answer — do not mention the specialists by name."
+)
+
+_SYNTH_PROMPT = """Produce a single coherent answer for the founder. Lead with the \
+answer, weave the specialist findings in naturally, list any actions taken with a \
+check mark, and end with 2-3 concrete Next Steps.
+
+<request>
+{request}
+</request>
+<company_context>
+{company}
+</company_context>
+<specialist_outputs>
+{results}
+</specialist_outputs>
+
+Answer:"""
+
+
+def make_hydrate_node(deps: Any):
+    """Refresh volatile company/task context before synthesis (and after a resume)."""
+
+    async def hydrate(state) -> dict:
+        return await deps.hydrate()
+
+    return hydrate
+
+
+def make_synthesize_node(deps: Any):
+    """One main-tier LLM call combining specialist outputs into the final answer."""
+
+    async def synthesize(state) -> dict:
+        from app.agents.llm import LLMMessage, Role
+
+        joined = "\n\n".join(f"[{k}]\n{v}" for k, v in state["results"].items()) or "(none)"
+        prompt = _SYNTH_PROMPT.format(
+            request=state["user_input"],
+            company=state["company_context"] or "(none)",
+            results=joined,
+        )
+        resp = await deps.llm.generate(
+            [LLMMessage(role=Role.USER, content=prompt)],
+            system=_SYNTH_SYSTEM,
+            model=getattr(deps, "main_model", None),
+            temperature=0.4,
+        )
+        trace = list(state["trace"]) + [
+            {"node": "synthesize", "tokens_used": resp.usage.total}
+        ]
+        return {"final_answer": resp.content, "trace": trace}
+
+    return synthesize
+
+
+def make_approval_node():
+    """Pause the run for human approval and resume with the founder's answer.
+
+    ``interrupt`` persists graph state and unwinds the invocation; a later
+    ``ainvoke(Command(resume=answer), config={thread_id})`` resumes here with that
+    answer. Only reached when ``needs_approval`` is set.
+    """
+
+    async def approval(state) -> dict:
+        from langgraph.types import interrupt
+
+        answer = interrupt({"reason": "approval_required", "request": state["user_input"]})
+        return {"approval_answer": answer}
+
+    return approval
