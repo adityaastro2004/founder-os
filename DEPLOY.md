@@ -186,6 +186,15 @@ to S3 (gated on `BACKUP_S3_BUCKET`).
 ## Gotchas (all stack-specific)
 
 - **Migrations**: handled by the `api` service (`alembic upgrade head`). Never hand-edit `schema.sql`.
+- **Durable orchestrator (ADR-017)**: `alembic upgrade head` also creates the LangGraph
+  `checkpoint*` tables (migration `0003_langgraph_checkpoint`, via `PostgresSaver.setup()`).
+  The checkpointer uses **psycopg3**, not the app's asyncpg — it derives a plain
+  `postgresql://…` DSN from `DATABASE_URL` (strips `+asyncpg`), so the same Postgres and
+  credentials work with no extra config. It opens a pooled `AsyncPostgresSaver` in the API
+  lifespan; if that fails the API still boots and orchestration simply degrades to
+  non-durable (no crash-resume / no `/orchestrate/resume`). Optional
+  `CHECKPOINTER_POOL_MAX` (default 10) sizes the pool. The human-in-the-loop resume path is
+  `POST /api/agents/orchestrate/resume` (`{session_id, answer}`).
 - **`WORKFLOW_CALLBACK_SECRET` is mandatory** when `APP_ENV != development` — the app
   refuses to boot without ≥43 chars. Generate with `token_urlsafe(32)`.
 - **CORS_ORIGINS** is a JSON array env var — include your exact web origin(s).
