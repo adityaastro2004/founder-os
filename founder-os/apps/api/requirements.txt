@@ -17,7 +17,7 @@ typing_extensions==4.15.0
 uvicorn==0.41.0
 uvloop==0.22.1
 watchfiles==1.1.1
-websockets==16.0
+websockets>=15.0,<16  # capped by langgraph-sdk (<16); uvicorn only needs >=10.4
 
 # Database
 sqlalchemy[asyncio]>=2.0
@@ -50,6 +50,11 @@ pdfplumber
 
 # Analytics
 posthog>=3.0.0
+
+# Orchestration graph — durable LangGraph orchestrator (resolved on Python 3.14)
+langgraph>=1.2.9,<2
+langgraph-checkpoint-postgres>=3.1.0
+psycopg[binary]>=3.2.0
 
 # Testing (Phase 0)
 pytest>=8.0
