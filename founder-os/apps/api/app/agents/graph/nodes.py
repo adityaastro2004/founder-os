@@ -16,6 +16,8 @@ import json
 import logging
 from typing import Any
 
+from app.agents.graph.edges import pending_agents
+
 logger = logging.getLogger(__name__)
 
 # The only valid specialist names the classifier may route to.
@@ -96,3 +98,74 @@ def make_classify_node(deps: Any):
         return {**parsed, **ctx, "trace": trace}
 
     return classify
+
+
+def _delegation_context(state) -> str:
+    """The context block forwarded to each specialist (company + task + memory)."""
+    return "\n".join(
+        state[k]
+        for k in ("company_context", "task_context", "memory_context")
+        if state.get(k)
+    )
+
+
+def make_fanout_node(deps: Any):
+    """Run each pending specialist sequentially via the router, accumulating outputs.
+
+    Emits the same event-bus events the legacy orchestrator emits
+    (``delegation.executing`` / ``delegation.completed`` / ``delegation.failed``)
+    with the same ``data`` keys, so the SSE UI contract is preserved. One failing
+    specialist never crashes the graph — the failure is recorded in ``results``
+    (empty) and ``trace``.
+    """
+
+    async def fanout(state) -> dict:
+        from app.agents.event_bus import Event
+        from app.agents.router import AgentMessage
+
+        results = dict(state["results"])
+        trace = list(state["trace"])
+        context = _delegation_context(state)
+        uid = str(deps.user_id)
+
+        for agent_name in pending_agents(state):
+            if deps.event_bus:
+                await deps.event_bus.publish(Event(
+                    type="delegation.executing", agent=agent_name,
+                    data={"from": "orchestrator", "task_preview": state["user_input"][:150],
+                          "attempt": 1, "user_id": uid},
+                ))
+            msg = AgentMessage(
+                from_agent="orchestrator", to_agent=agent_name,
+                task=(
+                    f"{state['user_input']}\n\n<orchestrator_context>\n"
+                    f"{context}\n</orchestrator_context>"
+                ),
+                context={"orchestrated": True},
+            )
+            try:
+                dr = await deps.router.delegate(msg, user_id=deps.user_id,
+                                                session_id=deps.session_id)
+                results[agent_name] = dr.content if dr.success else ""
+                trace.append({"agent": agent_name, "success": dr.success,
+                              "tokens_used": dr.tokens_used, "error": dr.error})
+                if deps.event_bus:
+                    await deps.event_bus.publish(Event(
+                        type="delegation.completed" if dr.success else "delegation.failed",
+                        agent=agent_name,
+                        data={"from": "orchestrator", "success": dr.success,
+                              "tokens_used": dr.tokens_used,
+                              "result_preview": (dr.content or "")[:200], "user_id": uid},
+                    ))
+            except Exception as exc:  # never let one specialist crash the graph
+                logger.exception("fanout delegation to %s failed", agent_name)
+                results[agent_name] = ""
+                trace.append({"agent": agent_name, "success": False, "error": str(exc)})
+                if deps.event_bus:
+                    await deps.event_bus.publish(Event(
+                        type="delegation.failed", agent=agent_name,
+                        data={"from": "orchestrator", "error": str(exc)[:300], "user_id": uid},
+                    ))
+        return {"results": results, "trace": trace}
+
+    return fanout
