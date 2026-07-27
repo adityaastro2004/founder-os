@@ -295,7 +295,9 @@ taken with ✅, end with 2-3 **Next Steps**.
             cheap_model=None,               # provider default = the cheap local tier
             main_model=self.config.model,   # synthesis uses the configured model
         )
-        checkpointer = getattr(self, "_graph_checkpointer", None)
+        from app.agents.graph.checkpointer import get_checkpointer
+
+        checkpointer = getattr(self, "_graph_checkpointer", None) or get_checkpointer()
         graph = build_graph(deps, checkpointer=checkpointer)
 
         thread_id = self.session_id or str(self.user_id)

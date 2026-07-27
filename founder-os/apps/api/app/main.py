@@ -91,10 +91,14 @@ async def lifespan(application: FastAPI):
     register_gcal_adapter()
     register_obsidian_adapter()
     register_notion_adapter()
+    # Durable orchestrator checkpointer (degrades to non-durable on failure)
+    from app.agents.graph.checkpointer import open_checkpointer, close_checkpointer
+    await open_checkpointer(_settings)
     start_scheduler()
     yield
     # ── Shutdown ──
     stop_scheduler()
+    await close_checkpointer()
     await close_redis()
     await close_db()
     if _posthog_client is not None:
