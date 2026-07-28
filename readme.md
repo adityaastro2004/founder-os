@@ -58,8 +58,8 @@ The end state: you wake up, open Founder OS, and your AI team has already triage
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │              ORCHESTRATOR (Stripe Minions)               │   │
 │  │                                                         │   │
-│  │  Analyse → Plan → Delegate → Synthesise                 │   │
-│  │  Agents-as-tools: the LLM decides the workflow          │   │
+│  │  Classify → Route → Delegate → Synthesise              │   │
+│  │  Durable graph (checkpointed, resumable) — ADR-017      │   │
 │  └───┬──────────┬──────────┬──────────┬──────────┬────────┘   │
 │      ▼          ▼          ▼          ▼          ▼             │
 │  ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐ ┌────────┐      │
@@ -148,7 +148,7 @@ Next month, when you say the same thing, the workflow will be **different** — 
 - **APScheduler** — cron-based background scheduler for automated weekly plan generation (Monday 08:00 IST)
 
 ### Agent System
-- **Orchestrator** — top-level manager agent (Stripe Minions pattern). Analyses any request, decomposes into subtasks, delegates to specialists via `delegate_task` tool, synthesises the response. The LLM decides the workflow — no hardcoded routing
+- **Orchestrator** — top-level manager agent running as a **durable LangGraph `StateGraph`** (ADR-017). Classifies each request, routes to specialists via the A2A router, and synthesises the response — with a Postgres checkpointer for crash-resume and human-in-the-loop (`/orchestrate/resume`). Routing is a cheap classify call + deterministic edges; the orchestrator exposes no tools to the LLM
 - **BaseAgent** — composable agent core with system prompts, tool use loops, memory, delegation, and event emission
 - **7 Agents** — Orchestrator + 6 Specialists (Planner, Content, Research, Ops, Product, Support) — each with distinct capabilities, tools, and system prompts
 - **Agents-as-tools** — specialist agents are exposed to the Orchestrator as callable tools. The `delegate_task` tool is bound at runtime via closure injection — the Orchestrator's LLM sees it as a regular tool, but it spawns a full agent under the hood
