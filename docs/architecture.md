@@ -51,8 +51,10 @@ The heart of the product. Key components:
   `memory_pages`) between memory context and history.
 - **`execution.py` — `ExecutionEngine`**: step-based LLM loop with parallel tool
   execution (LLM → tools → loop until done).
-- **`orchestrator.py` — Orchestrator**: Stripe-Minions pattern
-  (Analyse → Plan → Delegate → Synthesise); agents-as-tools, the LLM picks the workflow.
+- **`orchestrator.py` + `graph/` — Orchestrator**: a durable LangGraph `StateGraph`
+  (classify → route → specialists → optional approval → hydrate → synthesize) with a
+  Postgres checkpointer for crash-resume + human-in-the-loop (ADR-017). Routing is a
+  cheap classify call + deterministic edges; nodes call the A2A router directly.
 - **`agents.py`** — the specialists: Planner, Content, Research, Ops, Product, Support.
 - **`registry.py`** — agent factory + wiring (builds the registry, injects deps).
 - **`router.py` — `AgentRouter`**: Agent-to-Agent (A2A) capability-based routing.
@@ -67,12 +69,14 @@ The heart of the product. Key components:
 - **`llm.py`** — provider abstraction with 3-tier fallback (Ollama → Anthropic →
   Gemini / OpenAI-compatible). No call site assumes a specific vendor.
 
-### Built-in tools (12)
+### Built-in tools (11)
 
-`delegate_task`, `search_knowledge`, `web_search`*, `get_business_metrics`*,
+`search_knowledge`, `web_search`*, `get_business_metrics`*,
 `create_task`, `list_tasks`, `update_task_status`, `save_draft`,
 `get_integrations`, `get_writing_style`, `get_current_datetime`,
 `store_working_memory`. (* = stub/placeholder — see [requirements.md](requirements.md).)
+The orchestrator itself exposes no tools — it delegates via the A2A router from its
+graph nodes (ADR-017), not a `delegate_task` tool.
 
 ## Company State Engine — `app/state/` (the moat; see ADR-009)
 
