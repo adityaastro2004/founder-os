@@ -6,9 +6,9 @@ Factory that composes the full agent architecture:
 
 This is the single entry point for creating ready-to-use agents.
 
-The registry also handles the Orchestrator's special wiring:
-  - The ``delegate_task`` tool is bound to the orchestrator instance
-  - This enables the Stripe Minions pattern (agents-as-tools)
+The registry also binds runtime closures to placeholder tools (e.g.
+``get_user_profile`` bound to the live user-store). The orchestrator's own
+delegation is no longer tool-based — it runs as a durable graph (ADR-017).
 
 Usage:
     from app.agents.registry import AgentRegistry
@@ -358,105 +358,11 @@ class AgentRegistry:
         if planner_user_id:
             agent._planner_user_id = planner_user_id
 
-        # 8. Wire the delegate_task tool for the orchestrator.
-        #    This is the Stripe Minions pattern: the orchestrator's LLM
-        #    sees ``delegate_task`` as a regular tool, but under the hood
-        #    it creates a specialist agent and runs it.
-        if agent_name == "orchestrator":
-            from app.agents.orchestrator import OrchestratorAgent
-            if isinstance(agent, OrchestratorAgent):
-                _orchestrator = agent
-                _uid = user_id
-                _sid = session_id
-
-                async def _delegate_task_impl(
-                    agent_name: str,
-                    task: str,
-                    context: str = "",
-                ) -> str:
-                    return await _orchestrator.execute_delegation(
-                        agent_name=agent_name,
-                        task=task,
-                        context=context,
-                        user_id=_uid,
-                        session_id=_sid,
-                    )
-
-                # Inject the real implementation into the tool registry
-                tool_registry.override_tool_impl(
-                    "delegate_task", _delegate_task_impl,
-                )
-
-                # 8b. Wire recall_last_orchestration with shared memory
-                _shared_mem = shared
-
-                async def _recall_last_orchestration_impl() -> str:
-                    """Fetch the last orchestration summary from shared memory."""
-                    try:
-                        last = await _shared_mem.get("last_orchestration")
-                        if last:
-                            return json.dumps({
-                                "last_orchestration": json.loads(last),
-                                "note": "Prior conversation context loaded.",
-                            })
-                        return json.dumps({
-                            "last_orchestration": None,
-                            "note": "No prior orchestration found (first interaction).",
-                        })
-                    except Exception as exc:
-                        return json.dumps({
-                            "last_orchestration": None,
-                            "error": str(exc),
-                        })
-
-                tool_registry.override_tool_impl(
-                    "recall_last_orchestration", _recall_last_orchestration_impl,
-                )
-
-                # 8c. Wire list_available_agents with router introspection
-                _router_ref = self._router
-
-                async def _list_available_agents_impl() -> str:
-                    """List all agents with their live capabilities."""
-                    agents_info = []
-                    for card in _router_ref.list_cards():
-                        if card.name == "orchestrator":
-                            continue  # Don't list self
-                        agents_info.append({
-                            "name": card.name,
-                            "display_name": card.display_name,
-                            "capabilities": card.capabilities,
-                            "tags": card.tags,
-                            "description": card.description[:150] if card.description else "",
-                        })
-                    return json.dumps({
-                        "agents": agents_info,
-                        "total": len(agents_info),
-                    })
-
-                tool_registry.override_tool_impl(
-                    "list_available_agents", _list_available_agents_impl,
-                )
-
-                # 8d. Wire check_delegation_health with live router state
-                async def _check_delegation_health_impl() -> str:
-                    """Check if the delegation system is healthy."""
-                    registered = _router_ref.registered_agents
-                    factories_ok = all(
-                        n in _router_ref._agent_factory
-                        for n in registered
-                    )
-                    return json.dumps({
-                        "status": "healthy" if factories_ok else "degraded",
-                        "agents_registered": registered,
-                        "agents_available": len(registered),
-                        "router_connected": True,
-                        "factories_wired": factories_ok,
-                    })
-
-                tool_registry.override_tool_impl(
-                    "check_delegation_health", _check_delegation_health_impl,
-                )
+        # 8. The orchestrator no longer uses tool-based delegation. It runs as a
+        #    durable LangGraph StateGraph (ADR-017, app/agents/graph/) whose nodes
+        #    call the A2A router directly and never expose tools to the LLM — so the
+        #    old delegate_task / recall_last_orchestration / list_available_agents /
+        #    check_delegation_health wiring has been removed. See orchestrator.run().
 
         # 9. Wire get_user_profile with the real user-store data
         _mcp_uid = mcp_uid

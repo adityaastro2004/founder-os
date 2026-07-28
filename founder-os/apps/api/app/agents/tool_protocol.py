@@ -271,9 +271,9 @@ class ToolRegistry:
         """
         Replace a tool's implementation at runtime.
 
-        This is used by the Orchestrator to bind the ``delegate_task``
-        placeholder to an actual delegation closure that has access to
-        the orchestrator instance, user_id, and session_id.
+        This is used to bind a placeholder tool (e.g. ``get_user_profile``)
+        to an actual closure that has access to runtime state such as the
+        user_id, session_id, and live stores.
 
         The override installs a ``ClosureToolProvider`` that intercepts
         calls to ``tool_name`` and routes them to ``impl``.
@@ -293,8 +293,8 @@ class _ClosureToolProvider(ToolProvider):
     """
     A thin ToolProvider that wraps a single async callable.
 
-    Used to inject runtime closures (e.g. delegate_task bound to
-    the orchestrator) into the tool registry without modifying the
+    Used to inject runtime closures (e.g. get_user_profile bound to
+    the live user-store) into the tool registry without modifying the
     global @tool catalog.
     """
 

@@ -153,7 +153,6 @@ TOOL_RISK_MAP: dict[str, RiskLevel] = {
     "create_task": RiskLevel.MEDIUM,
     "update_task_status": RiskLevel.MEDIUM,
     "save_draft": RiskLevel.MEDIUM,
-    "delegate_task": RiskLevel.MEDIUM,
 }
 
 
@@ -553,10 +552,6 @@ class ApprovalGate:
             "save_draft": (
                 f"Save {arguments.get('output_type', 'draft')}: "
                 f"\"{arguments.get('title', '?')}\""
-            ),
-            "delegate_task": (
-                f"Delegate to {arguments.get('agent_name', '?')}: "
-                f"\"{arguments.get('task', '?')[:80]}\""
             ),
             "send_email": (
                 f"Send email to {arguments.get('to', '?')}: "

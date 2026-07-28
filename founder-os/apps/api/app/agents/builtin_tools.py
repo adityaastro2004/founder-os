@@ -674,68 +674,10 @@ async def validate_event_fields(
     return json.dumps({"valid": len(errors) == 0, "errors": errors})
 
 
-# ============================================================================
-# Orchestrator — Agent delegation (Stripe Minions pattern)
-# ============================================================================
-
-@tool(
-    name="delegate_task",
-    description=(
-        "Delegate a task to a specialist agent: planner, content, research, "
-        "or support. Rewrite the task as a clear instruction (never forward "
-        "raw messages) and include context (goal, timezone, stage, prior "
-        "results). Calendar work → 'planner'. Multi-step → delegate "
-        "sequentially, passing prior output."
-    ),
-)
-async def delegate_task(
-    agent_name: str,
-    task: str,
-    context: str = "",
-) -> str:
-    """Placeholder — wired to OrchestratorAgent.execute_delegation() at runtime."""
-    return json.dumps({"error": "delegate_task not wired — must be called via orchestrator"})
-
-
-# ============================================================================
-# Orchestrator — Memory & Context Tools
-# ============================================================================
-
-@tool(
-    name="recall_last_orchestration",
-    description=(
-        "Recall the most recent orchestration for this user. Returns: "
-        "last request, agents used, what was discussed, actions taken."
-    ),
-)
-async def recall_last_orchestration() -> str:
-    """Placeholder — wired at runtime by the registry."""
-    return json.dumps({"last_orchestration": None, "note": "No prior orchestration found."})
-
-
-@tool(
-    name="list_available_agents",
-    description="List all currently available specialist agents with their capabilities.",
-)
-async def list_available_agents() -> str:
-    """Placeholder — wired at runtime by the registry."""
-    return json.dumps({
-        "agents": [
-            {"name": "planner", "best_for": "Planning, scheduling, calendar, tasks", "has_calendar": True},
-            {"name": "content", "best_for": "Writing, blog posts, emails, social media", "has_calendar": False},
-            {"name": "research", "best_for": "Market research, competitor analysis", "has_calendar": False},
-            {"name": "support", "best_for": "Customer emails, FAQs, support playbooks", "has_calendar": False},
-        ],
-    })
-
-
-@tool(
-    name="check_delegation_health",
-    description="Check the health status of the delegation system.",
-)
-async def check_delegation_health() -> str:
-    """Placeholder — wired at runtime by the registry."""
-    return json.dumps({"status": "healthy", "agents_available": 6, "router_connected": True})
+# Orchestrator delegation + introspection tools (delegate_task,
+# recall_last_orchestration, list_available_agents, check_delegation_health) were
+# removed with ADR-017: the orchestrator now runs as a durable graph whose nodes
+# call the A2A router directly and expose no tools to the LLM.
 
 
 # ============================================================================
