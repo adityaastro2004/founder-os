@@ -25,6 +25,7 @@ from typing import Any
 
 import httpx
 from app.log_sanitize import sl
+from app.metrics import instrumented_generate, record_llm_fallback
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,7 @@ class OllamaProvider(LLMProvider):
         self.default_model = default_model
         self._client = httpx.AsyncClient(base_url=self.base_url, timeout=timeout)
 
+    @instrumented_generate
     async def generate(
         self,
         messages: list[LLMMessage],
@@ -308,6 +310,7 @@ class AnthropicProvider(LLMProvider):
         self.default_model = default_model
         self._client = anthropic.AsyncAnthropic(api_key=api_key)
 
+    @instrumented_generate
     async def generate(
         self,
         messages: list[LLMMessage],
@@ -462,6 +465,7 @@ class OpenAICompatibleProvider(LLMProvider):
             timeout=timeout,
         )
 
+    @instrumented_generate
     async def generate(
         self,
         messages: list[LLMMessage],
@@ -753,6 +757,7 @@ class GeminiNativeProvider(LLMProvider):
             timeout=timeout,
         )
 
+    @instrumented_generate
     async def generate(
         self,
         messages: list[LLMMessage],
@@ -944,6 +949,9 @@ class GeminiWithFallback(LLMProvider):
                     break
         raise last_exc  # type: ignore[misc]
 
+    # NOT decorated with @instrumented_generate on purpose: this method delegates
+    # to the already-instrumented leaf providers, so wrapping it too would count
+    # every call twice. It records tier transitions instead (ADR-018).
     async def generate(self, messages, *, system="", model=None, temperature=0.7, max_tokens=4096, **kwargs):
         import time as _time
         # Safety: ignore non-Gemini model names (e.g. from stale DB config)
@@ -968,6 +976,7 @@ class GeminiWithFallback(LLMProvider):
                 if not self._is_retryable(exc):
                     raise
                 logger.info("Gemini OpenAI-compat exhausted (%s) — trying native REST", str(exc)[:80])
+                record_llm_fallback("gemini_openai_compat", "gemini_native")
 
             # 2) Gemini native REST endpoint (with retry, separate rate-limit pool)
             try:
@@ -987,6 +996,7 @@ class GeminiWithFallback(LLMProvider):
         # 3) OpenAI fallback (if configured)
         if self._openai:
             logger.info("Falling back to OpenAI (%s)", self._openai_model)
+            record_llm_fallback("gemini", "openai_compatible")
             return await self._openai.generate(
                 messages, system=system, model=self._openai_model,
                 temperature=temperature, max_tokens=max_tokens, **kwargs,

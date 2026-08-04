@@ -1,0 +1,156 @@
+# Founder OS — Grafana alert rules (ADR-018)
+#
+# Import into Grafana Cloud: Alerting → Alert rules → "Import rules" (or
+# `grafanactl`/Terraform if you ever automate it). Replace DATASOURCE_UID with
+# the UID of your Prometheus data source before importing — Grafana rules bind
+# to a concrete UID, unlike the dashboards, which use a $datasource variable.
+#
+# Every rule carries a `for:` duration. Without one, a single scrape blip pages
+# the founder at 3am; these durations are the difference between an alert that
+# gets read and one that gets muted.
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: founder-os-critical
+    folder: Founder OS
+    interval: 1m
+    rules:
+      # ── API down ────────────────────────────────────────────────────────
+      # noDataState: Alerting is load-bearing. A total EC2 outage kills Alloy
+      # too, so `up` does not go to 0 — it simply stops arriving. Treating
+      # NoData as OK would mean a dead box alerts on nothing at all.
+      - uid: fos-api-down
+        title: APIDown
+        condition: threshold
+        for: 2m
+        noDataState: Alerting
+        execErrState: Alerting
+        labels:
+          severity: critical
+        annotations:
+          summary: "Founder OS API is not responding to scrapes"
+          description: >-
+            `up{job="founder-os-api"}` is 0 or absent for 2 minutes. Either the API
+            container is down or the whole host is. SSH in and check
+            `docker compose -f docker-compose.prod.yml ps`.
+        data:
+          - refId: query
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: DATASOURCE_UID
+            model:
+              expr: up{job="founder-os-api"}
+              instant: true
+              refId: query
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: query
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: threshold
+
+      # ── Error rate ──────────────────────────────────────────────────────
+      - uid: fos-high-error-rate
+        title: HighErrorRate
+        condition: threshold
+        for: 5m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: critical
+        annotations:
+          summary: "Over 5% of API responses are 5xx"
+          description: >-
+            Sustained server errors for 5 minutes. Check the "Request rate by
+            status class" panel on the Infra health dashboard, then the API logs.
+        data:
+          - refId: query
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: DATASOURCE_UID
+            model:
+              # clamp_min keeps this from dividing by zero on an idle system —
+              # 0/0 would evaluate to NaN and silently never fire.
+              expr: >-
+                sum(rate(fos_http_requests_total{status_class="5xx"}[5m]))
+                / clamp_min(sum(rate(fos_http_requests_total[5m])), 0.001)
+              instant: true
+              refId: query
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: query
+              conditions:
+                - evaluator: { type: gt, params: [0.05] }
+              refId: threshold
+
+      # ── Celery backlog ──────────────────────────────────────────────────
+      - uid: fos-celery-backlog
+        title: CeleryBacklog
+        condition: threshold
+        for: 10m
+        noDataState: OK
+        execErrState: Alerting
+        labels:
+          severity: warning
+        annotations:
+          summary: "Celery queue depth above 50 for 10 minutes"
+          description: >-
+            Tasks are arriving faster than the worker drains them, or the worker
+            is dead while the API keeps enqueuing. Check
+            `docker compose -f docker-compose.prod.yml logs worker`.
+        data:
+          - refId: query
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: DATASOURCE_UID
+            model:
+              expr: max(fos_celery_queue_depth)
+              instant: true
+              refId: query
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: query
+              conditions:
+                - evaluator: { type: gt, params: [50] }
+              refId: threshold
+
+      # ── LLM cost ────────────────────────────────────────────────────────
+      # THRESHOLD IS A PLACEHOLDER. Watch the "LLM spend per day" panel for a
+      # week, then set this to roughly 3x a normal day. Too low and you mute it;
+      # too high and it never fires.
+      - uid: fos-llm-cost-budget
+        title: LLMCostBudget
+        condition: threshold
+        for: 15m
+        noDataState: OK
+        execErrState: OK
+        labels:
+          severity: warning
+        annotations:
+          summary: "LLM spend over budget in the last 24h"
+          description: >-
+            Estimated spend crossed the daily budget. Usually an agent loop that
+            is not terminating. Check the Agent & LLM ops dashboard.
+            Note this figure excludes models missing from the price table in
+            app/metrics/registry.py, so real spend may be higher.
+        data:
+          - refId: query
+            relativeTimeRange: { from: 86400, to: 0 }
+            datasourceUid: DATASOURCE_UID
+            model:
+              expr: sum(increase(fos_llm_cost_usd_total[24h]))
+              instant: true
+              refId: query
+          - refId: threshold
+            datasourceUid: __expr__
+            model:
+              type: threshold
+              expression: query
+              conditions:
+                - evaluator: { type: gt, params: [10] }
+              refId: threshold

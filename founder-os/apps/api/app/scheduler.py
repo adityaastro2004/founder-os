@@ -331,6 +331,31 @@ def start_scheduler() -> AsyncIOScheduler:
     #     )
     #     logger.info("📋 Dev test job scheduled — will fire in 30 seconds")
 
+    # ── Business metrics refresh (ADR-018) ─────────────────────
+    # Cheap COUNT queries feeding the Grafana business gauges. Lives here rather
+    # than on Celery beat because no beat process runs in production, and the
+    # gauges must be set in the same process that serves /metrics.
+    _settings = get_settings()
+    if _settings.METRICS_ENABLED:
+        from apscheduler.triggers.interval import IntervalTrigger
+
+        from app.metrics.business import REFRESH_INTERVAL_SECONDS, collect_business_metrics
+
+        scheduler.add_job(
+            collect_business_metrics,
+            trigger=IntervalTrigger(seconds=REFRESH_INTERVAL_SECONDS),
+            id="business_metrics_refresh",
+            name=f"Business metrics refresh (every {REFRESH_INTERVAL_SECONDS}s)",
+            replace_existing=True,
+            # Boot happens before the DB pool is warm; wait one interval so the
+            # first run does not race init_db().
+            next_run_time=datetime.datetime.now(datetime.timezone.utc)
+            + datetime.timedelta(seconds=30),
+            # A slow refresh must never stack up behind itself.
+            max_instances=1,
+            coalesce=True,
+        )
+
     scheduler.start()
     _scheduler = scheduler
 

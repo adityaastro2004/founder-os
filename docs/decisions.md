@@ -19,6 +19,39 @@
 
 ---
 
+## ADR-018 — Observability via Prometheus exposition + Grafana Cloud (agent-only on-host)
+
+- Date: 2026-08-04
+- Status: accepted
+- Context: production ran blind — no way to see uptime, latency, error rate, Celery
+  backlog, LLM spend, or business aggregates without SSH-ing to the box. PostHog
+  covers per-user product funnels but nothing operational and cannot alert on a dead
+  API. The binding constraint is the host: a free-tier EC2 with ~1 GB RAM already
+  running Caddy + Postgres + Redis + api + worker. Spec:
+  [docs/superpowers/specs/2026-08-04-grafana-observability-design.md](superpowers/specs/2026-08-04-grafana-observability-design.md).
+- Decision: instrument the API with `prometheus_client` behind a token-guarded
+  `GET /metrics`, and ship to **Grafana Cloud free tier** via a single Grafana Alloy
+  container (~80 MB) rather than self-hosting Prometheus + Grafana (~500 MB, would
+  OOM the box). Because the Celery worker is a separate prefork container that
+  cannot host an in-process registry, it publishes counters to **Redis** via task
+  signals and the API re-emits them — rejecting both a worker-side HTTP server
+  (needs `PROMETHEUS_MULTIPROC_DIR` + shared tmpfs) and a Pushgateway (another
+  container, documented anti-pattern). Business aggregates come from a 5-minute
+  APScheduler job running `COUNT` queries, not from a Grafana Postgres datasource —
+  which would require exposing Postgres or running a private-connector agent.
+  `/metrics` is absent from the Caddyfile and reachable only on the compose network.
+- Consequences: one scrape target, one new Python dep (`prometheus-client`), one new
+  container. Label cardinality becomes a hard budget (10k series ceiling) — the
+  latency histogram carries only the route *template*, and no `user_id`/`email` may
+  ever be a label, which is a PII control as much as a cardinality one (metrics
+  leave the box to a third party). Per-user analysis therefore stays in PostHog;
+  the two systems are deliberately not unified. Retention is 14 days on the free
+  tier. The LLM price table is a hand-maintained dict that goes stale on repricing.
+  Rules out ad-hoc SQL drill-down in Grafana until a private data-source connector
+  is justified.
+- Links: [tasks/active/028-grafana-observability.md](../tasks/active/028-grafana-observability.md),
+  `apps/api/app/metrics/`, `ops/grafana/`, [DEPLOY.md](../DEPLOY.md).
+
 ## ADR-017 — Durable orchestration via a LangGraph `StateGraph` (in-place, thin-core)
 
 - Date: 2026-07-27

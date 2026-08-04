@@ -17,6 +17,7 @@ import logging
 from typing import Any
 
 from app.agents.graph.edges import pending_agents
+from app.metrics import record_orchestrator_run
 
 logger = logging.getLogger(__name__)
 
@@ -214,12 +215,19 @@ def make_synthesize_node(deps: Any):
             company=state["company_context"] or "(none)",
             results=joined,
         )
-        resp = await deps.llm.generate(
-            [LLMMessage(role=Role.USER, content=prompt)],
-            system=_SYNTH_SYSTEM,
-            model=getattr(deps, "main_model", None),
-            temperature=0.4,
-        )
+        # `synthesize` is the terminal node (it edges straight to END), so this is
+        # the one place a run can be counted as having completed (ADR-018).
+        try:
+            resp = await deps.llm.generate(
+                [LLMMessage(role=Role.USER, content=prompt)],
+                system=_SYNTH_SYSTEM,
+                model=getattr(deps, "main_model", None),
+                temperature=0.4,
+            )
+        except Exception:
+            record_orchestrator_run("error")
+            raise
+        record_orchestrator_run("completed")
         trace = list(state["trace"]) + [
             {"node": "synthesize", "tokens_used": resp.usage.total}
         ]

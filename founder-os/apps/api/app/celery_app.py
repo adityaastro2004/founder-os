@@ -87,3 +87,13 @@ celery.conf.imports = (
     "app.tasks.agent_tasks",
     "app.tasks.state_tasks",
 )
+
+# ── Metrics signals (ADR-018) ────────────────────────────────
+# The worker cannot expose a Prometheus endpoint (no HTTP server, and prefork
+# would give each of the 4 children its own counters), so task signals increment
+# Redis hashes that the API re-emits on /metrics. Registered here — explicitly,
+# for the same reason the imports above are explicit.
+if settings.METRICS_ENABLED:
+    from app.metrics.celery_bridge import register_worker_signals
+
+    register_worker_signals()
