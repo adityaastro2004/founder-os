@@ -1,0 +1,316 @@
+{
+  "title": "Founder OS — Agent & LLM ops",
+  "uid": "founderos-agents",
+  "tags": ["founder-os", "agents", "llm"],
+  "timezone": "Asia/Kolkata",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": { "from": "now-7d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "LLM spend — last 24h",
+      "description": "Estimated from a hand-maintained price table in app/metrics/registry.py. Unpriced models contribute 0, so this under-reports rather than invents. Ollama is local and free by design.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(fos_llm_cost_usd_total[24h]))", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "LLM calls — last 24h",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 0 },
+      "targets": [
+        { "refId": "A", "expr": "sum(increase(fos_llm_requests_total[24h]))", "instant": true }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "short", "decimals": 0, "thresholds": { "mode": "absolute", "steps": [{ "color": "text", "value": null }] } },
+        "overrides": []
+      },
+      "options": { "colorMode": "none", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "type": "stat",
+      "title": "LLM error rate",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 0 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(fos_llm_requests_total{outcome=\"error\"}[1h])) / clamp_min(sum(rate(fos_llm_requests_total[1h])), 0.0001)",
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.05 },
+              { "color": "red", "value": 0.2 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "LLM spend per day by provider",
+      "description": "The hero panel. Provider colors are pinned by name, so a provider going quiet never repaints the others.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 5 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (provider) (increase(fos_llm_cost_usd_total[1d]))",
+          "legendFormat": "{{provider}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "decimals": 2,
+          "custom": {
+            "drawStyle": "bars",
+            "lineWidth": 1,
+            "fillOpacity": 85,
+            "stacking": { "mode": "normal" },
+            "showPoints": "never"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "anthropic" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#5794F2" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "openai_compatible" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#E8590C" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "gemini" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#A352CC" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "ollama" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#56A64B" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Orchestrator runs by outcome",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (outcome) (increase(fos_orchestrator_runs_total[1h]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80, "stacking": { "mode": "normal" }, "showPoints": "never" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "completed" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "error" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Approval-gate decisions",
+      "description": "How often agents run unattended vs interrupt the founder. A rising requires_approval share means the gate is getting noisy.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (decision) (increase(fos_approval_decisions_total[1h]))",
+          "legendFormat": "{{decision}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80, "stacking": { "mode": "normal" }, "showPoints": "never" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "auto_approved" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#56A64B" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "requires_approval" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#E8590C" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "denied" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Tokens per hour by direction",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (direction) (rate(fos_llm_tokens_total[1h])) * 3600",
+          "legendFormat": "{{direction}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 15, "showPoints": "never" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "input" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#5794F2" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "output" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#E8590C" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "LLM p95 latency by provider",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, provider) (rate(fos_llm_request_duration_seconds_bucket[30m])))",
+          "legendFormat": "{{provider}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": { "drawStyle": "line", "lineWidth": 2, "fillOpacity": 0, "showPoints": "never" }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "anthropic" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#5794F2" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "openai_compatible" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#E8590C" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "gemini" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#A352CC" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "ollama" },
+            "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "#56A64B" } }]
+          }
+        ]
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    },
+
+    {
+      "type": "timeseries",
+      "title": "Provider fallback transitions",
+      "description": "Each event is a tier exhausting and the next being tried. A sustained non-zero line means the primary provider is effectively down.",
+      "datasource": { "type": "prometheus", "uid": "${datasource}" },
+      "gridPos": { "h": 7, "w": 24, "x": 0, "y": 31 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (from_provider, to_provider) (increase(fos_llm_fallback_total[1h]))",
+          "legendFormat": "{{from_provider}} → {{to_provider}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": { "drawStyle": "bars", "lineWidth": 1, "fillOpacity": 80, "showPoints": "never" }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      }
+    }
+  ]
+}

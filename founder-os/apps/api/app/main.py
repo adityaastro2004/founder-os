@@ -94,6 +94,13 @@ async def lifespan(application: FastAPI):
     # Durable orchestrator checkpointer (degrades to non-durable on failure)
     from app.agents.graph.checkpointer import open_checkpointer, close_checkpointer
     await open_checkpointer(_settings)
+    # Metrics (ADR-018): register the Redis-backed Celery collector so the API can
+    # re-emit the worker's counters, which it cannot expose itself (prefork).
+    if _settings.METRICS_ENABLED:
+        from app.metrics.celery_bridge import CeleryCollector
+        from app.metrics.registry import REGISTRY
+
+        REGISTRY.register(CeleryCollector())
     start_scheduler()
     yield
     # ── Shutdown ──
@@ -147,6 +154,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Metrics (ADR-018) ──
+# Added LAST, so it is the OUTERMOST layer and observes every response — including
+# the 429s that RateLimitMiddleware short-circuits before any handler runs. Those
+# land on route="__unmatched__" (the router never matched), which is correct: the
+# request was rejected, not served.
+if settings.METRICS_ENABLED:
+    from app.metrics.middleware import MetricsMiddleware
+
+    app.add_middleware(MetricsMiddleware)
+
 app.include_router(router)
 app.include_router(agent_router)
 app.include_router(approval_router)
@@ -167,6 +184,14 @@ app.include_router(billing_router)
 app.include_router(workflow_router)
 app.include_router(state_router)
 app.include_router(search_router)
+
+# Prometheus scrape endpoint — token-guarded, and NOT routed by Caddy, so it is
+# only reachable from inside the compose network (ADR-018). Disabled means not
+# mounted (404), never an open endpoint.
+from app.metrics.routes import metrics_endpoint_enabled, router as metrics_router
+
+if metrics_endpoint_enabled(settings):
+    app.include_router(metrics_router)
 
 # Dev-only test routes (no auth required)
 if settings.APP_ENV == "development":

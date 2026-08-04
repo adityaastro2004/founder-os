@@ -79,6 +79,8 @@ founder-os/                          ← git root, this CLAUDE.md, meta-layer
 ├── meta/               ← scaffold-{skill,trio,orchestration} + run-* orchestration runbooks
 ├── tasks/              ← backlog/ active/ completed/  (state = folder) + TEMPLATE.md
 ├── reports/            ← durable run & release reports (audit log)
+├── ops/grafana/        ← observability (ADR-018): alloy/ collector config · dashboards/ (3 JSON)
+│                          · alerts/ · README.md (setup + verification runbook)
 ├── scripts/            ← deploy-server.sh (SSM CD) · deploy-web.sh (guarded Vercel) · backup-db.sh
 ├── .github/workflows/  ← ci.yml · deploy.yml · codeql.yml · dependency-review.yml (§6)
 ├── DEPLOY.md            ← production topology + secrets runbook
@@ -97,7 +99,10 @@ founder-os/                          ← git root, this CLAUDE.md, meta-layer
     │   │   │   ├── integrations/← state-source adapters: base/registry + obsidian,
     │   │   │   │                   notion, google_calendar + credentials
     │   │   │   ├── workflows/   ← workflow engine: ir → compiler → generator, n8n_client
-    │   │   │   ├── crawler/  memory/  retrieval/  tasks/
+    │   │   │   ├── metrics/    ← Prometheus exposition → Grafana Cloud (ADR-018):
+│   │   │   │                  registry (label budget!), middleware, celery_bridge,
+│   │   │   │                  business, routes (/metrics, token-guarded)
+│   │   │   ├── crawler/  memory/  retrieval/  tasks/
     │   │   │   ├── auth.py      ← Clerk JWT (require_auth / optional_auth) + dev-only
     │   │   │   │                   x-test-user bypass, hard-gated on APP_ENV=development
     │   │   │   ├── security_middleware.py  log_sanitize.py  ← headers/rate limit, redaction

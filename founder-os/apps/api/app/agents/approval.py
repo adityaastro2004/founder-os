@@ -44,6 +44,7 @@ Architecture:
 
 from __future__ import annotations
 
+import functools
 import json
 import logging
 import time
@@ -54,8 +55,38 @@ from typing import Any, Optional
 
 import redis.asyncio as aioredis
 from app.log_sanitize import sl
+from app.metrics import record_approval_decision
 
 logger = logging.getLogger(__name__)
+
+
+def _decision_label(decision: "ApprovalDecision") -> str:
+    """Bucket an ``ApprovalDecision`` into one metric label (ADR-018).
+
+    Four outcomes matter on a dashboard: how often agents run unattended, how
+    often the founder is interrupted, and how often a call is refused outright.
+    """
+    if decision.pending_approval is not None:
+        return "requires_approval"
+    if decision.approved:
+        return "auto_approved" if decision.auto_approved else "approved"
+    return "denied"
+
+
+def _instrumented_check(func):
+    """Record the gate's verdict without touching its branching logic.
+
+    ``check()`` has six return points; a decorator keeps the security-critical
+    control flow untouched rather than threading a counter through each branch.
+    """
+
+    @functools.wraps(func)
+    async def wrapper(*args, **kwargs):
+        decision = await func(*args, **kwargs)
+        record_approval_decision(_decision_label(decision))
+        return decision
+
+    return wrapper
 
 
 # ============================================================================
@@ -405,6 +436,7 @@ class ApprovalGate:
     def preferences(self) -> ApprovalPreferences:
         return self._prefs
 
+    @_instrumented_check
     async def check(
         self,
         user_id: str,

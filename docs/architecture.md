@@ -212,7 +212,7 @@ result grouping are client-side (`_components/command-palette.tsx`).
   `orchestrator`; long orchestrations run async with status polling
   (`queue_routes.py`).
 - **APScheduler** (`scheduler.py`) — cron jobs, e.g. weekly plan generation
-  Monday 08:00 IST.
+  Monday 08:00 IST, plus the 5-minute business-metrics refresh (below).
 
 ## Data model — `app/models.py`, `planner_models_db.py`, `app/state/models.py`
 
@@ -261,8 +261,37 @@ thin views over `useChatStore()`. The provider also restores persisted history
 per session and, after a reload that lands mid-run, briefly polls history until
 the assistant reply arrives.
 
+## Observability — `app/metrics/` (ADR-018)
+
+Prometheus exposition scraped by a Grafana Alloy agent that remote-writes to
+Grafana Cloud's free tier. Self-hosting Prometheus + Grafana was rejected: ~500 MB
+on a ~1 GB EC2 box that already runs the API, worker, Postgres and Redis.
+
+| Module | Role |
+|---|---|
+| `registry.py` | Metric objects + one `CollectorRegistry`; the LLM price table |
+| `middleware.py` | HTTP rate/latency/in-flight, labelled by **route template** |
+| `celery_bridge.py` | Worker signals → Redis hashes; API-side collector re-emits them |
+| `business.py` | 5-minute Postgres `COUNT` job feeding the business gauges |
+| `routes.py` | `GET /metrics`, bearer-token guarded, never proxied by Caddy |
+
+Two constraints shape this and are easy to break by accident:
+
+- **The worker cannot expose its own registry.** It is a separate container with
+  prefork concurrency 4. It increments Redis hashes; the API renders them. The
+  snapshot is taken in the `async` request handler because `collect()` is sync.
+- **Labels are a hard budget.** The free tier caps 10k active series. HTTP metrics
+  carry the FastAPI route *template*, never the raw path, and **no metric may
+  carry a user-identifying label** — metrics leave the box to a third party, so
+  that is a PII rule as much as a cardinality one. Per-user analysis stays in
+  PostHog. Both are enforced by `tests/unit/test_metrics_registry.py`.
+
+Runbook: [`ops/grafana/README.md`](../ops/grafana/README.md).
+
 ## Infrastructure
 
 Docker Compose: `pgvector/pgvector:pg16` + `redis:7-alpine`. CORS middleware on
 the API for the Clerk frontend. Config via `pydantic-settings` (`config.py`) from
-`apps/api/.env` and `apps/web/.env.local`.
+`apps/api/.env` and `apps/web/.env.local`. Metrics collection adds a
+`grafana/alloy` container (compose: `metrics` profile; live EC2: a host-network
+container started by hand — see [DEPLOY.md](../DEPLOY.md)).

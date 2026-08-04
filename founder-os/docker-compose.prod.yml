@@ -123,9 +123,55 @@ services:
       retries: 5
       start_period: 20s
 
+  # Metrics collector (ADR-018). Scrapes api:8000/metrics on the internal
+  # network and remote-writes to Grafana Cloud. Self-hosting Prometheus +
+  # Grafana instead would add ~500 MB to a ~1 GB box; this agent is ~80 MB.
+  #
+  # Starts only when the `metrics` profile is active AND the Grafana Cloud
+  # credentials exist — the profile makes an unconfigured stack boot cleanly
+  # instead of crash-looping an agent with nowhere to ship to:
+  #   docker compose --env-file .env.production -f docker-compose.prod.yml \
+  #     --profile metrics up -d
+  alloy:
+    image: grafana/alloy:v1.11.0
+    container_name: founder-os-alloy
+    restart: unless-stopped
+    profiles: ["metrics"]
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    environment:
+      # Compose service name. The live EC2 box runs the API under systemd, not
+      # compose, and overrides this to localhost:8000 (see ops/grafana/README.md).
+      FOS_API_TARGET: api:8000
+      # Scrape auth for the API's token-guarded /metrics endpoint.
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      # Grafana Cloud remote-write. Deliberately NOT in apps/api/config.py —
+      # Settings gets dumped in logs and a provider key leaked that way once.
+      GRAFANA_CLOUD_PROM_URL: ${GRAFANA_CLOUD_PROM_URL:-}
+      GRAFANA_CLOUD_PROM_USER: ${GRAFANA_CLOUD_PROM_USER:-}
+      GRAFANA_CLOUD_API_KEY: ${GRAFANA_CLOUD_API_KEY:-}
+    volumes:
+      - ../ops/grafana/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloydata:/var/lib/alloy/data
+      # Host metrics for the unix exporter (read-only).
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    # Not published and not proxied by Caddy — the Alloy UI would expose the
+    # scraped data and the config. Internal network only.
+    expose:
+      - "12345"
+    depends_on:
+      api:
+        condition: service_started
+
 volumes:
   pgdata:
   redisdata:
   n8ndata:
   caddy_data:
   caddy_config:
+  alloydata:

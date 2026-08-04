@@ -73,7 +73,7 @@ jobs:
                 "sudo -u ubuntu git -C /home/ubuntu/founder-os fetch -q origin main",
                 "sudo -u ubuntu git -C /home/ubuntu/founder-os checkout -q main",
                 "sudo -u ubuntu git -C /home/ubuntu/founder-os reset -q --hard origin/main",
-                "FOS_OPENAI_API_KEY=${{ secrets.GROQ_API_KEY }} FOS_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} FOS_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} FOS_GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} FOS_GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }} FOS_OAUTH_STATE_SECRET=${{ secrets.OAUTH_STATE_SECRET }} FOS_BACKUP_S3_BUCKET=${{ secrets.BACKUP_S3_BUCKET }} bash /home/ubuntu/founder-os/scripts/deploy-server.sh \"$PREV\""
+                "FOS_OPENAI_API_KEY=${{ secrets.GROQ_API_KEY }} FOS_GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }} FOS_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }} FOS_GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }} FOS_GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }} FOS_OAUTH_STATE_SECRET=${{ secrets.OAUTH_STATE_SECRET }} FOS_BACKUP_S3_BUCKET=${{ secrets.BACKUP_S3_BUCKET }} FOS_METRICS_TOKEN=${{ secrets.METRICS_TOKEN }} bash /home/ubuntu/founder-os/scripts/deploy-server.sh \"$PREV\""
               ]
             }' \
             --query 'Command.CommandId' --output text)
