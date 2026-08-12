@@ -39,6 +39,15 @@
   no OAuth), proving Observe→Remember→Sync end-to-end. Status: `now`. See ADR-009 +
   [tasks/backlog/011](../tasks/completed/011-company-state-engine.md) +
   [spec](superpowers/specs/2026-06-22-company-state-engine-design.md).
+- **Production observability — Grafana Cloud ([task 028](../tasks/active/028-grafana-observability.md)):**
+  the API exposes a token-guarded `/metrics`; a Grafana Alloy agent ships it to
+  Grafana Cloud's free tier. Three dashboards (infra health · agent & LLM ops ·
+  business) and four alerts (APIDown, HighErrorRate, CeleryBacklog, LLMCostBudget).
+  Why: production ran blind — no uptime, latency, queue-depth or LLM-spend
+  visibility without SSH-ing to the box, and no way to be told the API is down.
+  Code is shipped; the Grafana Cloud stack + credentials are a founder setup step
+  ([runbook](../ops/grafana/README.md)). Status: `now`. See ADR-018 +
+  [spec](superpowers/specs/2026-08-04-grafana-observability-design.md).
 - _(seed)_ **Establish the development factory** — the meta-layer in this repo so
   the system improves itself. Why: less founder context-repetition, higher quality.
   Status: `now`.

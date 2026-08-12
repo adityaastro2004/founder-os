@@ -108,6 +108,16 @@ class Settings(BaseSettings):
     STATE_NOTION_FULL_WALK_EVERY_S: int = 86_400
     STATE_NOTION_API_VERSION: str = "2022-06-28"
 
+    # ── Prometheus metrics / Grafana Cloud (ADR-018) ──
+    # METRICS_TOKEN guards GET /metrics, which discloses internal route names,
+    # traffic volumes and LLM spend. Outside development an empty token DISABLES
+    # the endpoint rather than leaving it open (app/metrics/routes.py). The
+    # Grafana Cloud credentials themselves are NOT declared here — they are read
+    # by the Alloy container from .env.production only, so they can never be
+    # echoed by a Settings dump (see the 2026-07-14 key leak).
+    METRICS_ENABLED: bool = True
+    METRICS_TOKEN: str = ""
+
     # ── PostHog Analytics ──
     POSTHOG_PROJECT_TOKEN: str = ""
     POSTHOG_HOST: str = "https://us.i.posthog.com"

@@ -62,6 +62,13 @@ sync_env() {
   patch_var GOOGLE_REDIRECT_URI "${FOS_GOOGLE_REDIRECT_URI:-}"
   patch_var OAUTH_STATE_SECRET "${FOS_OAUTH_STATE_SECRET:-}"
   patch_var BACKUP_S3_BUCKET "${FOS_BACKUP_S3_BUCKET:-}"
+  # Guards GET /metrics (ADR-018). Generated with token_urlsafe, so it is always
+  # within the charset above. The Grafana Cloud credentials are deliberately NOT
+  # synced here: their tokens contain '=' and '+', which patch_var refuses by
+  # design, and loosening that validation for an observability feature would be
+  # the wrong trade. They are provisioned once, by hand, into the Alloy env file
+  # (see ops/grafana/README.md).
+  patch_var METRICS_TOKEN "${FOS_METRICS_TOKEN:-}"
   if [ -n "$synced" ]; then echo "env synced:$synced"; fi
 }
 

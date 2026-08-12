@@ -51,6 +51,9 @@ pdfplumber
 # Analytics
 posthog>=3.0.0
 
+# Metrics / observability (ADR-018) — Prometheus exposition scraped by Grafana Alloy
+prometheus-client>=0.21.0
+
 # Orchestration graph — durable LangGraph orchestrator (resolved on Python 3.14)
 langgraph>=1.2.9,<2
 langgraph-checkpoint-postgres>=3.1.0

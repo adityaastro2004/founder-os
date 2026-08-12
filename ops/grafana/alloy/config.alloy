@@ -1,0 +1,112 @@
+// Founder OS — Grafana Alloy collector (ADR-018)
+//
+// Scrapes the API's /metrics endpoint over the internal compose network and
+// remote-writes to Grafana Cloud. This is the ONLY observability process that
+// runs on the host: self-hosting Prometheus + Grafana (~500 MB) would OOM a
+// free-tier EC2 box that already runs Caddy + Postgres + Redis + api + worker.
+//
+// Credentials come from the environment (docker-compose.prod.yml passes them
+// through from .env.production). They are never written into this file.
+
+logging {
+  level  = "warn"
+  format = "logfmt"
+}
+
+// ── The API scrape target ──────────────────────────────────────────────────
+// Two supported topologies, hence the env var (see DEPLOY.md):
+//
+//   * LIVE production (EC2): the API runs as the `founder-api` systemd unit, so
+//     Alloy runs with `--network host` and scrapes FOS_API_TARGET=localhost:8000.
+//   * docker-compose.prod.yml recipe: FOS_API_TARGET=api:8000, the compose
+//     service name on the internal network.
+//
+// Either way /metrics is deliberately absent from the Caddyfile and unpublished,
+// so a loopback/compose-internal scrape is the only path to it.
+discovery.relabel "api" {
+  targets = [{
+    __address__ = coalesce(sys.env("FOS_API_TARGET"), "localhost:8000"),
+  }]
+
+  rule {
+    target_label = "job"
+    replacement  = "founder-os-api"
+  }
+  rule {
+    target_label = "instance"
+    replacement  = "founder-os-prod"
+  }
+}
+
+prometheus.scrape "api" {
+  targets    = discovery.relabel.api.output
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+
+  metrics_path    = "/metrics"
+  scrape_interval = "30s"
+  // The API scrapes cheaply, but the business gauges are only refreshed every
+  // 5 minutes anyway — 30s is plenty and keeps the free-tier ingest low.
+  scrape_timeout  = "10s"
+
+  bearer_token = sys.env("METRICS_TOKEN")
+}
+
+// ── Host resources ─────────────────────────────────────────────────────────
+// Alloy's built-in unix exporter — no separate node_exporter container. The
+// collector set is filtered hard: the default set emits several thousand
+// series, which would eat most of the 10k free-tier budget on its own.
+//
+// If the box ever runs short on memory, THIS is the first thing to drop
+// (~150 series, the least value per byte of anything we collect).
+prometheus.exporter.unix "host" {
+  set_collectors = ["cpu", "meminfo", "diskstats", "filesystem", "loadavg"]
+
+  filesystem {
+    fs_types_exclude = "^(autofs|binfmt_misc|cgroup.*|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|securityfs|sysfs|tracefs)$"
+  }
+}
+
+discovery.relabel "host" {
+  targets = prometheus.exporter.unix.host.targets
+
+  rule {
+    target_label = "job"
+    replacement  = "founder-os-host"
+  }
+  rule {
+    target_label = "instance"
+    replacement  = "founder-os-prod"
+  }
+}
+
+prometheus.scrape "host" {
+  targets         = discovery.relabel.host.output
+  forward_to      = [prometheus.remote_write.grafana_cloud.receiver]
+  scrape_interval = "60s"
+}
+
+// ── Ship to Grafana Cloud ──────────────────────────────────────────────────
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROM_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROM_USER")
+      password = sys.env("GRAFANA_CLOUD_API_KEY")
+    }
+
+    // Bound the write-ahead buffer. On a 1 GB box an unbounded queue during a
+    // Grafana Cloud outage is a memory leak that takes the API down with it —
+    // dropping old samples is strictly better than OOM-killing the product.
+    queue_config {
+      capacity             = 2500
+      max_shards           = 3
+      max_samples_per_send = 1000
+    }
+  }
+
+  wal {
+    truncate_frequency = "30m"
+    max_keepalive_time = "2h"
+  }
+}

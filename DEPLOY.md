@@ -153,6 +153,7 @@ on-server steps (as root, checkout already reset to `origin/main`):
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_REDIRECT_URI` | optional | Google Calendar OAuth client. |
 | `OAUTH_STATE_SECRET` | optional | Signs OAuth state. |
 | `BACKUP_S3_BUCKET` | optional | Nightly Postgres dump target ([`scripts/backup-db.sh`](scripts/backup-db.sh)); the cron no-ops until it's set. |
+| `METRICS_TOKEN` | optional | Bearer token guarding `GET /metrics` (ADR-018). Until it's set, the endpoint is **not mounted** in production — fail closed. Generate with `python3 -c "import secrets; print(secrets.token_urlsafe(32))"`. |
 
 The optional secrets are re-synced into `apps/api/.env` on **every** deploy — to
 rotate a key, update it here and re-run the workflow. Never commit keys (a set was
@@ -162,6 +163,18 @@ via **Actions → Deploy → Run workflow**.
 **Nightly backups:** `deploy-server.sh` installs `/etc/cron.d/founder-os-db-backup`,
 which runs [`scripts/backup-db.sh`](scripts/backup-db.sh) to `pg_dump` the database
 to S3 (gated on `BACKUP_S3_BUCKET`).
+
+**Metrics / Grafana Cloud (ADR-018):** the API exposes a token-guarded
+`GET /metrics`, scraped by a Grafana Alloy container that remote-writes to Grafana
+Cloud's free tier. On this systemd topology Alloy runs with `--network host` and
+scrapes `localhost:8000`; it is **not** started by `deploy-server.sh`, because a
+collector that crash-loops on a missing credential must never be able to fail a
+product deploy. The three Grafana Cloud credentials also bypass `sync_env` — their
+tokens contain `=`/`+`, which `patch_var`'s charset check refuses by design — and
+live in `/etc/founder-os/alloy.env` instead. One-time setup, verification, and the
+dashboard/alert import steps are in
+[`ops/grafana/README.md`](ops/grafana/README.md). `/metrics` is never exposed by
+Caddy.
 
 > **Frontend:** the Vercel project is **git-integrated** and auto-deploys merges to
 > `main` on its own — no Action needed. **Never run `vercel deploy --prod` by hand**
