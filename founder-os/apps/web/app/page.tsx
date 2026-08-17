@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ThemeToggle } from "./_components/theme-toggle";
+import { LogoMark } from "./_components/logo-mark";
 
 const features = [
   "7 AI agents",
@@ -23,9 +24,7 @@ export default async function Home() {
       {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-5 md:px-12 lg:px-20">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-            <span className="text-sm font-bold text-white">F</span>
-          </div>
+          <LogoMark className="h-8" />
           <span className="font-serif text-lg font-semibold tracking-tight text-ink">
             Founder OS
           </span>

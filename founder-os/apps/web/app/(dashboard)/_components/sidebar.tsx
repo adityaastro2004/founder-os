@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { clsx } from "clsx";
 import { useChatStore } from "@/lib/chat-store";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
+import { LogoMark } from "@/app/_components/logo-mark";
 import {
   LayoutDashboard,
   Bot,
@@ -131,9 +132,7 @@ export function Sidebar({
       {/* Brand */}
       <div className="flex h-14 items-center justify-between px-4">
         <Link href="/dashboard" className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent">
-            <span className="text-xs font-bold text-white">F</span>
-          </div>
+          <LogoMark className="h-7" />
           <span className="font-serif text-[15px] font-semibold tracking-tight text-ink">
             Founder OS
           </span>
