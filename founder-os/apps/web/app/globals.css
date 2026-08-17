@@ -89,6 +89,12 @@ body {
   border-radius: 4px;
 }
 
+/* ── Brand mark ────────────────────────────────────── */
+/* The logo art is ink-black on transparent; flip it to paper on the dark theme. */
+.dark .logo-mark {
+  filter: invert(1);
+}
+
 /* ── Selection ─────────────────────────────────────── */
 ::selection {
   background: var(--color-accent-soft);

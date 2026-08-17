@@ -1,3 +1,5 @@
+import { LogoMark } from "@/app/_components/logo-mark";
+
 export default function AuthLayout({
   children,
 }: {
@@ -8,9 +10,7 @@ export default function AuthLayout({
       <div className="flex flex-col items-center gap-8">
         {/* Brand */}
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent">
-            <span className="text-base font-bold text-white">F</span>
-          </div>
+          <LogoMark className="h-9" />
           <span className="font-serif text-xl font-semibold tracking-tight text-ink">
             Founder OS
           </span>
