@@ -96,3 +96,32 @@ Compose from the owned kit in `app/_components/ui/` (`Button`, `Card`,
 `PageHeader`, `EmptyState`, `Badge`, `StatCard`, `Skeleton`, `Dialog`, `Tabs`,
 `Input`, `Kbd`, `Spinner`). One-off styles are allowed only where a primitive
 genuinely doesn't fit.
+
+## Public marketing site
+
+The public pages live in `app/(marketing)/` and have their own small kit in
+`app/(marketing)/_components/` — same tokens, different needs (ADR-019):
+
+- `Container` / `Section` / `SectionHeading` / `Prose` — one horizontal rhythm
+  (`px-6`, `md:px-10`, `max-w-6xl`) and one vertical band rhythm
+  (`py-14 md:py-20`) for every page. Long-form copy goes in `Prose`.
+- `CtaLink` — the marketing CTA. An anchor, not the dashboard's `Button`:
+  crawlers and middle-click need a real link.
+- `PageHero` — breadcrumbs + the single `<h1>` + one lead paragraph. Every inner
+  page uses it, so there is exactly one h1 per URL.
+- `CtaBand` — the closing conversion band, repeated at the bottom of every page.
+- `SiteHeader` / `SiteFooter` / `StickyMobileCta` / `Breadcrumbs` / `FaqSection`.
+
+Marketing-specific rules on top of the brand above:
+
+- **Copy is honest about shipping status** — Obsidian ships, Notion is "in
+  progress". No screenshot or claim describes something that does not exist.
+- **No invented numbers.** Case-study outcomes are behavioural, and every
+  case-study surface carries the illustrative-scenario disclaimer.
+- **Voice stays the product's voice** — plain, specific, sentence case, no
+  exclamation marks, no growth-hack punctuation.
+- Brand tokens are also the social card: `lib/og.tsx` renders
+  `/opengraph-image` from the same hex values. Change the palette, change it
+  there too.
+- Copy that appears in more than one place (FAQ answers, the response-time
+  promise, contact details) lives in `lib/faq.ts` / `lib/site.ts`, never inline.

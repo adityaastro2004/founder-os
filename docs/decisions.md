@@ -19,6 +19,64 @@
 
 ---
 
+## ADR-019 — Public marketing site as a `(marketing)` MPA route group with a single metadata factory
+
+- Date: 2026-08-17
+- Status: accepted
+- Context: the public surface was one `app/page.tsx` hero. There was no
+  `robots.txt`, no `sitemap.xml`, no canonical URLs, one site-wide `<title>`, no
+  Open Graph image, no structured data, and no legal, contact, about or FAQ
+  pages — so nothing could rank and nothing could be shared. The Clerk proxy was
+  also deny-by-default over *pages*, which meant an unknown URL 307'd anonymous
+  visitors (and crawlers) to `/sign-in` instead of returning a 404 — a soft-404
+  farm the moment the site was indexed.
+- Decision:
+  1. **A `(marketing)` route group** (`apps/web/app/(marketing)/`) holding one
+     real server-rendered URL per topic: `/`, `/features`, `/case-studies`
+     (+ one static page per scenario), `/about`, `/faq`, `/contact`,
+     `/thank-you`, `/privacy`, `/terms`. Multi-page, not tabs-in-one-route —
+     each page needs its own title, description, canonical and crawl entry.
+     The group adds no URL segment, so the dashboard shell is untouched.
+  2. **`lib/site.ts` as the single metadata factory.** `pageMetadata()` builds
+     title/description/canonical/OG/Twitter from one input, and the same module
+     owns the schema.org builders (Organization, WebSite, SoftwareApplication,
+     ProfessionalService, FAQPage, BreadcrumbList). A page cannot ship with the
+     generic site-wide tags by accident, and the canonical origin lives in one
+     constant (`NEXT_PUBLIC_SITE_URL`, defaulting to the production domain).
+  3. **Generated social card**, not a binary: `next/og` renders
+     `/opengraph-image` + `/twitter-image` from brand tokens, so the card cannot
+     drift from the palette. `pageMetadata()` references it explicitly — a page
+     that exports its own `openGraph` replaces the root layout's wholesale and
+     silently drops the file-based image.
+  4. **Proxy inverted for pages only.** `proxy.ts` now protects an explicit
+     page allowlist (`/dashboard(.*)`, `/onboarding(.*)`) while `/api/*` stays
+     deny-by-default (webhooks excepted). Equivalent for every route that
+     exists today, and unknown paths now render a real 404.
+  5. **Case studies are labelled illustrative.** No customers can be named yet,
+     so `lib/case-studies.ts` holds authored composites, every rendering carries
+     a visible disclaimer, and the pages contain no invented metrics or
+     testimonials. The `Article` schema sets `disambiguatingDescription` to say
+     so in machine-readable form.
+  6. **GA4 alongside PostHog**, both env-gated (`NEXT_PUBLIC_GA_ID`): nothing is
+     injected without a key, matching ADR-012's opt-in analytics posture.
+     `/thank-you` is `noindex` and is the conversion goal.
+- Consequences:
+  - New public page = new folder + `pageMetadata()` + one line in
+    `app/sitemap.ts`. Forgetting the sitemap line is the likely failure mode.
+  - **New authenticated pages must be added to `isProtectedPage` in
+    `proxy.ts`** or they ship publicly. That is the cost of correct 404s; the
+    matcher carries a warning comment.
+  - Legal pages (`/privacy`, `/terms`) are factual claims about sub-processors
+    and data flows — they have to be updated when a provider or flow changes,
+    and they are an engineering draft, not counsel-reviewed.
+  - Marketing copy now asserts what ships (Obsidian shipped, Notion in
+    progress); it needs a pass whenever that changes.
+  - Rules out a separate marketing site/CMS for now: copy lives in typed
+    modules (`lib/faq.ts`, `lib/case-studies.ts`) and ships with the app.
+- Links: [tasks/completed/029](../tasks/completed/029-public-marketing-site-seo.md) ·
+  `apps/web/lib/site.ts` · `apps/web/app/(marketing)/` · `apps/web/proxy.ts` ·
+  ADR-012 (analytics opt-in) · ADR-015 (design tokens) · ADR-016 (dark theme)
+
 ## ADR-018 — Observability via Prometheus exposition + Grafana Cloud (agent-only on-host)
 
 - Date: 2026-08-04
