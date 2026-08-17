@@ -66,6 +66,22 @@ export const footerNav = [
   },
 ] as const;
 
+/**
+ * Public pages reachable from *inside* the signed-in app.
+ *
+ * Rendered by the dashboard footer and (the first two) by the sidebar, so a
+ * user who already has an account can still reach help, contact and the legal
+ * pages without signing out or guessing URLs.
+ */
+export const appFooterNav = [
+  { href: "/faq", label: "FAQ" },
+  { href: "/contact", label: "Contact" },
+  { href: "/about", label: "About" },
+  { href: "/features", label: "Features" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+] as const;
+
 /** Absolute URL for a site-relative path — required by OG tags and sitemaps. */
 export function absoluteUrl(path = "/"): string {
   return `${siteUrl}${path.startsWith("/") ? path : `/${path}`}`;

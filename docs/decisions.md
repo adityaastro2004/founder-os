@@ -73,6 +73,17 @@
     progress); it needs a pass whenever that changes.
   - Rules out a separate marketing site/CMS for now: copy lives in typed
     modules (`lib/faq.ts`, `lib/case-studies.ts`) and ships with the app.
+  7. **Reachable from inside the app** (2026-08-17 follow-up). Signed-in users are
+     redirected away from `/`, so the public pages were URL-only once you had an
+     account. The dashboard now renders an `AppFooter` (copyright + FAQ, contact,
+     about, features, privacy, terms), the sidebar carries a `helpNav` group
+     (Help & FAQ, Contact us) which the ⌘K palette also indexes, and the
+     marketing header/sticky CTA swap to a "Dashboard" link for signed-in
+     visitors via `AuthSwitch`. `AuthSwitch` exists rather than Clerk's
+     `<SignedIn>/<SignedOut>` because those render `null` until auth resolves —
+     on statically prerendered pages that stripped the sign-in CTA out of the
+     served HTML entirely (caught in verification). The signed-out CTA is the
+     prerendered default; only a signed-in visitor swaps after hydration.
 - Links: [tasks/completed/029](../tasks/completed/029-public-marketing-site-seo.md) ·
   `apps/web/lib/site.ts` · `apps/web/app/(marketing)/` · `apps/web/proxy.ts` ·
   ADR-012 (analytics opt-in) · ADR-015 (design tokens) · ADR-016 (dark theme)
