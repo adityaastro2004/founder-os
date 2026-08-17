@@ -1,9 +1,18 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Source_Serif_4 } from "next/font/google";
 import { PostHogIdentify } from "./_components/posthog-identify";
 import { AppClerkProvider } from "./_components/app-clerk-provider";
 import { ThemeProvider, themeInitScript } from "./_components/theme";
+import { GoogleAnalytics } from "./_components/google-analytics";
+import { JsonLd } from "./_components/json-ld";
+import {
+  organizationSchema,
+  siteDescription,
+  siteName,
+  siteUrl,
+  websiteSchema,
+} from "../lib/site";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -20,8 +29,65 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
-  title: "Founder OS",
-  description: "AI-powered operating system for founders",
+  // Resolves every relative URL below (OG images, canonicals) to an absolute
+  // one — crawlers and social scrapers reject relative image paths.
+  metadataBase: new URL(siteUrl),
+  // Each page exports its own `title` string; this template appends the brand
+  // so titles stay unique per page instead of all reading "Founder OS".
+  title: {
+    default: `${siteName} — the autonomous operating system for founders`,
+    template: `%s · ${siteName}`,
+  },
+  description: siteDescription,
+  applicationName: siteName,
+  authors: [{ name: siteName, url: siteUrl }],
+  creator: siteName,
+  publisher: siteName,
+  category: "technology",
+  formatDetection: { telephone: false, address: false, email: false },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: siteUrl,
+    siteName,
+    title: `${siteName} — the autonomous operating system for founders`,
+    description: siteDescription,
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        type: "image/png",
+        alt: `${siteName} — one system that knows your whole company`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${siteName} — the autonomous operating system for founders`,
+    description: siteDescription,
+    images: [
+      {
+        url: "/twitter-image",
+        alt: `${siteName} — one system that knows your whole company`,
+      },
+    ],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Matches --color-paper in both themes so mobile browser chrome blends in.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#faf9f5" },
+    { media: "(prefers-color-scheme: dark)", color: "#262624" },
+  ],
 };
 
 export default function RootLayout({
@@ -43,6 +109,11 @@ export default function RootLayout({
           hydration, which the server render can't know about. */}
       <body className="antialiased">
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Site-wide structured data. Page-level schema (FAQPage,
+            BreadcrumbList, Article) is emitted by the pages themselves. */}
+        <JsonLd data={organizationSchema} />
+        <JsonLd data={websiteSchema} />
+        <GoogleAnalytics />
         <ThemeProvider>
           {hasClerk ? (
             <AppClerkProvider>
