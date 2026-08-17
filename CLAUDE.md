@@ -82,6 +82,7 @@ founder-os/                          ← git root, this CLAUDE.md, meta-layer
 ├── ops/grafana/        ← observability (ADR-018): alloy/ collector config · dashboards/ (3 JSON)
 │                          · alerts/ · README.md (setup + verification runbook)
 ├── scripts/            ← deploy-server.sh (SSM CD) · deploy-web.sh (guarded Vercel) · backup-db.sh
+│                          · generate-brand-assets.py (logo drop → favicon/icons/mark)
 ├── .github/workflows/  ← ci.yml · deploy.yml · codeql.yml · dependency-review.yml (§6)
 ├── DEPLOY.md            ← production topology + secrets runbook
 ├── readme.md            ← product vision (source of truth for the pitch)
@@ -305,4 +306,4 @@ Capture the answer as a concrete artifact (a new `skills/*.md` via
 - **meta/ runbooks** — [run-nightly-test-sweep](meta/run-nightly-test-sweep.md) (L3 orchestration: report-only nightly test triage)
 - **tasks/** — [conventions](tasks/README.md) · [template](tasks/TEMPLATE.md) · backlog/ active/ completed/. Task IDs are shared across concurrent sessions — `ls tasks/*/` for the next free number, never assume.
 - **reports/** — [conventions](reports/README.md)
-- **ops/** — [DEPLOY.md](DEPLOY.md) (topology + secrets) · [.github/workflows/README.md](.github/workflows/README.md) (CI/CD) · [scripts/](scripts/): [deploy-server.sh](scripts/deploy-server.sh) · [deploy-web.sh](scripts/deploy-web.sh) · [backup-db.sh](scripts/backup-db.sh) (nightly Postgres → S3)
+- **ops/** — [DEPLOY.md](DEPLOY.md) (topology + secrets) · [.github/workflows/README.md](.github/workflows/README.md) (CI/CD) · [scripts/](scripts/): [deploy-server.sh](scripts/deploy-server.sh) · [deploy-web.sh](scripts/deploy-web.sh) · [backup-db.sh](scripts/backup-db.sh) (nightly Postgres → S3) · [generate-brand-assets.py](scripts/generate-brand-assets.py) (source art in `docs/brand/` → favicon · app icons · `<LogoMark>` art; re-run it after any logo drop and copy the mark size it prints into `logo-mark.tsx`)
