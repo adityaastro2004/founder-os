@@ -3,11 +3,61 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { LayoutDashboard, Menu, X } from "lucide-react";
 import { clsx } from "clsx";
 import { LogoMark } from "../../_components/logo-mark";
 import { ThemeToggle } from "../../_components/theme-toggle";
+import { AuthSwitch } from "./auth-switch";
 import { primaryNav } from "../../../lib/site";
+
+function DashboardLink({ className }: { className?: string }) {
+  return (
+    <Link
+      href="/dashboard"
+      className={clsx(
+        "inline-flex items-center justify-center gap-2 rounded-control bg-accent px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent-hover",
+        className,
+      )}
+    >
+      <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+      Dashboard
+    </Link>
+  );
+}
+
+const mobileSignedOutCtas = (
+  <div className="flex gap-3">
+    <Link
+      href="/sign-in"
+      className="flex-1 rounded-control border border-line bg-surface px-4 py-2.5 text-center text-sm font-medium text-ink"
+    >
+      Sign in
+    </Link>
+    <Link
+      href="/sign-up"
+      className="flex-1 rounded-control bg-accent px-4 py-2.5 text-center text-sm font-medium text-white"
+    >
+      Get started
+    </Link>
+  </div>
+);
+
+const signedOutCtas = (
+  <>
+    <Link
+      href="/sign-in"
+      className="hidden px-3 py-2 text-sm font-medium text-ink-secondary transition-colors duration-150 hover:text-ink sm:block"
+    >
+      Sign in
+    </Link>
+    <Link
+      href="/sign-up"
+      className="hidden rounded-control bg-accent px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent-hover sm:block"
+    >
+      Get started
+    </Link>
+  </>
+);
 
 /**
  * Public site header — the primary internal-linking surface.
@@ -63,18 +113,12 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link
-            href="/sign-in"
-            className="hidden px-3 py-2 text-sm font-medium text-ink-secondary transition-colors duration-150 hover:text-ink sm:block"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/sign-up"
-            className="hidden rounded-control bg-accent px-4 py-2 text-sm font-medium text-white transition-colors duration-150 hover:bg-accent-hover sm:block"
-          >
-            Get started
-          </Link>
+          {/* A signed-in visitor reading /faq or /privacy needs a way back into
+              the app — not an invitation to sign up again. */}
+          <AuthSwitch
+            signedOut={signedOutCtas}
+            signedIn={<DashboardLink className="hidden sm:inline-flex" />}
+          />
           <button
             type="button"
             onClick={() => setOpen((v) => !v)}
@@ -110,19 +154,11 @@ export function SiteHeader() {
                 </Link>
               </li>
             ))}
-            <li className="flex gap-3 pt-4 sm:hidden">
-              <Link
-                href="/sign-in"
-                className="flex-1 rounded-control border border-line bg-surface px-4 py-2.5 text-center text-sm font-medium text-ink"
-              >
-                Sign in
-              </Link>
-              <Link
-                href="/sign-up"
-                className="flex-1 rounded-control bg-accent px-4 py-2.5 text-center text-sm font-medium text-white"
-              >
-                Get started
-              </Link>
+            <li className="pt-4 sm:hidden">
+              <AuthSwitch
+                signedOut={mobileSignedOutCtas}
+                signedIn={<DashboardLink className="w-full" />}
+              />
             </li>
           </ul>
         </nav>

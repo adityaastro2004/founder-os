@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useApi } from "@/lib/use-api";
 import { Kbd } from "@/app/_components/ui";
-import { navGroups, bottomNav, type NavItem } from "./sidebar";
+import { navGroups, bottomNav, helpNav, type NavItem } from "./sidebar";
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -113,6 +113,8 @@ function pushRecent(query: string): string[] {
 const ALL_PAGES: NavItem[] = [
   ...navGroups.flatMap((g) => g.items),
   ...bottomNav,
+  // Public help/contact pages, so ⌘K "faq" or "contact" finds them too.
+  ...helpNav,
 ];
 
 /** Subsequence match, e.g. "kb" → "Knowledge base". Case-insensitive. */

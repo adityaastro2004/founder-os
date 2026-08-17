@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
+import { AppFooter } from "./app-footer";
 import { CommandPalette } from "./command-palette";
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <main className="flex-1 px-5 py-6 md:px-8 md:py-8 lg:px-10">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
+        <AppFooter />
       </div>
 
       {/* Global ⌘K command palette (owns its own keyboard shortcut) */}

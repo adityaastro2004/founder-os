@@ -19,6 +19,8 @@ import {
   Lightbulb,
   CalendarDays,
   CreditCard,
+  CircleQuestionMark,
+  LifeBuoy,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -59,6 +61,20 @@ export const navGroups: { section: string | null; items: NavItem[] }[] = [
 export const bottomNav: NavItem[] = [
   { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
+];
+
+/**
+ * Public support pages, reachable from inside the app.
+ *
+ * These leave the dashboard for the marketing site (`app/(marketing)/`), which
+ * is why they are a separate group — signed-in users are redirected away from
+ * `/`, so without these links help and contact are unreachable in-app. The full
+ * set including the legal pages lives in the dashboard footer; these two are the
+ * ones worth a permanent slot. Also indexed by the ⌘K palette.
+ */
+export const helpNav: NavItem[] = [
+  { name: "Help & FAQ", href: "/faq", icon: CircleQuestionMark },
+  { name: "Contact us", href: "/contact", icon: LifeBuoy },
 ];
 
 function NavLink({
@@ -179,6 +195,15 @@ export function Sidebar({
             key={item.name}
             item={item}
             isActive={pathname.startsWith(item.href)}
+            onClose={onClose}
+          />
+        ))}
+        {/* Public pages — never "active", since they live outside /dashboard. */}
+        {helpNav.map((item) => (
+          <NavLink
+            key={item.name}
+            item={item}
+            isActive={false}
             onClose={onClose}
           />
         ))}
