@@ -62,6 +62,18 @@ sync_env() {
   patch_var GOOGLE_REDIRECT_URI "${FOS_GOOGLE_REDIRECT_URI:-}"
   patch_var OAUTH_STATE_SECRET "${FOS_OAUTH_STATE_SECRET:-}"
   patch_var BACKUP_S3_BUCKET "${FOS_BACKUP_S3_BUCKET:-}"
+  # Clerk token verification. Synced so that switching Clerk instances (e.g. the
+  # development -> production cutover) is a secrets change plus a redeploy, not
+  # an undocumented hand-edit of the server .env. Both are plain https URLs and
+  # sit inside the charset above. They MUST move together and must match the
+  # instance the web app's publishable key belongs to — a mismatch means every
+  # API call 401s because the JWT is verified against the wrong JWKS.
+  patch_var CLERK_ISSUER "${FOS_CLERK_ISSUER:-}"
+  patch_var CLERK_JWKS_URL "${FOS_CLERK_JWKS_URL:-}"
+  # CORS_ORIGINS is deliberately NOT synced: it is a JSON array, so its '[', '"'
+  # and ',' are refused by patch_var by design, and widening that validation for
+  # a config value would weaken the guard protecting an unquoted sed. It is
+  # maintained by hand in the server .env (see DEPLOY.md).
   # Guards GET /metrics (ADR-018). Generated with token_urlsafe, so it is always
   # within the charset above. The Grafana Cloud credentials are deliberately NOT
   # synced here: their tokens contain '=' and '+', which patch_var refuses by

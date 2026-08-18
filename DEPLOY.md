@@ -16,6 +16,22 @@ Two halves:
 > the `docker-compose.prod.yml`/`Caddyfile` in the repo still support, but *not*
 > the mechanism the hosted instance uses.
 
+> **Production domains.** `myfounderos.com` (Namecheap BasicDNS) is the canonical
+> origin. `www` 308s to the apex; `myfounder.vercel.app` stays reachable but 308s
+> to the apex too, so it is never canonical.
+>
+> | Host | Serves | Where |
+> |---|---|---|
+> | `myfounderos.com`, `www.` | Next.js web | Vercel (git integration) |
+> | `api.myfounderos.com` | FastAPI | EC2 Elastic IP `43.204.81.99`, native Caddy |
+> | `founderos.duckdns.org` | FastAPI | same box — **transitional alias**, retire it |
+>
+> ⚠️ The **live** Caddy is a native systemd service reading `/etc/caddy/Caddyfile`
+> **on the box**. The `founder-os/Caddyfile` in this repo belongs to the unused
+> Docker Compose path — editing it does nothing to production. Change the host
+> list with `sudo nano /etc/caddy/Caddyfile && sudo caddy validate --config
+> /etc/caddy/Caddyfile && sudo systemctl reload caddy`.
+
 > All Docker Compose commands below run from the monorepo dir:
 > `founder-os/founder-os/` (the repo is double-nested; the compose file lives there).
 
@@ -210,11 +226,20 @@ Caddy.
   `POST /api/agents/orchestrate/resume` (`{session_id, answer}`).
 - **`WORKFLOW_CALLBACK_SECRET` is mandatory** when `APP_ENV != development` — the app
   refuses to boot without ≥43 chars. Generate with `token_urlsafe(32)`.
-- **CORS_ORIGINS** is a JSON array env var — include your exact web origin(s).
+- **CORS_ORIGINS** is a JSON array env var — include your exact web origin(s). It is
+  **not** synced by `deploy-server.sh`: its `[`, `"` and `,` are refused by `patch_var`'s
+  charset guard by design. Edit it by hand in the server `.env`, then
+  `sudo systemctl restart founder-api`.
 - **APScheduler in-process** → API stays at 1 replica.
 - **Embeddings need a provider with an embeddings endpoint** (Groq has none). Use OpenAI
   `text-embedding-3-small` (cheap, 1536 dims) or a small Ollama just for embeddings.
 - **n8n**: set `N8N_API_KEY` (generated in the n8n UI) or the API's n8n client gets 401;
   set public `WEBHOOK_URL`/`N8N_HOST` so callbacks resolve.
 - **Clerk**: use production-instance keys for both web and API; the API only needs
-  `CLERK_ISSUER` + `CLERK_JWKS_URL`.
+  `CLERK_ISSUER` + `CLERK_JWKS_URL`, synced from the `FOS_CLERK_ISSUER` /
+  `FOS_CLERK_JWKS_URL` Actions secrets. The web keys (`pk_live_…`/`sk_live_…`) and the
+  API's issuer **must belong to the same Clerk instance** — a mismatch 401s every
+  authenticated request. A development instance (`pk_test_…`, `*.clerk.accounts.dev`)
+  is capped at 100 users and ships without bot protection: never leave one in
+  production. Note that instances do **not** share users — cutting over orphans every
+  row keyed on a Clerk user id, so migrate before you have real accounts.

@@ -104,8 +104,11 @@ jobs:
             exit 1
           fi
 
+      # Checks the canonical host. Caddy also still serves founderos.duckdns.org
+      # as a transitional alias; drop that name from /etc/caddy/Caddyfile once
+      # nothing references it, and this check keeps passing unchanged.
       - name: Public health check
         run: |
           curl -fsS -o /dev/null --retry 3 --retry-delay 5 \
-            -w "https://founderos.duckdns.org -> %{http_code}\n" \
-            https://founderos.duckdns.org/
+            -w "https://api.myfounderos.com -> %{http_code}\n" \
+            https://api.myfounderos.com/
