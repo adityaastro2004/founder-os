@@ -9,9 +9,16 @@ import type { Metadata } from "next";
  * the generic site-wide defaults by accident.
  */
 
-/** Canonical origin, no trailing slash. Overridable per environment. */
+/**
+ * Canonical origin, no trailing slash. Overridable per environment.
+ *
+ * The default is the production apex, so a build with no env override still
+ * emits correct canonicals, sitemap URLs and OG image URLs. `myfounder.vercel.app`
+ * remains reachable but 308s here (Vercel primary-domain redirect), so it must
+ * never be the canonical — two origins serving the same pages splits ranking.
+ */
 export const siteUrl = (
-  process.env.NEXT_PUBLIC_SITE_URL || "https://myfounder.vercel.app"
+  process.env.NEXT_PUBLIC_SITE_URL || "https://myfounderos.com"
 ).replace(/\/$/, "");
 
 export const siteName = "Founder OS";
