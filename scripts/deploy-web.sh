@@ -75,4 +75,4 @@ vercel deploy --prebuilt --prod --yes -m gitSha="$HEAD_SHA"
 
 echo
 echo "deploy-web: deployed origin/main @ $HEAD_SHA to production"
-curl -fsS -o /dev/null -w "deploy-web: https://myfounder.vercel.app -> %{http_code}\n" https://myfounder.vercel.app/
+curl -fsS -o /dev/null -w "deploy-web: https://myfounderos.com -> %{http_code}\n" https://myfounderos.com/

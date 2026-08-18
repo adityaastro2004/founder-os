@@ -62,8 +62,10 @@ class BillingStatusOut(BaseModel):
 
 class CheckoutIn(BaseModel):
     plan: str = Field(..., pattern="^(starter|pro|enterprise)$")
-    success_url: Optional[str] = None
-    cancel_url: Optional[str] = None
+    # No success_url/cancel_url here on purpose. Stripe redirects the browser to
+    # whatever it is handed, so accepting them from the request body would let a
+    # caller bounce a post-payment user to an arbitrary origin. They are derived
+    # server-side from settings.FRONTEND_BASE_URL instead.
 
 
 class CheckoutOut(BaseModel):
@@ -161,11 +163,12 @@ async def create_checkout(
     user = await _get_user(clerk_user, db)
 
     try:
+        base = settings.FRONTEND_BASE_URL.rstrip("/")
         url = await create_checkout_session(
             user=user,
             plan_name=body.plan,
-            success_url=body.success_url or "http://localhost:3000/dashboard/billing?success=true",
-            cancel_url=body.cancel_url or "http://localhost:3000/dashboard/billing?canceled=true",
+            success_url=f"{base}/dashboard/billing?success=true",
+            cancel_url=f"{base}/dashboard/billing?canceled=true",
         )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
@@ -199,7 +202,10 @@ async def create_portal(
     user = await _get_user(clerk_user, db)
 
     try:
-        url = await create_portal_session(user=user)
+        url = await create_portal_session(
+            user=user,
+            return_url=f"{settings.FRONTEND_BASE_URL.rstrip('/')}/dashboard/billing",
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except stripe.StripeError as exc:

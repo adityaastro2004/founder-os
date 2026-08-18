@@ -40,13 +40,17 @@ PRICE_PLAN_MAP: dict[str, str] = {v: k for k, v in PLAN_PRICE_MAP.items() if v}
 async def create_checkout_session(
     user: User,
     plan_name: str,
-    success_url: str = "http://localhost:3000/dashboard/billing?success=true",
-    cancel_url: str = "http://localhost:3000/dashboard/billing?canceled=true",
+    success_url: str,
+    cancel_url: str,
 ) -> str:
     """Create a Stripe Checkout session and return the URL.
 
     If the user already has a ``stripe_customer_id`` we reuse it so
     Stripe can track their payment history.
+
+    ``success_url`` / ``cancel_url`` are required: they previously defaulted to
+    localhost, which silently shipped to production and stranded paying users on
+    a dead redirect. Callers derive them from ``settings.FRONTEND_BASE_URL``.
     """
     price_id = PLAN_PRICE_MAP.get(plan_name)
     if not price_id:
@@ -79,7 +83,7 @@ async def create_checkout_session(
 
 async def create_portal_session(
     user: User,
-    return_url: str = "http://localhost:3000/dashboard/billing",
+    return_url: str,
 ) -> str:
     """Create a Stripe Customer Portal session for self-service management."""
     if not user.stripe_customer_id:

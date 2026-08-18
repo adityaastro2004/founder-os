@@ -66,6 +66,12 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:3001"]
 
+    # Public origin of the web app, no trailing slash. The API builds
+    # browser-facing return links from this (Stripe checkout success/cancel and
+    # the billing portal return). It must be the origin users actually browse —
+    # in production https://myfounderos.com, NOT the API's own host.
+    FRONTEND_BASE_URL: str = "http://localhost:3000"
+
     # ── Security middleware (app/security_middleware.py) ──
     SECURITY_HEADERS_ENABLED: bool = True
     RATE_LIMIT_ENABLED: bool = True
