@@ -32,6 +32,14 @@ install_deps() {
 # sed and an unquoted env assignment — anything else is refused, not written.
 # ':' and '/' are allowed for URL values (redirect URIs); both are inert in the
 # '|'-delimited sed and in an unquoted assignment.
+#
+# ORDERING HAZARD — read before adding a var here. Settings forbids unknown keys
+# in the .env file (pydantic extra_forbidden), so writing a key whose field does
+# not exist in the DEPLOYED code crashes the API at import time. The caller resets
+# the checkout to origin/main before this runs, so a var added in the same commit
+# as its Settings field is safe. A var synced ahead of its field is not: the health
+# check fails, rollback restores the old CODE but not the .env, and the rollback is
+# then unhealthy too — the "CRITICAL" branch below. Land the field first.
 sync_env() {
   local envfile=$API/.env synced=""
   [ -f "$envfile" ] || sudo -u ubuntu install -m 600 /dev/null "$envfile"
@@ -70,6 +78,12 @@ sync_env() {
   # API call 401s because the JWT is verified against the wrong JWKS.
   patch_var CLERK_ISSUER "${FOS_CLERK_ISSUER:-}"
   patch_var CLERK_JWKS_URL "${FOS_CLERK_JWKS_URL:-}"
+  # Public origin of the web app. Stripe sends the browser here after checkout,
+  # so a stale value strands paying users on a dead page.
+  patch_var FRONTEND_BASE_URL "${FOS_FRONTEND_BASE_URL:-}"
+  # Public base the n8n workflow engine calls back on. Dormant while n8n is not
+  # running, but it must not be left pointing at a retired hostname.
+  patch_var WORKFLOW_CALLBACK_BASE_URL "${FOS_WORKFLOW_CALLBACK_BASE_URL:-}"
   # CORS_ORIGINS is deliberately NOT synced: it is a JSON array, so its '[', '"'
   # and ',' are refused by patch_var by design, and widening that validation for
   # a config value would weaken the guard protecting an unquoted sed. It is

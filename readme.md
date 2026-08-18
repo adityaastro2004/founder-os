@@ -1,6 +1,6 @@
 # Founder OS
 
-[https://myfounder.vercel.app/](https://myfounder.vercel.app/)
+[https://myfounderos.com/](https://myfounderos.com/)
 
 
 **The autonomous operating system for founders.**
