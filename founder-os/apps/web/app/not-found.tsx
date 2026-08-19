@@ -19,7 +19,7 @@ import { Container } from "./(marketing)/_components/section";
 export const metadata = {
   title: "Page not found (404)",
   description:
-    "That page does not exist. Jump to the Founder OS home page, features, case studies, FAQ or contact page instead.",
+    "That page does not exist. Jump to the Founder OS home page, features, pricing, integrations, case studies, FAQ or contact page instead.",
 };
 
 const destinations = [
@@ -32,6 +32,21 @@ const destinations = [
     href: "/features",
     title: "Features",
     body: "The state engine, the agents, memory, tool sync, planning and the approval gate.",
+  },
+  {
+    href: "/pricing",
+    title: "Pricing",
+    body: "Four plans from free to enterprise, and why self-hosting costs nothing.",
+  },
+  {
+    href: "/integrations",
+    title: "Integrations",
+    body: "Obsidian, Notion and Google Calendar — what connects, and in which direction.",
+  },
+  {
+    href: "/compare",
+    title: "Compare",
+    body: "Against ChatGPT, Notion AI and a virtual assistant, including when they win.",
   },
   {
     href: "/case-studies",

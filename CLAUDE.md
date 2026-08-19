@@ -117,14 +117,20 @@ founder-os/                          ← git root, this CLAUDE.md, meta-layer
     │   │   └── test_*.py        ← 15 legacy standalone live scripts (13 wrapped by tests/live/)
     │   ├── web/         ← Next.js 16 dashboard + public site (App Router)
     │   │   ├── app/(auth) (dashboard) (onboarding)/  _components/  globals.css
-    │   │   ├── app/(marketing)/ ← PUBLIC SEO site (ADR-019): home · features ·
+    │   │   ├── app/(marketing)/ ← PUBLIC SEO site (ADR-019, ADR-020): home · features ·
+    │   │   │              pricing · integrations/[slug] · compare/[slug] ·
     │   │   │              case-studies/[slug] · about · faq · contact · thank-you ·
     │   │   │              privacy · terms (+ not-found · robots · sitemap · manifest ·
-    │   │   │              opengraph-image). New authed page? add it to proxy.ts
+    │   │   │              llms.txt · opengraph-image). ALL statically generated —
+    │   │   │              the signed-in "/" redirect lives in proxy.ts so "/" stays
+    │   │   │              static. New authed page? add it to proxy.ts
     │   │   ├── lib/     ← api.ts · use-api · use-event-source · use-streaming-fetch
     │   │   │              chat-store.tsx (background chat state) · n8n.ts
     │   │   │              site.ts (metadata + schema.org factory) · og.tsx · faq.ts
-    │   │   │              case-studies.ts
+    │   │   │              case-studies.ts · comparisons.ts
+    │   │   │              ⚠️ pricing.ts MIRRORS the subscription_plans seed and
+    │   │   │              integrations.ts MIRRORS adapter capabilities — change the
+    │   │   │              backend fact and the marketing module in ONE commit
     │   │   ├── proxy.ts ← Clerk middleware: protected PAGE allowlist + /api deny-by-default
     │   │   └── brand.md ← design tokens / brand source of truth (+ marketing kit)
     │   └── docs/        ← Next.js docs site (WIP)

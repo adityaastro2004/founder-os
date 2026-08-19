@@ -186,6 +186,23 @@ export default function FeaturesPage() {
               support triage with a human on the brake.
             </li>
             <li>
+              Check which tools connect today, and in which direction, on the{" "}
+              <Link href="/integrations">integrations pages</Link> —{" "}
+              <Link href="/integrations/obsidian">Obsidian</Link>,{" "}
+              <Link href="/integrations/notion">Notion</Link> and{" "}
+              <Link href="/integrations/google-calendar">Google Calendar</Link>.
+            </li>
+            <li>
+              See what each plan includes on the{" "}
+              <Link href="/pricing">pricing page</Link> — the free plan covers one
+              state source and asks for no card.
+            </li>
+            <li>
+              Weigh it against the alternatives you are actually considering on
+              the <Link href="/compare">comparison pages</Link>, each of which
+              says plainly when the other option wins.
+            </li>
+            <li>
               Check the practical questions on the{" "}
               <Link href="/faq">FAQ</Link> — cost, setup time, self-hosting, and
               what happens to your data.

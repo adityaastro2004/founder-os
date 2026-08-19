@@ -4,8 +4,9 @@ import { PageHero } from "../_components/page-hero";
 import { CtaBand } from "../_components/cta-band";
 import { Section } from "../_components/section";
 import { ScenarioNotice } from "./_components/scenario-notice";
+import { JsonLd } from "../../_components/json-ld";
 import { caseStudies } from "../../../lib/case-studies";
-import { pageMetadata } from "../../../lib/site";
+import { itemListSchema, pageMetadata } from "../../../lib/site";
 
 export const metadata = pageMetadata({
   title: "Case studies — Founder OS in a real week",
@@ -19,9 +20,21 @@ export const metadata = pageMetadata({
   ],
 });
 
+/** Tells a crawler this is an index over three specific scenario URLs. */
+const listSchema = itemListSchema(
+  "Founder OS case studies",
+  caseStudies.map((study) => ({
+    href: `/case-studies/${study.slug}`,
+    name: `${study.persona}: ${study.title}`,
+    description: study.description,
+  })),
+);
+
 export default function CaseStudiesPage() {
   return (
     <>
+      <JsonLd data={listSchema} />
+
       <PageHero
         eyebrow="Case studies"
         title="What a week with Founder OS looks like"

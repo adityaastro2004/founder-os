@@ -58,6 +58,16 @@ export default function FaqPage() {
               <Link href="/features">feature breakdown</Link> or an{" "}
               <Link href="/case-studies">illustrative scenario</Link>.
             </li>
+            <li>
+              For plan limits and exact prices, see{" "}
+              <Link href="/pricing">pricing</Link>; for which tools connect
+              today, see <Link href="/integrations">integrations</Link>.
+            </li>
+            <li>
+              If you are still choosing between options, the{" "}
+              <Link href="/compare">comparison pages</Link> say when something
+              else is the better fit.
+            </li>
           </ul>
         </Prose>
       </Section>

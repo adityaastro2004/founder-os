@@ -18,8 +18,10 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-line">
       <div className="mx-auto w-full max-w-6xl px-6 py-12 md:px-10 md:py-16">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="lg:pr-8">
+        {/* 6 columns at lg so the brand block can take 2 and still leave one
+            column per footerNav group (Product · Compare · Company · Legal). */}
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          <div className="sm:col-span-2 md:col-span-3 lg:col-span-2 lg:pr-8">
             <Link href="/" className="flex items-center gap-2.5">
               <LogoMark className="h-7" />
               <span className="font-serif text-base font-semibold tracking-tight text-ink">

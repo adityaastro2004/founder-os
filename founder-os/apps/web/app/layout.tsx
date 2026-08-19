@@ -76,8 +76,27 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+    // max-snippet/max-video-preview unbounded and large image previews: without
+    // these Google may show a truncated snippet and a thumbnail-sized image.
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
+  // Search Console / Bing Webmaster ownership proof. Env-gated so a missing key
+  // emits no tag at all rather than an empty `content=""` that fails validation.
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    other: process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION
+      ? { "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION }
+      : undefined,
+  },
+  // No `alternates.canonical` here on purpose: root metadata is inherited by
+  // every route, so a canonical set here would tag the 404 and the auth pages
+  // as duplicates of "/". Canonicals come from `pageMetadata()` per page.
 };
 
 export const viewport: Viewport = {

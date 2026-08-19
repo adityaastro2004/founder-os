@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 /**
  * Authenticated *pages*. These two route groups are the complete set of
@@ -24,6 +25,23 @@ export default clerkMiddleware(async (auth, request) => {
   // status instead of bouncing anonymous visitors (and crawlers) to /sign-in.
   if (isProtectedPage(request) || (isApiRoute(request) && !isPublicApiRoute(request))) {
     await auth.protect();
+    return;
+  }
+
+  // Signed-in visitors get the product, not the pitch.
+  //
+  // This lives here rather than in `(marketing)/page.tsx` for one reason: an
+  // `await auth()` inside the page opts the route out of static generation, so
+  // the single most important URL on the site was re-rendered on every request
+  // — including every crawl. Doing the check in middleware leaves `/` a
+  // prerendered static page served from the edge cache. It is a convenience
+  // redirect, not an access gate: `/` is public to anonymous visitors either
+  // way, and the real gate is `isProtectedPage` above.
+  if (request.nextUrl.pathname === "/") {
+    const { userId } = await auth();
+    if (userId) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
   }
 });
 

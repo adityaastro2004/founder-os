@@ -24,7 +24,7 @@ export const faqs: FaqItem[] = [
   {
     question: "Do I have to move my work into Founder OS?",
     answer:
-      "No. That is the point of the adapter model. Founder OS reads your existing tools as state sources and mirrors the reconciled picture back into them. Obsidian is supported today and Notion is in progress, so you keep writing where you already write — the difference is that your notes stop disagreeing with your issue tracker and your calendar.",
+      "No. That is the point of the adapter model. Founder OS reads your existing tools as state sources and mirrors the reconciled picture back into them. Obsidian and Google Calendar are supported today and Notion is in progress, so you keep writing where you already write — the difference is that your notes stop disagreeing with your issue tracker and your calendar. The integrations pages list each tool and the direction data flows in.",
   },
   {
     question: "Can it take actions on its own, or does it just suggest things?",
@@ -44,7 +44,7 @@ export const faqs: FaqItem[] = [
   {
     question: "What does it cost to start?",
     answer:
-      "There is a free tier and it does not ask for a card. You can connect a tool, let the engine build your company state, and decide whether the unified picture is worth paying for before you spend anything.",
+      "Nothing. The Free plan does not ask for a card: you connect a tool, let the engine build your company state, and decide whether the unified picture is worth paying for before you spend anything. Paid plans are $99 a month for Starter, $299 for Pro and $999 for Enterprise, with roughly 16 percent off for annual billing. Self-hosting the OSS stack costs nothing at all. Full detail is on the pricing page.",
   },
   {
     question: "How long does setup take?",

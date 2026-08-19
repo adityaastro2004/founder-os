@@ -1,5 +1,3 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -89,14 +87,10 @@ const features = [
   },
 ];
 
-export default async function Home() {
-  const { userId } = await auth();
-
-  // Signed-in visitors get the product, not the pitch.
-  if (userId) {
-    redirect("/dashboard");
-  }
-
+// No `auth()` call here on purpose. The signed-in → /dashboard redirect lives
+// in `proxy.ts`; reading auth in this component would opt the home page out of
+// static generation and make the site's most-crawled URL dynamic.
+export default function Home() {
   return (
     <>
       {/* ── Hero — the primary CTA sits above the fold on a 360px phone ── */}
@@ -129,7 +123,13 @@ export default async function Home() {
           </div>
 
           <p className="mt-5 text-[13px] text-ink-secondary">
-            Free tier · no credit card · runs locally on Ollama if you prefer
+            <Link
+              href="/pricing"
+              className="font-medium text-accent-text underline underline-offset-2 hover:no-underline"
+            >
+              Free plan
+            </Link>{" "}
+            · no credit card · runs locally on Ollama if you prefer
           </p>
         </div>
       </Container>
@@ -257,10 +257,13 @@ export default async function Home() {
             Nothing has to migrate. Pluggable adapters treat each tool as a
             synchronisation endpoint: Founder OS reads it as a state source, and
             the renderer writes the reconciled picture back out as ordinary content
-            in that tool. Obsidian ships today and Notion is in progress, with
-            Google Calendar feeding real capacity into planning. You keep working
-            where you already work — the change is that your notes, your tracker
-            and your calendar stop contradicting each other.
+            in that tool.{" "}
+            <Link href="/integrations/obsidian">Obsidian</Link> ships today and{" "}
+            <Link href="/integrations/notion">Notion</Link> is in progress, with{" "}
+            <Link href="/integrations/google-calendar">Google Calendar</Link>{" "}
+            feeding real capacity into planning. You keep working where you
+            already work — the change is that your notes, your tracker and your
+            calendar stop contradicting each other.
           </p>
 
           <h3>Autonomy with a brake</h3>
@@ -279,9 +282,15 @@ export default async function Home() {
             The honest summary: Founder OS is for founders whose bottleneck is
             context switching rather than typing speed. If you want to see the
             shape of it, read the{" "}
-            <Link href="/features">feature breakdown</Link>, walk through an{" "}
-            <Link href="/case-studies">illustrative scenario</Link>, or{" "}
-            <Link href="/sign-up">start on the free tier</Link> and connect one tool.
+            <Link href="/features">feature breakdown</Link>, check{" "}
+            <Link href="/pricing">what it costs</Link>, see which{" "}
+            <Link href="/integrations">tools it connects to</Link>, walk through an{" "}
+            <Link href="/case-studies">illustrative scenario</Link>, or weigh it
+            against{" "}
+            <Link href="/compare/founder-os-vs-chatgpt">ChatGPT</Link> and{" "}
+            <Link href="/compare/founder-os-vs-notion-ai">Notion AI</Link>. When
+            you are ready, <Link href="/sign-up">start on the free plan</Link> and
+            connect one tool.
           </p>
         </Prose>
       </Section>

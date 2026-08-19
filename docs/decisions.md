@@ -19,6 +19,104 @@
 
 ---
 
+## ADR-020 — SEO round two: intent-led landing pages, derived structured data, and a static home page
+
+- Date: 2026-08-19
+- Status: accepted
+- Context: ADR-019 built the technical SEO floor — canonical factory, per-page
+  metadata, JSON-LD, `robots.txt`, `sitemap.xml`, generated OG card — and it
+  held up. What it did not build was pages for the queries the site already
+  claimed. `lib/site.ts` and the page keyword lists targeted "Founder OS
+  pricing", "Obsidian AI integration" and "Notion AI alternative", and there was
+  no URL for any of them: a keyword with no landing page is a keyword you lose.
+  Three further gaps had accumulated:
+  1. *(resolved elsewhere)* `siteUrl` had defaulted to
+     `https://myfounder.vercel.app` after `myfounderos.com` was connected. A
+     concurrent workstream corrected it on `main` before this change landed, so
+     it is recorded here as context only — this ADR neither claims nor re-applies
+     that fix. Verified live: `myfounder.vercel.app` 30x's to the apex, and the
+     deployed canonicals already read `https://myfounderos.com`.
+  2. `(marketing)/page.tsx` called `await auth()` to redirect signed-in visitors,
+     which opted the site's most-crawled URL out of static generation. `/` was
+     `ƒ` in the build table: re-rendered on every request, including every crawl.
+  3. No Search Console verification hook, no `llms.txt`, and `sitemap.ts`
+     stamped every URL with `new Date()` — telling crawlers the legal pages
+     changed on every deploy, which trains them to ignore `lastModified`.
+- Decision:
+  1. **Ten new URLs, all statically generated**, in three intent clusters:
+     `/pricing` (commercial intent), `/integrations` + one page per adapter
+     (`obsidian`, `notion`, `google-calendar` — "does it work with X" / "how do
+     I connect X"), and `/compare` + three comparisons (ChatGPT, Notion AI, a
+     virtual assistant — the highest-intent query a category has).
+  2. **Content lives in typed data modules**, not in JSX: `lib/pricing.ts`,
+     `lib/integrations.ts`, `lib/comparisons.ts`. Pages render them, and so do
+     `sitemap.ts`, `llms.txt` and the JSON-LD builders — one edit propagates to
+     the page, the sitemap, the structured data and the answer-engine map at
+     once, which is what stops those four from drifting apart.
+  3. **`lib/pricing.ts` is a declared mirror of the `subscription_plans` seed**
+     in `apps/api/schema.sql`, carrying a comment saying so. Publishing a price
+     in `Offer` structured data that checkout does not charge is a rich-result
+     violation, so the coupling is made explicit rather than left implicit.
+  4. **New schema builders in `lib/site.ts`**: `personSchema` (named founder —
+     E-E-A-T on a one-person operation), `itemListSchema` (hub pages),
+     `howToSchema` (integration setup, rendered from the same string array as
+     the visible list so they cannot diverge), plus `Product`/`AggregateOffer`
+     on `/pricing` and `AggregateOffer` replacing the bare free `Offer` on
+     `softwareApplicationSchema` — advertising only the $0 tier of a four-tier
+     product made the rich result misleading.
+  5. **The signed-in redirect moved to `proxy.ts`.** `/` is now `○` static and
+     edge-cached. This is a convenience redirect, not an access gate — `/` is
+     public to anonymous visitors either way, and `isProtectedPage` is untouched.
+  6. **`/llms.txt`** (`app/llms.txt/route.ts`, `force-static`), generated from
+     the same modules the pages render from. `sitemap.xml` says which URLs
+     exist; `llms.txt` says what they mean. It closes with an explicit note that
+     the case studies are illustrative and that no metrics are published, so an
+     answer engine cannot cite outcomes the site never claimed. `robots.ts`
+     names the answer-engine crawlers explicitly instead of leaving them to `*`,
+     so allowing them is a visible, reversible decision.
+  7. **Canonical origin left as `https://myfounderos.com`** (set on `main`,
+     overridable via `NEXT_PUBLIC_SITE_URL`) and asserted against the
+     prerendered HTML for every new URL rather than assumed. Search-engine
+     verification is
+     env-gated (`NEXT_PUBLIC_{GOOGLE,BING}_SITE_VERIFICATION`) so a missing key
+     emits no tag rather than an invalid empty one. `sitemap.ts` uses per-page
+     dates.
+  8. **Comparison pages must state when the alternative wins.** Every entry in
+     `lib/comparisons.ts` carries a required `whenOther` field, rendered as its
+     own section, and the `Article` schema sets `disambiguatingDescription` to
+     declare the page vendor-authored. Same posture as ADR-019 §5 on case
+     studies: the honesty is structural, not editorial discretion.
+- Consequences:
+  - Header nav grew to six items; **About and Contact moved out of the primary
+    nav ordering priority** in favour of Pricing and Integrations. About is
+    still one hop away from every page via the footer and body copy.
+  - Two content-to-code couplings now exist and will rot silently if ignored:
+    `lib/pricing.ts` ↔ the `subscription_plans` seed, and
+    `lib/integrations.ts` `status` ↔ the adapter `capabilities` flags in
+    `apps/api/app/integrations/`. Both are commented at the top of their file.
+    A change to either backend fact must update the marketing module in the same
+    commit.
+  - `/` being static means the signed-in redirect now costs a middleware hop
+    instead of a server render — strictly cheaper, but the redirect is no longer
+    visible in the page component, which is a discoverability cost paid down by
+    comments at both ends.
+  - The web app has no test runner, so verification for this tier remains
+    `turbo lint && turbo check-types && turbo build` plus assertions against the
+    prerendered HTML in `.next/server/app/` (canonicals, JSON-LD parse + no
+    duplicate `FAQPage` per URL, sitemap contents).
+  - Not done, deliberately: no blog or RSS (a content engine is a separate
+    commitment, not a page), no product screenshots (the /about promise forbids
+    showing features that do not exist), and no `aggregateRating`/`review`
+    markup (nothing has been measured, and fabricating it is a manual action).
+- Links: [tasks/completed/030](../tasks/completed/030-seo-intent-pages.md),
+  `apps/web/lib/{pricing,integrations,comparisons,site}.ts`,
+  `apps/web/app/(marketing)/{pricing,integrations,compare}/`,
+  `apps/web/app/llms.txt/route.ts`, `apps/web/proxy.ts`, extends ADR-019.
+
+---
+
+---
+
 ## ADR-019 — Public marketing site as a `(marketing)` MPA route group with a single metadata factory
 
 - Date: 2026-08-17
