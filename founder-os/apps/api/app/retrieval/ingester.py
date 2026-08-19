@@ -29,6 +29,7 @@ from typing import Any, Optional
 
 import httpx
 
+from app.crawler.ssrf import safe_get
 from app.retrieval.chunker import TextChunker, Chunk, count_tokens
 from app.retrieval.embeddings import EmbeddingProvider
 from app.retrieval.vector_store import VectorStore
@@ -179,9 +180,8 @@ class Ingester:
         # Fetch content
         async with httpx.AsyncClient(
             timeout=httpx.Timeout(30.0),
-            follow_redirects=True,
         ) as client:
-            response = await client.get(url)
+            response = await safe_get(client, url)
             response.raise_for_status()
 
         content_type = response.headers.get("content-type", "")
