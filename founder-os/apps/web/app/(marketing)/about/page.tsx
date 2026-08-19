@@ -2,20 +2,49 @@ import Link from "next/link";
 import { PageHero } from "../_components/page-hero";
 import { CtaBand } from "../_components/cta-band";
 import { Section, SectionHeading, Prose } from "../_components/section";
+import { JsonLd } from "../../_components/json-ld";
 import {
+  absoluteUrl,
   businessLocality,
   contactEmail,
+  founderName,
+  organizationSchema,
   pageMetadata,
+  personSchema,
   responseTimePromise,
+  siteName,
 } from "../../../lib/site";
 
 export const metadata = pageMetadata({
   title: "About us",
-  description:
-    "Who builds Founder OS and why: a local-first, OSS-first AI operating system for solo founders, built in New Delhi by the person who needed it first.",
+  description: `Who builds Founder OS and why: a local-first, OSS-first AI operating system for solo founders, built in New Delhi by ${founderName} — the person who needed it first.`,
   path: "/about",
-  keywords: ["about Founder OS", "who built Founder OS", "AI co-founder company"],
+  keywords: [
+    "about Founder OS",
+    "who built Founder OS",
+    founderName,
+    "AI co-founder company",
+  ],
 });
+
+/**
+ * AboutPage tied to the named founder.
+ *
+ * A one-person operation asking founders to trust it with their company state
+ * has to be identifiable. `mainEntity` points at the Person node so the name,
+ * role and GitHub profile are attached to the organisation rather than left as
+ * prose a crawler has to infer authorship from.
+ */
+const aboutPageSchema = {
+  "@context": "https://schema.org",
+  "@type": "AboutPage",
+  url: absoluteUrl("/about"),
+  name: `About ${siteName}`,
+  description: `${siteName} is built and operated by ${founderName} in ${businessLocality}, India.`,
+  mainEntity: { "@id": organizationSchema["@id"] },
+  about: { "@id": personSchema["@id"] },
+  inLanguage: "en",
+};
 
 const principles = [
   {
@@ -43,6 +72,9 @@ const principles = [
 export default function AboutPage() {
   return (
     <>
+      <JsonLd data={personSchema} />
+      <JsonLd data={aboutPageSchema} />
+
       <PageHero
         eyebrow="About us"
         title="Built by a solo founder, for solo founders"
@@ -78,7 +110,7 @@ export default function AboutPage() {
 
           <h2>Who is behind it</h2>
           <p>
-            Founder OS is built and operated by Aditya Jain, an engineer in{" "}
+            Founder OS is built and operated by {founderName}, an engineer in{" "}
             {businessLocality}. It is a small, independent operation — which is
             exactly the constraint the product is designed around, and the reason
             support is answered by the person who wrote the code rather than by a

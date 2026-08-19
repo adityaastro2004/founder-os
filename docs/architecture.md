@@ -246,7 +246,8 @@ Schema changes go through **Alembic** (`apps/api/alembic/`), not hand-edited SQL
 
 ## Frontend — `apps/web`
 
-App Router with route groups: `(auth)`, `(dashboard)`, `(onboarding)`. Dashboard
+App Router with route groups: `(marketing)`, `(auth)`, `(dashboard)`,
+`(onboarding)`. Dashboard
 pages: overview, chat (SSE streaming), agents (live status), planner, tasks,
 knowledge, memory, content-ideas, settings. Shared client utilities in `lib/`:
 `useApi` (stable, ref-based token), `useEventSource` (SSE with backoff),
@@ -260,6 +261,45 @@ sidebar shows a pulse dot on Chat/Agents while a run is in flight. Pages are
 thin views over `useChatStore()`. The provider also restores persisted history
 per session and, after a reload that lands mid-run, briefly polls history until
 the assistant reply arrives.
+
+### Public site + SEO layer — `(marketing)` (ADR-019, ADR-020)
+
+A 20-URL multi-page site sharing the root layout: `/`, `/features`, `/pricing`,
+`/integrations` (+ one page per adapter), `/compare` (+ one page per
+comparison), `/case-studies` (+ one page per scenario), `/about`, `/faq`,
+`/contact`, `/thank-you`, `/privacy`, `/terms`, plus a real-404 `not-found`. The
+route group adds no URL segment. Every page is statically generated —
+**including `/`**: the signed-in → `/dashboard` redirect lives in `proxy.ts`,
+because an `await auth()` in the page component opts the most-crawled URL out of
+static generation.
+
+Two rules govern this layer:
+
+1. **`lib/site.ts` is the single metadata + structured-data factory.**
+   `pageMetadata()` builds title / description / canonical / OG / Twitter from
+   one input, so a page cannot ship with the site-wide defaults by accident. The
+   same module owns every schema.org builder: `Organization`, `WebSite`,
+   `SoftwareApplication` (with `AggregateOffer`), `ProfessionalService`,
+   `Person`, `FAQPage`, `BreadcrumbList`, `ItemList` and `HowTo`. Canonical
+   origin is one constant (`NEXT_PUBLIC_SITE_URL`, defaulting to
+   `https://myfounderos.com`).
+2. **Page content lives in typed data modules, not in JSX.**
+   `lib/{pricing,integrations,comparisons,case-studies,faq}.ts` are rendered by
+   the pages *and* consumed by `app/sitemap.ts`, `app/llms.txt/route.ts` and the
+   JSON-LD builders. One edit propagates to the page, the sitemap, the
+   structured data and the answer-engine map together.
+
+⚠️ Two of those modules mirror backend facts and will rot silently:
+`lib/pricing.ts` mirrors the `subscription_plans` seed in `apps/api/schema.sql`
+(publishing an `Offer` price checkout does not charge is a rich-result
+violation), and `lib/integrations.ts` `status` mirrors the adapter `capabilities`
+flags in `apps/api/app/integrations/`. Change the backend fact, change the
+marketing module in the same commit.
+
+Also served: `robots.txt` (answer-engine crawlers named explicitly rather than
+left to `*`), `sitemap.xml` (per-page `lastModified`, not build time),
+`llms.txt`, `manifest.webmanifest`, and a `next/og`-generated share card at
+`/opengraph-image` + `/twitter-image`.
 
 ## Observability — `app/metrics/` (ADR-018)
 

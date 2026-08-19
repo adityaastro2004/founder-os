@@ -37,11 +37,23 @@ export const businessRegion = "Delhi";
 export const businessCountry = "IN";
 export const foundingYear = "2026";
 
-/** Header nav — kept short on purpose; the footer carries the full link map. */
+/** Named author/operator — carries the E-E-A-T signal on /about. */
+export const founderName = "Aditya Jain";
+export const founderRole = "Founder and engineer";
+
+/**
+ * Header nav — kept short on purpose; the footer carries the full link map.
+ *
+ * Ordered by search intent rather than by org chart: Pricing and Integrations
+ * are the two highest-intent queries in this category, so they take header
+ * slots and About moves to the footer (it is still one hop from every page via
+ * the footer and from body copy on /features, /faq and /contact).
+ */
 export const primaryNav = [
   { href: "/features", label: "Features" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/integrations", label: "Integrations" },
   { href: "/case-studies", label: "Case studies" },
-  { href: "/about", label: "About" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
 ] as const;
@@ -51,9 +63,23 @@ export const footerNav = [
     heading: "Product",
     links: [
       { href: "/features", label: "Features" },
+      { href: "/pricing", label: "Pricing" },
+      { href: "/integrations", label: "Integrations" },
       { href: "/case-studies", label: "Case studies" },
       { href: "/faq", label: "FAQ" },
       { href: "/sign-up", label: "Get started free" },
+    ],
+  },
+  {
+    heading: "Compare",
+    links: [
+      { href: "/compare", label: "All comparisons" },
+      { href: "/compare/founder-os-vs-chatgpt", label: "vs ChatGPT" },
+      { href: "/compare/founder-os-vs-notion-ai", label: "vs Notion AI" },
+      {
+        href: "/compare/founder-os-vs-virtual-assistant",
+        label: "vs a virtual assistant",
+      },
     ],
   },
   {
@@ -219,13 +245,42 @@ export const softwareApplicationSchema = {
     "Weekly planning with Google Calendar",
     "Human-in-the-loop approval gate",
   ],
+  // AggregateOffer rather than a bare free Offer: the product has four paid
+  // tiers, and advertising only the $0 one makes the rich result misleading.
+  // The range must stay in step with `lib/pricing.ts` (itself a mirror of the
+  // `subscription_plans` seed).
   offers: {
-    "@type": "Offer",
-    price: "0",
+    "@type": "AggregateOffer",
     priceCurrency: "USD",
-    description: "Free tier — no credit card required",
+    lowPrice: "0",
+    highPrice: "999",
+    offerCount: 4,
+    url: absoluteUrl("/pricing"),
   },
   publisher: { "@id": `${siteUrl}/#organization` },
+};
+
+/**
+ * The named human behind the product. Search engines weigh identifiable
+ * authorship (E-E-A-T), and an unattributed site run by one person reads as
+ * less trustworthy than the same site with a name on it.
+ */
+export const personSchema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": `${siteUrl}/#founder`,
+  name: founderName,
+  jobTitle: founderRole,
+  email: contactEmail,
+  url: absoluteUrl("/about"),
+  worksFor: { "@id": `${siteUrl}/#organization` },
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: businessLocality,
+    addressRegion: businessRegion,
+    addressCountry: businessCountry,
+  },
+  sameAs: ["https://github.com/adityaastro2004"],
 };
 
 /**
@@ -288,6 +343,63 @@ export function breadcrumbSchema(crumbs: readonly Crumb[]) {
       position: i + 1,
       name: crumb.label,
       item: absoluteUrl(crumb.href),
+    })),
+  };
+}
+
+export type ListEntry = { href: string; name: string; description?: string };
+
+/**
+ * ItemList for a hub page (case studies, integrations, comparisons). Tells a
+ * crawler that the page is an index over N specific URLs, which is what gets
+ * the children discovered and grouped rather than treated as loose pages.
+ */
+export function itemListSchema(name: string, entries: readonly ListEntry[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name,
+    numberOfItems: entries.length,
+    itemListOrder: "https://schema.org/ItemListOrderAscending",
+    itemListElement: entries.map((entry, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: entry.name,
+      description: entry.description,
+      url: absoluteUrl(entry.href),
+    })),
+  };
+}
+
+/**
+ * HowTo for the "how do I connect X" query that every integration page has to
+ * answer. Steps are plain strings so the same array renders the visible list
+ * and the JSON-LD — they can never drift apart.
+ */
+export function howToSchema({
+  name,
+  description,
+  path,
+  steps,
+}: {
+  name: string;
+  description: string;
+  path: string;
+  steps: readonly string[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    name,
+    description,
+    url: absoluteUrl(path),
+    totalTime: "PT10M",
+    step: steps.map((text, i) => ({
+      "@type": "HowToStep",
+      position: i + 1,
+      name: `Step ${i + 1}`,
+      text,
+      url: `${absoluteUrl(path)}#step-${i + 1}`,
     })),
   };
 }
