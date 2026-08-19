@@ -61,7 +61,11 @@ export function ContactForm() {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-xl">
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* The base `grid-cols-1` is load-bearing, not decoration: without it the
+          single column is an implicit `auto` track, which sizes to the <input>'s
+          intrinsic width (~317px at 16px) and overflows a 320px screen. Every
+          `grid-cols-N` utility is `repeat(N, minmax(0, 1fr))`, which caps it. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="name" className="text-sm font-medium text-ink">
             Your name

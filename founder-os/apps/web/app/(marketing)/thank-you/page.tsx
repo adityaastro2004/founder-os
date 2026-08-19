@@ -91,7 +91,7 @@ export default function ThankYouPage() {
           >
             While you wait
           </h2>
-          <div className="mt-8 grid gap-6 md:grid-cols-3">
+          <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
             {next.map((item) => (
               <Link
                 key={item.href}

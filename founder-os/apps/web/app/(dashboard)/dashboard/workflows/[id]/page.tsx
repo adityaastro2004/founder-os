@@ -489,7 +489,7 @@ export default function WorkflowDetailPage() {
           <button
             type="button"
             onClick={fetchAll}
-            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
+            className="tap-target rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
             title="Refresh runs"
             aria-label="Refresh runs"
           >

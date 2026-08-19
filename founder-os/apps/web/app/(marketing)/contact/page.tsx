@@ -92,7 +92,7 @@ export default function ContactPage() {
       />
 
       <Section>
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
+        <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)]">
           <div>
             <SectionHeading id="form-title" title="Send a message" />
             <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-secondary">

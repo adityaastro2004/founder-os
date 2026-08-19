@@ -157,7 +157,7 @@ export function Sidebar({
           type="button"
           onClick={onClose}
           aria-label="Close menu"
-          className="-m-1 rounded-control p-2 transition-colors duration-150 hover:bg-paper/60 lg:hidden"
+          className="tap-target -m-1 rounded-control p-2 transition-colors duration-150 hover:bg-paper/60 lg:hidden"
         >
           <X className="h-4 w-4 text-ink-muted" aria-hidden="true" />
         </button>

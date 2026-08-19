@@ -94,7 +94,7 @@ export default function AboutPage() {
           <h2>How we work</h2>
         </Prose>
 
-        <ul className="mt-6 grid max-w-4xl gap-4 sm:grid-cols-2">
+        <ul className="mt-6 grid grid-cols-1 max-w-4xl gap-4 sm:grid-cols-2">
           {principles.map((principle) => (
             <li
               key={principle.title}

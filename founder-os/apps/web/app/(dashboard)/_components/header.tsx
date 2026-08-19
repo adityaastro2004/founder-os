@@ -20,7 +20,7 @@ export function Header({
           type="button"
           onClick={onMenuClick}
           aria-label="Open menu"
-          className="-m-1 rounded-control p-2 transition-colors duration-150 hover:bg-surface-muted lg:hidden"
+          className="tap-target -m-1 rounded-control p-2 transition-colors duration-150 hover:bg-surface-muted lg:hidden"
         >
           <Menu className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
         </button>

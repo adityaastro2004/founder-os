@@ -32,7 +32,7 @@ export default function CaseStudiesPage() {
       </PageHero>
 
       <Section>
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {caseStudies.map((study) => (
             <article
               key={study.slug}

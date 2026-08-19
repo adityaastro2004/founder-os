@@ -97,7 +97,7 @@ export default async function CaseStudyPage({
 
       {/* ── Before ─────────────────────────────────────────────────── */}
       <Section labelledBy="situation-title">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
           <div>
             <SectionHeading
               id="situation-title"
@@ -167,7 +167,7 @@ export default async function CaseStudyPage({
           title="What changes"
           lead="Described as behaviour, not as percentages — we do not publish numbers we have not measured."
         />
-        <ul className="mt-8 grid max-w-4xl gap-4 sm:grid-cols-2">
+        <ul className="mt-8 grid grid-cols-1 max-w-4xl gap-4 sm:grid-cols-2">
           {study.outcomes.map((outcome) => (
             <li
               key={outcome}
@@ -182,7 +182,7 @@ export default async function CaseStudyPage({
       {/* ── Other scenarios ───────────────────────────────────────── */}
       <Section bordered labelledBy="other-title">
         <SectionHeading id="other-title" title="Other scenarios" />
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
           {caseStudies
             .filter((other) => other.slug !== study.slug)
             .map((other) => (
