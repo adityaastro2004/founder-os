@@ -58,13 +58,14 @@
 }
 
 /* ── Base ──────────────────────────────────────────── */
-html,
+/* `clip`, not `hidden`: `overflow-x: hidden` makes <body> a scroll container,
+   which re-anchors every `position: sticky` descendant to it — the marketing
+   and dashboard headers both depend on sticky. `clip` contains stray overflow
+   without creating a scroll container. `max-width: 100vw` is deliberately gone:
+   100vw counts the classic scrollbar, so it produced the horizontal overflow it
+   was meant to suppress. */
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
+  overflow-x: clip;
   color: var(--color-ink);
   background: var(--color-paper);
   font-family: var(--font-sans);
@@ -87,6 +88,44 @@ body {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* ── Touch ─────────────────────────────────────────── */
+/* Safari on iOS zooms the viewport whenever a focused field renders under 16px
+   and never zooms back out. Our fields are 14–15px, and so are Clerk's, which
+   Tailwind classes can't reach — so force the floor in CSS. These rules sit
+   outside @layer, so they beat the `text-sm` utility without !important.
+   The query is an OR: any touch pointer, or any viewport narrow enough to be a
+   phone/tablet. Relying on `pointer: coarse` alone would silently do nothing on
+   a browser that misreports it, and the cost of the wider net is 16px fields in
+   a narrow desktop window. */
+@media (pointer: coarse), (max-width: 1024px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/* Icon-only controls render as 26–32px boxes: fine under a cursor, below the
+   44px tap target on a phone. `.tap-target` grows only the *hit* area, via a
+   pseudo-element, so the visual box and the layout around it are untouched.
+   Reserved for controls with no adjacent sibling button — overlapping hit
+   areas would let one control steal its neighbour's taps. */
+@media (pointer: coarse), (max-width: 1024px) {
+  .tap-target {
+    position: relative;
+  }
+
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
 }
 
 /* ── Brand mark ────────────────────────────────────── */

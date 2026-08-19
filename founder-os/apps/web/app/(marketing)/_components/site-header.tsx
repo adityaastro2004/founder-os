@@ -125,7 +125,7 @@ export function SiteHeader() {
             aria-expanded={open}
             aria-controls="mobile-nav"
             aria-label={open ? "Close menu" : "Open menu"}
-            className="-mr-1 rounded-control p-2 text-ink transition-colors duration-150 hover:bg-surface-muted lg:hidden"
+            className="tap-target -mr-1 rounded-control p-2 text-ink transition-colors duration-150 hover:bg-surface-muted lg:hidden"
           >
             {open ? (
               <X className="h-5 w-5" aria-hidden="true" />

@@ -18,7 +18,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-line">
       <div className="mx-auto w-full max-w-6xl px-6 py-12 md:px-10 md:py-16">
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:pr-8">
             <Link href="/" className="flex items-center gap-2.5">
               <LogoMark className="h-7" />
@@ -83,17 +83,19 @@ export function SiteFooter() {
             &copy; {new Date().getFullYear()} {siteName}. Operated from New Delhi,
             India.
           </p>
-          <p className="flex flex-wrap gap-x-4 gap-y-1">
-            <Link href="/privacy" className="hover:text-ink">
+          {/* `py-1` + `gap-y-2` take these from 16px-tall targets to 24px with
+              8px between them — WCAG 2.5.8 — without moving the row visually. */}
+          <p className="flex flex-wrap gap-x-4 gap-y-2">
+            <Link href="/privacy" className="inline-block py-1 hover:text-ink">
               Privacy
             </Link>
-            <Link href="/terms" className="hover:text-ink">
+            <Link href="/terms" className="inline-block py-1 hover:text-ink">
               Terms
             </Link>
-            <Link href="/contact" className="hover:text-ink">
+            <Link href="/contact" className="inline-block py-1 hover:text-ink">
               Contact
             </Link>
-            <a href="/sitemap.xml" className="hover:text-ink">
+            <a href="/sitemap.xml" className="inline-block py-1 hover:text-ink">
               Sitemap
             </a>
           </p>

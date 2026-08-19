@@ -142,7 +142,7 @@ export default async function Home() {
           title="Five loops, running whether or not you are"
           lead="Founder OS behaves like an OS daemon rather than a chat window. It keeps cycling, and each pass leaves the company state a little more accurate."
         />
-        <ol className="mt-10 grid gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
+        <ol className="mt-10 grid grid-cols-1 gap-px overflow-hidden rounded-card border border-line bg-line sm:grid-cols-2 lg:grid-cols-5">
           {loops.map((loop, i) => (
             <li key={loop.name} className="bg-surface p-5">
               <span className="font-mono text-xs text-ink-muted">
@@ -167,7 +167,7 @@ export default async function Home() {
           title="Built around state, not around chat"
           lead="The moat is not the conversation — it is the canonical model of your company underneath it."
         />
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map(({ icon: Icon, title, body }) => (
             <div
               key={title}
@@ -294,7 +294,7 @@ export default async function Home() {
           title="What this looks like in a real week"
           lead="Three illustrative scenarios — not customer accounts — showing how the engine and the agents are actually used."
         />
-        <div className="mt-10 grid gap-6 md:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 gap-6 md:grid-cols-3">
           {caseStudies.map((study) => (
             <Link
               key={study.slug}

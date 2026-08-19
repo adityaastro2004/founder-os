@@ -706,7 +706,7 @@ export default function StateSourcesSection({
             type="button"
             onClick={() => setNotice(null)}
             aria-label="Dismiss"
-            className="p-1 -m-1 rounded text-ink-secondary hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            className="tap-target p-1 -m-1 rounded text-ink-secondary hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
           >
             <X className="w-3.5 h-3.5" />
           </button>

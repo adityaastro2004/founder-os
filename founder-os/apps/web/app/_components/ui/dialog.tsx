@@ -72,7 +72,7 @@ export function Dialog({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="-m-2 rounded-control p-2 text-ink-muted transition-colors duration-150 hover:bg-surface-muted hover:text-ink"
+            className="tap-target -m-2 rounded-control p-2 text-ink-muted transition-colors duration-150 hover:bg-surface-muted hover:text-ink"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>

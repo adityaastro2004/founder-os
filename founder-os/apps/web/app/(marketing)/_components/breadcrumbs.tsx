@@ -35,7 +35,7 @@ export function Breadcrumbs({ crumbs }: { crumbs: Crumb[] }) {
                 ) : (
                   <Link
                     href={crumb.href}
-                    className="transition-colors duration-150 hover:text-ink"
+                    className="inline-block py-1 transition-colors duration-150 hover:text-ink"
                   >
                     {crumb.label}
                   </Link>

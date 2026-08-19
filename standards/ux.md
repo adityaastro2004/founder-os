@@ -37,7 +37,21 @@
 - **Accessibility baseline.** Semantic HTML, labelled controls, keyboard-navigable,
   visible focus states, sufficient contrast.
 - **Responsive.** The dashboard works on a laptop and a phone; no fixed-width layouts
-  that break the founder checking in on mobile.
+  that break the founder checking in on mobile. Four rules that have each already
+  cost us a real bug — check them in a 320px-wide browser, not by eye:
+  1. **Always declare a base `grid-cols-1`.** `grid-cols-N` compiles to
+     `repeat(N, minmax(0, 1fr))`; a `grid` with only `sm:`/`lg:` columns falls back
+     to an implicit `auto` track that sizes to its content's intrinsic width. An
+     `<input>` inside one overflowed a 320px screen by 21px.
+  2. **Never `overflow-x: hidden` on `html`/`body`.** It turns the element into a
+     scroll container and silently kills every `position: sticky` descendant —
+     both site headers were broken this way. Use `overflow-x: clip`.
+  3. **Form controls render ≥16px on touch.** Below that, Safari on iOS zooms the
+     viewport on focus and never zooms back. Enforced globally in `globals.css`,
+     which also covers Clerk's own fields.
+  4. **Tap targets ≥24px** (WCAG 2.5.8), 44px for isolated icon buttons via the
+     `.tap-target` utility. Don't put `.tap-target` on adjacent buttons — the hit
+     areas overlap and one control starts stealing its neighbour's taps.
 
 ## Review checklist (UX)
 

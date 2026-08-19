@@ -261,7 +261,7 @@ function AgentChatPanel({
             type="button"
             onClick={onClose}
             aria-label="Back"
-            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
+            className="tap-target rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
           >
             <ArrowLeft className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           </button>
@@ -284,18 +284,21 @@ function AgentChatPanel({
             <button
               type="button"
               onClick={clearChat}
-              className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
+              className="rounded-control p-2 transition-colors duration-150 hover:bg-surface-muted"
               title="Clear chat"
               aria-label="Clear chat"
             >
               <Trash2 className="h-3.5 w-3.5 text-ink-muted" aria-hidden="true" />
             </button>
           )}
+          {/* Adjacent to "Clear chat", so this pair gets padding rather than
+              `.tap-target` — overlapping 44px areas would put a destructive
+              control under a tap meant for Close. */}
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
+            className="rounded-control p-2 transition-colors duration-150 hover:bg-surface-muted"
           >
             <X className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           </button>
@@ -494,7 +497,7 @@ function AgentHistoryPanel({
             type="button"
             onClick={onClose}
             aria-label="Back"
-            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
+            className="tap-target rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
           >
             <ArrowLeft className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           </button>
@@ -509,7 +512,7 @@ function AgentHistoryPanel({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
+            className="tap-target rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted"
           >
             <X className="h-4 w-4 text-ink-secondary" aria-hidden="true" />
           </button>

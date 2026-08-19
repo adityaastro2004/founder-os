@@ -413,7 +413,7 @@ function TaskDetailPanel({
           type="button"
           onClick={onBack}
           aria-label="Back to list"
-          className="rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted lg:hidden"
+          className="tap-target rounded-control p-1.5 transition-colors duration-150 hover:bg-surface-muted lg:hidden"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
         </button>

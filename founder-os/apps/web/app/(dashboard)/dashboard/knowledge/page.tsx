@@ -465,7 +465,7 @@ export default function KnowledgePage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Open source"
-                      className="p-1.5 text-ink-muted transition-colors duration-150 hover:text-ink"
+                      className="p-2 text-ink-muted transition-colors duration-150 hover:text-ink"
                     >
                       <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                     </a>
@@ -475,7 +475,7 @@ export default function KnowledgePage() {
                     onClick={() => handleDelete(item.id)}
                     disabled={deleting === item.id}
                     aria-label="Delete item"
-                    className="p-1.5 text-ink-muted transition-colors duration-150 hover:text-danger"
+                    className="p-2 text-ink-muted transition-colors duration-150 hover:text-danger"
                   >
                     {deleting === item.id ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />

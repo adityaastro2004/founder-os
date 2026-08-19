@@ -128,13 +128,16 @@ function MemoryCard({
             </span>
           </div>
         </button>
-        <div className="flex shrink-0 items-center gap-1">
+        {/* Pin and Delete sit side by side, so they get real padding and a wider
+            gap rather than `.tap-target` — overlapping 44px hit areas would put
+            Delete under a tap meant for Pin. */}
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={onPin}
             disabled={pinning}
             className={clsx(
-              "rounded-control p-1.5 transition-colors duration-150",
+              "rounded-control p-2 transition-colors duration-150",
               memory.is_pinned
                 ? "text-accent-text hover:bg-surface-muted"
                 : "text-ink-muted hover:bg-surface-muted hover:text-ink"
@@ -153,7 +156,7 @@ function MemoryCard({
             onClick={onDelete}
             disabled={deleting}
             aria-label="Delete memory"
-            className="rounded-control p-1.5 text-ink-muted transition-colors duration-150 hover:bg-surface-muted hover:text-danger"
+            className="rounded-control p-2 text-ink-muted transition-colors duration-150 hover:bg-surface-muted hover:text-danger"
           >
             {deleting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
